@@ -1,0 +1,89 @@
+@import "./index.scss";
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-auto-flow: column;
+    background-color: $gray-light;
+    color: black;
+
+
+
+    #app-navigation {
+        background-color: $gray-dark;
+        color: whitesmoke;
+        width: 20vw;
+        height: 100vh;
+        border-radius: 0;
+        padding: 0.1rem 0;
+
+
+        #logo-box {
+            z-index: 10;
+            display: grid;
+            grid-auto-flow: column;
+
+            img {
+                height: 2.5rem;
+                margin: auto 0.5rem auto 0;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+                color: $blue;
+                white-space: auto;
+            }
+        }
+
+        #page-menu {
+            display: flex;
+            flex-direction: column;
+            // padding-left: 1.5rem;
+            margin-top: 1.0rem;
+
+            .page {
+                color:whitesmoke;
+                font-family: 'EB Garamond';
+                font-weight: 500;
+                font-size: 1.5rem;
+                text-decoration: none;
+                padding: 0.25rem 0.5rem 0.25rem 1.5rem;
+            }
+
+            .active {
+                background-color: $red;
+            }
+        }
+        
+    }
+
+    #app-content {
+        margin: 0;
+        height: 100vh;
+        width: 80vw;
+
+        #app-header {
+            background-color: $red;
+            min-height: 10vh;
+            width: 100%;
+            border-radius: 0;
+            margin: 0;
+
+            h2 {
+                margin: auto;
+                width: fit-content;
+                height: 100%;
+                color: white;
+            }
+        }
+
+        #app-body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            margin: 1.0rem;
+
+            
+        }
+    }
+}

@@ -1,46 +1,23 @@
-# Getting Started with Create React App
+# Encouraging Prayer
+Site is live at: Learn More at: [encouragingprayer.org](https://encouragingprayer.org/)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+The **Encouraging Prayer Portal** will allow circle leader and admin management on the Encouraging Prayer system.
 
-## Available Scripts
+[See Portal Figma Demo](https://www.figma.com/proto/HOGcmnYooogGDNlgAxKoSe/DASHBOARD_DESIGN?node-id=119%3A2&scaling=min-zoom&page-id=0%3A1)
 
-In the project directory, you can run:
+![alt text](https://encouragingprayer.org/static/media/page-portal-mac.e2fa6cc47cf7827dad74.png)
 
-### `npm start`
+## Encouraging Prayer System: 
+Will be a software social platform to connect students, enable communication, and promote biblical content.  The primary focus will be establishing prayer partners and promoting daily prayer among users, and sending content based on the user's unique identifiers.  Secondarily will be hosting Circles organized by local leaders via providing group organization within the scope of the app, and also the ability to curate, manage, and send content based on user registration data. The platform will consist of a Mobile App directed at students, Web portal for circle leaders, and Server and Data management.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+![alt text](http://encouragingprayer.org/encouraging-prayer.png)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+#### Currently under development with an expected release 2023
+Lead Developer is [**Ethan Johnsrud**](https://ethanjohnsrud.com/)
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Pew35 Ministry
 
-### `npm run build`
+*Encouraging Prayer is a product of the [**Pew35 Ministry**](https://pew35.org/).*
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+PEW35 is a christian religious organization located in southern Minnesota.  Consisting of 5 board members and many volunteers across the Encouraging Prayer software  and hosting the Undignified Day of Prayer.  The ministry focuses on youth to teach the next generation the practical application of prayer in their lives, to be an encouragement in helping them develop their relationship with God, and an ongoing attitude of worship to magnify Him through advancing the Kingdom of God on earth.

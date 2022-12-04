@@ -1,0 +1,186 @@
+$background: whitesmoke;
+$red: #B12020;
+$blue: #62D0F5;
+$blue-dark: #003f89;
+$gray-dark: #303030;
+$gray-light: #DCDCDC;
+$t-black: rgba(0, 0, 0, 0.6);
+$t-white: rgba(255, 255, 255, 0.2);
+$radius: 4px;
+
+html {
+  font-size: 22px;
+  color: white;
+  font-family: 'Roboto';
+  font-weight: 300;
+  background-color: $background;
+
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+
+  @media screen and (max-width: 1200px) {
+    font-size: 18px;
+  }
+
+  @media screen and (max-width: 991px) {
+    font-size: 15px;
+  }
+
+  @media screen and (max-width: 576px) {
+    font-size: 13px;
+  }
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+
+.none {
+  display: none;
+  height: 0;
+  width: 0;
+  margin: 0;
+  padding: 0;
+
+}
+
+div,
+label,
+button,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  background-color: transparent;
+  border: none;
+  border-radius: $radius;
+  font-weight: 300;
+  margin: 0.3rem 0;
+}
+
+div {
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  padding: 0.5rem 1.0rem;
+  font-family: 'EB Garamond';
+  font-weight: 600;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+NavLink, Link {
+  text-decoration: none;
+}
+
+h1 {
+  font-family: 'Playfair Display';
+  font-weight: 700;
+  font-size: 4.0rem;
+}
+
+h2 {
+  font-family: 'Playfair Display';
+  font-weight: 500;
+  font-size: 2.5rem;
+}
+
+h3,
+label {
+  font-family: 'EB Garamond';
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: $blue;
+}
+
+h4,
+h5,
+h6 {
+  font-family: 'Roboto';
+  font-weight: 300;
+  font-size: 1.15rem;
+}
+
+
+//Animations
+@keyframes zoom-pulse {
+  0%,100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes border-pulse-red {
+  0%,100% {
+    border-color: transparent;
+  }
+  50% {
+    border-color: $t-white;
+  }
+}
+
+@keyframes border-pulse-blue {
+  0%,100% {
+    border-color: transparent;
+  }
+  50% {
+    border-color: $blue;
+  }
+}
+
+@keyframes outline {
+  0% {
+    background-size: 0 1px,
+      1px 0,
+      0 1px,
+      1px 0;
+  }
+
+  100% {
+    background-size: 100% 1px,
+      1px 100%,
+      100% 1px,
+      1px 100%;
+  }
+}
+
+@keyframes trace {
+  0% {
+      background-size:    0 3px,
+                          3px 0,
+                          0 3px,
+                          3px 0;
+  }
+  25% {
+      background-size:    100% 3px,
+                          3px 0,
+                          0 3px,
+                          3px 0;
+  }
+  50% {
+      background-size:    100% 3px,
+                          3px 100%,
+                          0 3px,
+                          3px 0;
+  }
+  75% {
+      background-size:    100% 3px,
+                          3px 100%,
+                          100% 3px,
+                          3px 0;
+  }
+  100% {
+      background-size:    100% 3px,
+                          3px 100%,
+                          100% 3px,
+                          3px 100%;
+  }
+}
