@@ -64,6 +64,7 @@
         width: 80vw;
 
         #app-header {
+            display: flex;
             background-color: $red;
             min-height: 10vh;
             width: 100%;
@@ -75,6 +76,13 @@
                 width: fit-content;
                 height: 100%;
                 color: white;
+            }
+
+            label {
+                align-self: flex-end;
+                font-size: 1.0rem;
+                color: $gray-dark;
+                margin: auto;
             }
         }
 

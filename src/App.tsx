@@ -1,15 +1,21 @@
 import React, { useState, useEffect, forwardRef, useRef } from "react";
 import { BrowserRouter, Route, Routes, Navigate, NavLink, Link } from "react-router-dom";
 import "./App.scss";
+import { useAppSelector, useAppDispatch } from './hooks';
 
 //Components
-import Chat from "./1-Chat-Demo/Chat";
+import Login from "./1-Login/Login";
+import Chat from "./3-Chat-Demo/Chat";
 
 
 //Assets
 import LOGO from './0-Assets/logo.png';
 
 const App = () => {
+
+  const displayName:string = useAppSelector((state) => state.account.userProfile.displayName);
+  const userId:number = useAppSelector((state) => state.account.userId);
+
 
   return (
     <BrowserRouter>
@@ -43,13 +49,14 @@ const App = () => {
       <div id="app-content">
         <div id="app-header">
             <h2>Welcome to the Portal</h2>
+            <label>{displayName} | {userId} </label>
         </div>
 
         <div id="app-body">
             <Routes>
               <Route path='/' element={ <Navigate to="/login" /> }/>
               <Route path="/dashboard" element={"Dashboard coming Eventually :)"}/>
-              <Route path="/login" element={"Login Page"}/>
+              <Route path="/login" element={<Login/>}/>
               <Route path="/signup" element={"Sign Up Page"}/>
               <Route path="/chat" element={<Chat/>}/>
               <Route path="/logs" element={"Log Page Coming Soon!"}/>

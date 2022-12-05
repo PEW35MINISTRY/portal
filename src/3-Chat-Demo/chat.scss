@@ -1,0 +1,113 @@
+@import "../index.scss";
+
+#chat {
+    display: flex;
+    flex-direction: column;
+
+    h3 {
+        text-align: center;
+        color: black;
+    }
+
+    #horizontal {
+        display: grid;
+        grid-template-columns: 60% auto;
+        grid-auto-flow: row;
+        padding: 0.5rem;
+        
+        #align-left {
+            grid-column: 1;
+            display: flex;
+            flex-direction: column;
+
+            #chat-header {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                margin: 0.5rem 1.5rem;
+
+                label {
+                    padding: 0.25rem 2.0rem;
+                    width: 100%;
+                    text-align: left;
+                    margin: 0 1.0rem;
+                    font-size: 1.1rem;
+                }
+
+                .active {
+                    background-color: $red;
+                    color: white;                   
+                }
+
+                .inactive {
+                    color: $gray-dark;
+
+                    &:hover {
+                        background-color: $blue;
+                        color: white;
+                        cursor: grab;
+                    }
+                }
+            }
+
+            #contact-select {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                margin: 0.5rem 1.5rem;
+
+                label {
+                    white-space: nowrap;
+                    margin: 0 1.0rem;
+                    font-size: 1.1rem;
+                }
+
+                select {
+                    width: 70%;
+                    margin: 0 1.0rem;
+                    border: none;
+                    background-color: white;
+                }
+                
+            }
+
+            button {
+                grid-column: 1 /span 2;
+                background-color: $red;
+                color: white;
+                width: 15rem;
+                margin: auto;
+                margin-top: 0;
+
+                &:hover {
+                    background-color: $blue;
+                }
+            }
+
+            textarea {
+                font-size: 1.0rem;
+                height: 200px;
+                font-size: 1.0rem;
+                background-color: white;
+                border: none;
+                padding: 0.5rem 1.0rem;
+                margin: 1.0rem 0;
+            }
+
+        }
+
+        #chat-log {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            overflow-y: scroll;
+            max-height: 80vh;
+            padding-left: 0.5rem;
+
+            option {
+                margin: 0.25rem;
+                border-bottom: 1px solid #909090;
+            }
+        }
+    }
+}

@@ -1,0 +1,37 @@
+@import "../index.scss";
+
+#login {
+    display: grid;
+    grid-column: 2;
+    grid-template-columns: 25% auto;
+    grid-row-gap: 0.5rem;
+
+    h4{
+        grid-column: 1 /span 2;
+        color: $blue;
+    }
+
+    label {
+        grid-column: 1;
+        margin-left: auto;
+        margin-right: 1.0rem;
+    }
+
+    input {
+        grid-column: 2;
+        background-color: white;
+        border: none;
+    }
+
+    button {
+        grid-column: 1 /span 2;
+        background-color: $red;
+        color: white;
+        width: 15rem;
+        margin: auto;
+
+        &:hover {
+            background-color: $blue;
+        }
+    }
+}
