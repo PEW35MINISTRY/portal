@@ -11,10 +11,11 @@ type contact = {
 const Login = () => {
     const dispatch = useAppDispatch();
     const [email, setEmail] = useState<string>('email@email.com'); 
-    const [password, setPassword] = useState<string>('abc'); 
+    const [password, setPassword] = useState<string>('abcde'); 
 
     const onLogin = (e:any) => {
-        e.preventDefault();
+        if(e)
+            e.preventDefault();
 
         axios.post(`${process.env.REACT_APP_DOMAIN}/login`, {
             email: email,
@@ -34,6 +35,9 @@ const Login = () => {
 
         }).catch(error => console.log('AXIOS Login Error:', error));
     }
+
+    //OnStart
+    useEffect(() => onLogin(null), []);
     
 
     return (
@@ -42,7 +46,7 @@ const Login = () => {
             <label>Email:</label>
             <input type='email' onChange={(e)=>setEmail(e.target.value)} value={email}/>
             <label>Password:</label>
-            <input type='email' onChange={(e)=>setPassword(e.target.value)} value={password}/>
+            <input type='email' onChange={(e)=>setPassword(e.target.value)} value={password} onKeyDown={(e)=>{if(e.key === 'Enter') {onLogin(e);}}}/>
             <button onClick={onLogin}>Login</button>
         </div>
     );

@@ -1,0 +1,129 @@
+@import "../index.scss";
+
+#log {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    
+
+    #log-type-box {
+        max-width: 100%;
+        height: 100%;
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-columns: repeat(1fr, 7);
+        justify-content: space-between;
+
+        .log-type {
+            // background-color: $blue;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 0;
+            
+            label {
+                color: $blue;
+                padding: 0.5rem 0.5rem;
+                cursor: pointer;
+                font-size: 1.0rem;
+                font-weight: 600;
+
+            }
+
+            &.selected {
+                background-color: $blue;
+    
+                label {
+                    color: white;
+                }
+    
+            }
+        }
+
+        
+
+        #expand-all-button, #add {
+            background-color: $red;
+            width: 10vw;
+            cursor: pointer;
+            border-radius: 0;
+            
+            label {
+                font-size: 1.0rem;
+                font-weight: 600;
+                color: white;
+                padding: 0.5rem 1.0rem;
+            }
+        }
+
+    }
+
+    .add-box {
+
+        input {
+            width: 90%;
+            margin: 0.75rem 2.0rem;
+            padding: 0.5rem;
+            border: 2px solid $blue;
+            background-color: none;
+        }
+    }
+
+    .hide {
+        display: none;
+    }
+
+    #log-display {
+        padding: 0.5rem 1.0rem 1.0rem 2.0rem;
+        height: 80vh;
+        overflow: scroll;
+        background-color: whitesmoke;
+
+        .log-entry {
+            display: grid;
+            grid-auto-flow: column;
+            grid-template-columns: 3.0rem auto;
+            margin-bottom: 0.5rem;
+            cursor: grab;
+
+            label {
+                grid-column: 1;
+                font-weight: 800;
+                font-size: 0.8rem;
+                color: $red;
+                margin: 0;
+
+                .trace-star {
+                    color: gray;
+                }
+                
+            }
+
+            p {
+                margin: 0;
+                margin-left: 0.75rem;
+                grid-column: 2;
+                // font-weight: 500;
+                font-size: 0.7rem;
+            }
+            
+            .header {
+                margin-left: 0;
+                font-size: 0.8rem;
+                font-weight: 600;
+            }
+
+            .trace {
+                margin-left: 2.0rem;
+                font-weight: 300;
+                font-size: 0.6rem;
+                color: gray;
+            }
+
+            .hide {
+                display: none;
+            }
+        }
+    }
+    
+}

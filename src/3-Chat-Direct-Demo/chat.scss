@@ -26,6 +26,15 @@
                 justify-content: space-around;
                 margin: 0.5rem 1.5rem;
 
+                #chat-id {
+                    color: $red;
+                    font-style: italic;
+                    font-weight: 200;
+                    font-size: 0.8rem;
+                    text-align: left;
+                    margin-left: 0;
+                }
+
                 label {
                     padding: 0.25rem 2.0rem;
                     width: 100%;
