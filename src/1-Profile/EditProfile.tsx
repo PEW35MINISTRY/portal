@@ -37,7 +37,7 @@ const EditProfile = () => {
         getAvailableUserRoles()
             .then(result => setAvailableUserRoles(result));
         
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/profile/access`,{
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/profile/access`,{
             headers: {
                 ['user-id']: userId,
                 jwt: JWT
@@ -50,7 +50,7 @@ const EditProfile = () => {
 
     useEffect(() => { if(editingUserId > 0) fetchProfile(editingUserId);}, [editingUserId]);
 
-    const fetchProfile = (fetchUserId:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/profile/${fetchUserId}`,{
+    const fetchProfile = (fetchUserId:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/profile/${fetchUserId}`,{
         headers: {
             ['user-id']: userId,
             jwt: JWT
@@ -79,7 +79,7 @@ const EditProfile = () => {
             setStatusMessage("Please fix all validation before creating a new account.")
             return;
         } 
-            axios.patch(`${process.env.REACT_APP_DOMAIN}/api/profile/${editingUserId}`, {
+            axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/profile/${editingUserId}`, {
             ...input,
             dob: input.dob ? convertDate(input.dob || '').getTime() : undefined,
             dailyNotificationHour: input.dailyNotificationHour ? convertHour(input.dailyNotificationHour || '') : undefined,

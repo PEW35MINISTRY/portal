@@ -49,7 +49,7 @@ const CircleChat = () => {
         setChatSocket(socket);
 
     /* Fetch Circles */
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/circles`, 
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/circles`, 
             { headers: {
                 'user-id': userId,
                 'jwt': JWT

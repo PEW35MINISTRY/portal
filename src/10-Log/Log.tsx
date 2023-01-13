@@ -27,7 +27,7 @@ const Log = () => {
 
 
     useEffect(() => {setLoading(true);
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}`, { 
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/admin/log/${type}`, { 
             headers: {
                 'user-id': userId,
                 'jwt': JWT
@@ -46,7 +46,7 @@ const Log = () => {
     const saveLog = (event:any) => {
         event.preventDefault();
 
-        axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}`, message.toString(), { 
+        axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/admin/log/${type}`, message.toString(), { 
             headers: {
                 'Content-Type': 'text/plain',
                 'user-id': userId,

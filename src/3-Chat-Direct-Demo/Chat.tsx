@@ -27,7 +27,7 @@ const DirectChat = () => {
     //Get list of all Contacts Individual
     useEffect(() => {
     /* Fetch Contacts */
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/contacts`, 
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/contacts`, 
             { headers: {
                 'user-id': userId,
                 'jwt': JWT
