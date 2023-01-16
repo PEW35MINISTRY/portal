@@ -42,13 +42,14 @@ export enum Profile_Validation_Mode {
 }
 
 //Input Validation
-export default  async(field: any, value:any, input:any, validation:any, validationMode:Profile_Validation_Mode = Profile_Validation_Mode.EDIT) => {
+export default  async(field: any, value:any, input:any, validation:any, requiredProfileFields:string[], validationMode:Profile_Validation_Mode = Profile_Validation_Mode.EDIT) => {
     let errors:any = validation;
     // console.log('VALIDATING', field, value, input, validation);
 
-    //Require Input for All
-    delete errors[field];
-    if((value == undefined || !value.toString().trim().length) && REQUIRED_FIELDS.includes(field)) {
+    //Require Input for All except:
+    if(field != 'token')
+        delete errors[field];
+    if((value == undefined || !value.toString().trim().length) && requiredProfileFields.includes(field)) {
         errors[field] = `${field} is required`;
         return errors;
     }
@@ -78,13 +79,21 @@ export default  async(field: any, value:any, input:any, validation:any, validati
             errors.userRole = `User Roles are unavailable, please contact PEW35`;
         else if(!availableUserRoles.includes(value))
             errors.userRole = `Invalid User Role`;
-        
-        //Require Role Token on Signup
-        if(validationMode === Profile_Validation_Mode.SIGNUP && value !== 'STUDENT'){
-            if(value == undefined || !value.toString().trim().length)
-                errors.token = `Token is required for a ${value} account.`;
-        }
     }
+
+    //Require Role Token on Signup
+    if((field === 'userRole' || field === 'token') && validationMode === Profile_Validation_Mode.SIGNUP){
+        const latestUserRole = (field === 'userRole') ? value : input.userRole;
+        const latestToken = (field === 'token') ? value : input.token;
+
+        console.log(latestUserRole, latestToken);
+
+        if(latestUserRole != 'STUDENT' && (latestToken == undefined || !latestToken.toString().trim().length))
+            errors.token = `Token is required for a ${latestUserRole} account.`;
+        else
+            delete errors['token'];
+            
+    } 
 
     if(field === 'phone' && !/^[1]{0,1}-[0-9]{3}-[0-9]{3}-[0-9]{4}$/.test(value))
         errors.phone = `Invalid phone format: X-XXX-XXX-XXXX`;

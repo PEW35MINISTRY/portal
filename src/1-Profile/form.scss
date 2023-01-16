@@ -97,6 +97,22 @@
             width: 100%;
             color: $red;
         }
+
+        .children {
+            grid-column: 1 /span 2;
+            width: 100%;
+            text-align: center;
+
+            label {
+                text-align: right;
+                margin-right: 1.0rem;
+                color: $blue-dark;
+    
+                @media only screen and (max-width: 768px) {
+                    text-align: left;
+                }
+            }
+        }
     }
     
 }

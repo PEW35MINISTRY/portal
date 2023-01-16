@@ -1,6 +1,6 @@
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
 import type { RootState, AppDispatch } from './redux-store'
-import { useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import qs from "qs"
 
@@ -10,4 +10,11 @@ import qs from "qs"
 export const useAppDispatch: () => AppDispatch = useDispatch;
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
+export function useStateFromProp(initialValue: unknown) {
+    const [value, setValue] = useState(initialValue);
+  
+    useEffect(() => setValue(initialValue), [initialValue]);
+  
+    return [value, setValue];
+  }
 
