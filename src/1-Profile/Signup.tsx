@@ -4,17 +4,9 @@ import React, {useState, useEffect, forwardRef, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import './form.scss'; 
-import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists } from './validateProfile';
+import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists, REQUIRED_FIELDS } from './validateProfile';
 
-const REQUIRED_FIELDS:string[] = [
-    'email',
-    'password',
-    'firstName',
-    'lastName',
-    'dob',
-    'gender',
-    'displayName'
-];
+
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -23,7 +15,6 @@ const Signup = () => {
 
     const [input, setInput] = useState<ProfileType>({
         ['userRole']: 'STUDENT',
-        ['gender']: 'MALE',
         ['dailyNotificationHour']: "09:00",
     });
     const [statusMessage, setStatusMessage] = useState<string>('');
@@ -95,7 +86,11 @@ const Signup = () => {
                 {(statusMessage.length > 0) && <button type='submit' onClick={()=>navigate('/dashboard')}>Return to Dashboard</button>}
                 {(statusMessage.length > 0) && <hr/>}
 
-                <label htmlFor='email'>Email address</label>
+                <label htmlFor='displayName'>Username</label>
+                <input name='displayName' type='text' onChange={onInput}  value={input.displayName || ''}/>
+                {validation?.displayName && <p className='error' >{validation.displayName}</p>}
+                
+                <label htmlFor='email'>Email Address</label>
                 <input name='email' type='email' onChange={onInput}  value={input.email || ''}/>
 
                 <label htmlFor='emailVerify'>Confirm Email Address</label>
@@ -119,6 +114,10 @@ const Signup = () => {
                 </select>
                 {validation?.userRole && <p className='error' >{validation.userRole}</p>}
 
+                {input.userRole != 'STUDENT' && <label htmlFor='token'>New Account Token</label>}
+                {input.userRole != 'STUDENT' && <input name='token' type='text' onChange={onInput}  value={input.token || ''}/>}
+                {validation?.token && <p className='error' >{validation.token}</p>}
+
                 <label htmlFor='firstName'>First Name</label>
                 <input name='firstName' type='text' onChange={onInput}  value={input.firstName || ''}/>
                 {validation?.firstName && <p className='error' >{validation.firstName}</p>}
@@ -141,18 +140,14 @@ const Signup = () => {
                 {validation?.dob && <p className='error' >{validation.dob}</p>}
 
                 <label htmlFor='gender'>Gender</label>
-                <select name="gender" onChange={onInput}  value={input.gender || ''}>
+                <select name="gender" onChange={onInput}  value={input.gender} defaultValue='default'>
+                    <option key={`default`} value="default" disabled hidden>Select Gender:</option>
                     <option key={`1-male`} value='MALE'>Male</option>
                     <option key={`2-female`} value='FEMALE'>Female</option>
                 </select>
                 {validation?.gender && <p className='error' >{validation.gender}</p>}
 
                 <hr/>
-
-                <label htmlFor='displayName'>Public Name</label>
-                <input name='displayName' type='text' onChange={onInput}  value={input.displayName || ''}/>
-                {validation?.displayName && <p className='error' >{validation.displayName}</p>}
-
 
                 <label htmlFor='dailyNotificationHour'>Daily Reminder</label>
                 <input name='dailyNotificationHour' type='time' step='3600' onChange={onInput} value={input.dailyNotificationHour || ''}/>

@@ -6,6 +6,7 @@ export type ProfileType = {
     password?: string,
     passwordVerify?: string,
     userRole?: string,
+    token?:string,
     displayName?: string,
     firstName?: string,
     lastName?: string,
@@ -23,19 +24,36 @@ export type ProfileType = {
     // partnerList?: string[]
 }
 
+export const REQUIRED_FIELDS:string[] = [
+    'displayName',
+    'email',
+    'password',
+    'firstName',
+    'lastName',
+    'dob',
+    'gender'
+];
+
+export const emailRegex = new RegExp(/^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()\.,;\s@\"]+\.{0,1})+([^<>()\.,;:\s@\"]{2,}|[\d\.]+))$/);
+
+export enum Profile_Validation_Mode {
+    'SIGNUP',
+    'EDIT'
+}
+
 //Input Validation
-export default  async(field: any, value:any, input:any, validation:any) => {
+export default  async(field: any, value:any, input:any, validation:any, validationMode:Profile_Validation_Mode = Profile_Validation_Mode.EDIT) => {
     let errors:any = validation;
     // console.log('VALIDATING', field, value, input, validation);
 
     //Require Input for All
     delete errors[field];
-    if(value == undefined || !value.toString().trim().length) {
+    if((value == undefined || !value.toString().trim().length) && REQUIRED_FIELDS.includes(field)) {
         errors[field] = `${field} is required`;
         return errors;
     }
 
-    if((field === 'email' || field === 'emailVerify') && !/^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()\.,;\s@\"]+\.{0,1})+([^<>()\.,;:\s@\"]{2,}|[\d\.]+))$/.test(value))
+    if((field === 'email' || field === 'emailVerify') && !emailRegex.test(value))
         errors.email = `Invalid email format`;
     else if(field === 'email' && value !== input.emailVerify)
         errors.email = `Email fields do not match`;
@@ -60,6 +78,12 @@ export default  async(field: any, value:any, input:any, validation:any) => {
             errors.userRole = `User Roles are unavailable, please contact PEW35`;
         else if(!availableUserRoles.includes(value))
             errors.userRole = `Invalid User Role`;
+        
+        //Require Role Token on Signup
+        if(validationMode === Profile_Validation_Mode.SIGNUP && value !== 'STUDENT'){
+            if(value == undefined || !value.toString().trim().length)
+                errors.token = `Token is required for a ${value} account.`;
+        }
     }
 
     if(field === 'phone' && !/^[1]{0,1}-[0-9]{3}-[0-9]{3}-[0-9]{4}$/.test(value))

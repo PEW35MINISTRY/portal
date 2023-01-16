@@ -57,6 +57,7 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
     case 'login':
       axios.post(`${process.env.REACT_APP_DOMAIN}/login`, {
         email: action.payload.email,
+        displayName: action.payload.displayName,
         password: action.payload.password,
 
         }).then(response => {
@@ -78,15 +79,27 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
         return state;
 
       case 'logout':
-        axios.post(`${process.env.REACT_APP_DOMAIN}/api/logout/${state.userId}`
+        console.log(state);
+        const userId = state.userId;
+        const jwt = state.JWT;
+        axios.post(`${process.env.REACT_APP_DOMAIN}/api/logout/${userId}`,{},{
+          headers: {
+            'user-id': userId,
+            'jwt': '100.100.100'
+        }}
         ).then(response => { console.log(response, state.userId);
+          store.dispatch({type: "reset-login", payload: {}});
         }).catch(error => console.log('REDUX AXIOS LOGOUT Error:', error, state.userId));
 
         window.localStorage.removeItem('user');
 
-        if(window.location.pathname != '/login')
+        if(window.location.pathname != '/login') //clears state on 'load-login'
             window.location.assign('/login');
 
+        // return {...initialAccountState};
+        return state;
+
+      case 'reset-login':
         return {...initialAccountState};
 
     default: return state; 

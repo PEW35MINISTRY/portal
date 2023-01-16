@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, {useState, useEffect, forwardRef, useRef} from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks';
+import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists, emailRegex } from './validateProfile';
 import './form.scss'; 
 
 type contact = {
@@ -22,9 +23,10 @@ const Login = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const location = useLocation();  
+    const [input, setInput] = useState<ProfileType>({});
     const [statusMessage, setStatusMessage] = useState<string>('');
-    const [email, setEmail] = useState<string>(''); 
-    const [password, setPassword] = useState<string>(''); 
+
+    //TODO Temporary for Debugging
     const [credentialList, setCredentialList] = useState<CredentialProfile[]>([]);
 
     useEffect(() => {if(statusMessage.length > 0) setTimeout(() => setStatusMessage(""), 5000);},[statusMessage]);
@@ -36,34 +38,36 @@ const Login = () => {
                 console.error('Failed to fetch all user credentials', error);});
 
             //Failed /signup redirects with email in query parameter
-            const queryEmail = new URLSearchParams(location.search).get('email');
-            if(queryEmail) 
-                setEmail(queryEmail);
+            if(new URLSearchParams(location.search).get('email')) 
+                setInput({...input, 'email': input.email});
+            if(new URLSearchParams(location.search).get('displayName')) 
+                setInput({...input, 'displayName': input.displayName});
     }, []);
 
     const onCredentialSelect = (e:any) => {
         if(e)
             e.preventDefault();
         const user:CredentialProfile = credentialList[e.target.value];
-        makeLoginRequest(user.email, user.password_hash);
-        setEmail(user.email);
+        makeLoginRequest(user.email, user.display_name, user.password_hash);
+        setInput({...input, 'email': user.email, 'displayName': user.display_name, 'password': user.password_hash});
     }
 
     const onLogin = (e:any) => {
         if(e)
             e.preventDefault();
 
-        makeLoginRequest(email, password);
+        makeLoginRequest(input.email, input.displayName, input.password);
     }
 
-    const makeLoginRequest = (userEmail:string, userPassword:string) => (userEmail.length && userPassword.length) &&
-    dispatch({
-        type: "login",
-        payload: {
-            email: userEmail,
-            password: userPassword
-        }
-    });    
+    const makeLoginRequest = (email:string = '', displayName:string = '', password:string = '') => ((email.length || displayName.length) && password.length) &&
+        dispatch({
+            type: "login",
+            payload: {
+                email: email,
+                displayName: displayName,
+                password: password
+            }
+        });    
 
     //Moved to REDUX
 
@@ -94,10 +98,16 @@ const Login = () => {
         //     setPassword('');
         //     console.log('AXIOS Login Error:', error);
     
-    
 
-    //OnStart
-    useEffect(() => onLogin(null), []);
+    const onInput = async (event:any) => {
+        let {name, value} = event?.target;
+        
+        if(name === 'emailUsername') {
+            name = emailRegex.test(value) ? 'email' : 'username';
+        }
+        setInput({...input, [name]: value});
+        console.log(name, value, {...input, [name]: value});
+    }
     
 
     return (
@@ -116,10 +126,12 @@ const Login = () => {
 
                 <h2>Login</h2>
 
-                <label>Email:</label>
-                <input type='email' onChange={(e)=>setEmail(e.target.value)} value={email}/>
-                <label>Password:</label>
-                <input type='email' onChange={(e)=>setPassword(e.target.value)} value={password} onKeyDown={(e)=>{if(e.key === 'Enter') {onLogin(e);}}}/>
+                <label htmlFor='emailUsername'>Email address</label>
+                <input name='emailUsername' type='email' onChange={onInput}  value={input.email || ''}/>
+
+                <label htmlFor='password'>Password</label>
+                <input name='password' type='password' onChange={onInput}  value={input.password || ''}/>
+
                 <button onClick={onLogin}>Login</button>
             </form>
         </div>

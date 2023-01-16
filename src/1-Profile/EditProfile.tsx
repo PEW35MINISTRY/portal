@@ -19,8 +19,6 @@ const EditProfile = () => {
     const { id = -1 } = useParams();
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
 
-    const isAdmin = () => userRole === "ADMIN";
-
     const [input, setInput] = useState<ProfileType>({});
     const [original, setOriginal] = useState<ProfileType>({});
     const [statusMessage, setStatusMessage] = useState<string>('');
@@ -28,6 +26,7 @@ const EditProfile = () => {
     const [availableUserRoles, setAvailableUserRoles] = useState<string[]>([]); 
     const [accessProfiles, setAccessProfiles] = useState<AccessProfile[]>([]);
     const [editingUserId, setEditingUserId] = useState<number>(-1);
+    const [accessFields, setAccessFields] = useState<string[]>([]);
 
     //Triggers
     useEffect(() => {if(id > 0) setEditingUserId(parseInt(id.toString()));}, [id]);
@@ -45,6 +44,15 @@ const EditProfile = () => {
             .then(response => setAccessProfiles(response.data))
             .catch(error => {
                 console.error('Failed to fetch all user credentials', error);});
+
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/resources/profile-edit-list`,{
+            headers: {
+                ['user-id']: userId,
+                jwt: JWT
+            }})
+            .then(response => setAccessFields(response.data || []))
+            .catch(error => {
+                console.error('User is not allowed to edit profiles.', error);});
             },[]);
             
 
@@ -116,6 +124,7 @@ const EditProfile = () => {
         // else return '';
     }
 
+    const access = (field:string):boolean => accessFields.includes(field);
 
     return (
         <div id='edit-profile'  className='form-page'>
@@ -132,86 +141,78 @@ const EditProfile = () => {
                     )}
                 </select>
 
-                <h3>General Edits</h3>
-              
-                <label htmlFor='displayName'>Public Name</label>
-                <input name='displayName' type='text' onChange={onInput}  value={getInput('displayName')}/>
-                {validation?.displayName && <p className='error' >{validation.displayName}</p>}
+                <h3>{userRole} Edits</h3>
 
-                <label htmlFor='zipcode'>Zipcode</label>
-                <input name='zipcode' type='text' onChange={onInput}  value={getInput('zipcode')}/>
-                {validation?.zipcode && <p className='error' >{validation.zipcode}</p>}
-                {/* TODO: Zipcode Auto Search City  */}
-
-                <label htmlFor='dailyNotificationHour'>Daily Reminder</label>
-                <input name='dailyNotificationHour' type='time' step='3600' onChange={onInput} value={getInput('dailyNotificationHour')}/>
-                {validation?.dailyNotificationHour && <p className='error' >{validation.dailyNotificationHour}</p>}
-
-                {isAdmin() && <hr/>}
-
-
-                {isAdmin() && <h3>Admin Edits</h3>}
-
-                {/* <label htmlFor='verified'>Account Verified</label>
-                <input name='verified' type='checkbox' onChange={onBooleanInput}  checked={getInput('verified}/>
-                {validation?.verified && <p className='error' >{validation.verified}</p>} */}
-
-                {isAdmin() && <label htmlFor='email'>Email address</label>}
-                {isAdmin() && <input name='email' type='email' onChange={onInput}  value={getInput('email')}/>}
-
-                {isAdmin() && <label htmlFor='emailVerify'>Confirm Email Address</label>}
-                {isAdmin() && <input name='emailVerify' type='email' onChange={onInput}  value={getInput('emailVerify')}/>}
-                {validation?.email && <p className='error' >{validation.email}</p>}
-
-                {isAdmin() && <label htmlFor='password'>Password</label>}
-                {isAdmin() && <input name='password' type='password' onChange={onInput}  value={getInput('password')}/>}
-
-                {isAdmin() && <label htmlFor='passwordVerify'>Confirm Password</label>}
-                {isAdmin() && <input name='passwordVerify' type='password' onChange={onInput}  value={getInput('passwordVerify')}/>}
-                {validation?.password && <p className='error' >{validation.password}</p>}
-
-
-                {isAdmin() && <label htmlFor='userRole'>Account Type</label>}
-                {isAdmin() && <select name="userRole" onChange={onInput}  value={getInput('userRole')}>
+                {access('userRole') && <label htmlFor='userRole'>Account Type</label>}
+                {access('userRole') && <select name="userRole" onChange={onInput}  value={getInput('userRole')}>
                         {availableUserRoles?.map((role,i)=>
                             <option key={`${i}-${role}`} value={role}>{role}</option>
                         )}
                     </select>}
                 {validation?.userRole && <p className='error' >{validation.userRole}</p>}
 
-                {isAdmin() && <label htmlFor='firstName'>First Name</label>}
-                {isAdmin() && <input name='firstName' type='text' onChange={onInput}  value={getInput('firstName')}/>}
+              {/* {access('verified') && <label htmlFor='verified'>Account Verified</label>}
+                {access('verified') && <input name='verified' type='checkbox' onChange={onBooleanInput}  checked={getInput('verified}/>}
+                {validation?.verified && <p className='error' >{validation.verified}</p>} */}
+
+                {access('displayName') && <label htmlFor='displayName'>Public Name</label>}
+                {access('displayName') && <input name='displayName' type='text' onChange={onInput}  value={getInput('displayName')}/>}
+                {validation?.displayName && <p className='error' >{validation.displayName}</p>}
+
+                {access('email') && <label htmlFor='email'>Email Address</label>}
+                {access('email') && <input name='email' type='email' onChange={onInput}  value={getInput('email')}/>}
+
+                {access('email') && <label htmlFor='emailVerify'>Confirm Email Address</label>}
+                {access('email') && <input name='emailVerify' type='email' onChange={onInput}  value={getInput('emailVerify')}/>}
+                {validation?.email && <p className='error' >{validation.email}</p>}
+
+                {access('password') && <label htmlFor='password'>Password</label>}
+                {access('password') && <input name='password' type='password' onChange={onInput}  value={getInput('password')}/>}
+
+                {access('password') && <label htmlFor='passwordVerify'>Confirm Password</label>}
+                {access('password') && <input name='passwordVerify' type='password' onChange={onInput}  value={getInput('passwordVerify')}/>}
+                {validation?.password && <p className='error' >{validation.password}</p>}
+
+                {access('firstName') && <label htmlFor='firstName'>First Name</label>}
+                {access('firstName') && <input name='firstName' type='text' onChange={onInput}  value={getInput('firstName')}/>}
                 {validation?.firstName && <p className='error' >{validation.firstName}</p>}
                 
-                {isAdmin() && <label htmlFor='lastName'>Last Name</label>}
-                {isAdmin() && <input name='lastName' type='text' onChange={onInput}  value={getInput('lastName')}/>}
+                {access('lastName') && <label htmlFor='lastName'>Last Name</label>}
+                {access('lastName') && <input name='lastName' type='text' onChange={onInput}  value={getInput('lastName')}/>}
                 {validation?.lastName && <p className='error' >{validation.lastName}</p>}
                 
-                {isAdmin() && <label htmlFor='phone'>Phone Number</label>}
-                {isAdmin() && <input name="phone" type="tel" onChange={onInput}  value={getInput('phone')} pattern="[1]{0,1}-[0-9]{3}-[0-9]{3}-[0-9]{4}" placeholder='1-555-555-5555'/>}
+                {access('phone') && <label htmlFor='phone'>Phone Number</label>}
+                {access('phone') && <input name="phone" type="tel" onChange={onInput}  value={getInput('phone')} pattern="[1]{0,1}-[0-9]{3}-[0-9]{3}-[0-9]{4}" placeholder='1-555-555-5555'/>}
                 {validation?.phone && <p className='error' >{validation.phone}</p>}
                 
-                    
-                {isAdmin() && <label htmlFor='dob'>Date of Birth</label>}
-                {isAdmin() && <input name='dob' type='date' onChange={onInput}  value={getInput('dob')}/>}
+                {access('dob') && <label htmlFor='dob'>Date of Birth</label>}
+                {access('dob') && <input name='dob' type='date' onChange={onInput}  value={getInput('dob')}/>}
                 {validation?.dob && <p className='error' >{validation.dob}</p>}
 
-                {isAdmin() && <label htmlFor='gender'>Gender</label>}
-                {isAdmin() && <select name="gender" onChange={onInput}  value={getInput('gender')}>
+                {access('gender') && <label htmlFor='gender'>Gender</label>}
+                {access('gender') && <select name="gender" onChange={onInput}  value={getInput('gender')} defaultValue='default'>
+                        <option key={`default`} value="default" disabled hidden>Select Gender:</option>
                         <option key={`1-male`} value='MALE'>Male</option>
                         <option key={`2-female`} value='FEMALE'>Female</option>
                     </select>}
                 {validation?.gender && <p className='error' >{validation.gender}</p>}
 
-                    <hr/>
+                {access('zipcode') && <label htmlFor='zipcode'>Zipcode</label>}
+                {access('zipcode') && <input name='zipcode' type='text' onChange={onInput}  value={getInput('zipcode')}/>}
+                {validation?.zipcode && <p className='error' >{validation.zipcode}</p>}
+                {/* TODO: Zipcode Auto Search City  */}
 
-                    {/* TODO: Image Upload and POST */}
-                    {/* <label htmlFor='profileImage'>Profile Image</label>
-                    <input name='profileImage' type='image' onChange={onInput}  value={getInput('image')}/> */}
+                {access('dailyNotificationHour') && <label htmlFor='dailyNotificationHour'>Daily Reminder</label>}
+                {access('dailyNotificationHour') && <input name='dailyNotificationHour' type='time' step='3600' onChange={onInput} value={getInput('dailyNotificationHour')}/>}
+                {validation?.dailyNotificationHour && <p className='error' >{validation.dailyNotificationHour}</p>}
 
-              {isAdmin() && <label htmlFor='notes'>Profile Notes</label>}
-              {isAdmin() && <textarea name='notes' onChange={onInput} value={getInput('notes')}/>}
-              {validation?.notes && <p className='error' >{validation.notes}</p>}
+                {/* TODO: Image Upload and POST */}
+                {/* <label htmlFor='profileImage'>Profile Image</label>
+                <input name='profileImage' type='image' onChange={onInput}  value={getInput('image')}/> */}
+
+                {access('notes') && <label htmlFor='notes'>Profile Notes</label>}
+                {access('notes') && <textarea name='notes' onChange={onInput} value={getInput('notes')}/>}
+                {validation?.notes && <p className='error' >{validation.notes}</p>}
 
                 {/* } */}
                 {/* } */}
