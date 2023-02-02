@@ -1,4 +1,6 @@
 import axios from "axios";
+import { toast } from "react-toastify";
+import { useAppSelector, useAppDispatch } from '../hooks';
 
 export type ProfileType = {
     email?: string,
@@ -43,6 +45,7 @@ export enum Profile_Validation_Mode {
 
 //Input Validation
 export default  async(field: any, value:any, input:any, validation:any, requiredProfileFields:string[], validationMode:Profile_Validation_Mode = Profile_Validation_Mode.EDIT) => {
+
     let errors:any = validation;
     // console.log('VALIDATING', field, value, input, validation);
 
@@ -147,11 +150,15 @@ export const findDateYears = (years:number):Date => {
 export const getAvailableUserRoles = async():Promise<string[]> => new Promise((resolve, reject) => 
     axios.get(`${process.env.REACT_APP_DOMAIN}/resources/role-list`)
         .then(response => resolve(response.data))
-        .catch(error => {console.log('AXIOS Fetch User Roles Failed:', error); resolve([]); })
+        .catch(res => {
+            // toast.warn('Account already exists.');
+            resolve([]); })
     );
 
     export const testEmailExists = async(email:string):Promise<boolean> => new Promise((resolve, reject) => 
     axios.post(`${process.env.REACT_APP_DOMAIN}/resources/account-exists`,{email: email})
         .then(response => resolve(true))
-        .catch(error => {console.log('AXIOS Sign-up account already exists:', error); resolve(false); })
+        .catch(res => {
+            // toast.warn('Account already exists.');
+            resolve(false); })
     );

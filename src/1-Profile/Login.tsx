@@ -3,7 +3,9 @@ import React, {useState, useEffect, forwardRef, useRef} from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists, emailRegex } from './validateProfile';
+import { toast } from 'react-toastify';
 import './form.scss'; 
+import { serverErrorResponse } from '../app-types';
 
 type contact = {
     id: number,
@@ -24,18 +26,18 @@ const Login = () => {
     const dispatch = useAppDispatch();
     const location = useLocation();  
     const [input, setInput] = useState<ProfileType>({});
-    const [statusMessage, setStatusMessage] = useState<string>('');
 
     //TODO Temporary for Debugging
     const [credentialList, setCredentialList] = useState<CredentialProfile[]>([]);
 
-    useEffect(() => {if(statusMessage.length > 0) setTimeout(() => setStatusMessage(""), 5000);},[statusMessage]);
-
     useEffect(() => {
         axios.get(`${process.env.REACT_APP_DOMAIN}/login/credentials`)
             .then(response => setCredentialList(response.data))
-            .catch(error => {
-                console.error('Failed to fetch all user credentials', error);});
+            .catch((res) => { 
+                dispatch({type: "notify", payload: { response: res,
+                    message: 'Failed to fetch all user credentials.'
+                }});
+            });
 
             //Failed /signup redirects with email in query parameter
             if(new URLSearchParams(location.search).get('email')) 
@@ -87,7 +89,7 @@ const Login = () => {
 
         //     setStatusMessage(`Welcome to Encouraging Prayer ${response.data.userProfile.displayName}!`)
         //     console.log('Login Successfully', response.data.userId, response.data.service);
-        //     navigate('/dashboard');
+        //     navigate('/portal/dashboard');
 
         // }).catch(error => {
         //     if(error.response.status === 403)
@@ -113,8 +115,6 @@ const Login = () => {
     return (
         <div id='login'  className='form-page'>
             <form onSubmit={onLogin}>
-                {(statusMessage.length > 0) && <h4>{statusMessage}</h4>}
-                {(statusMessage.length > 0) && <hr/>}
 
                 <label htmlFor='credentialSelect'>Select User</label>
                 <select name="credentialSelect" onChange={onCredentialSelect} defaultValue='default'>

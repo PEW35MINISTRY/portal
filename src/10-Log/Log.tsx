@@ -3,7 +3,9 @@ import { error } from 'console';
 import React, {useState, useEffect, forwardRef, useRef} from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from '../hooks';
+import { toast } from 'react-toastify';
 import './log.scss'; 
+import { serverErrorResponse, ToastStyle } from '../app-types';
 
 
 const LOG_TYPES = new Map();
@@ -15,6 +17,8 @@ const LOG_TYPES = new Map();
 
 const Log = () => {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
     const userId:number = useAppSelector((state) => state.account.userId);
     const JWT:string = useAppSelector((state) => state.account.JWT);
 
@@ -36,10 +40,13 @@ const Log = () => {
                 setLogEntries(response.data.split(/(?=\[\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}])/g).reverse());
                 // console.log('Log Retrieved', response.data);
                 setLoading(false);
-            }).catch(error => {
-                console.log('AXIOS Log Error:', error);
-                //@ts-ignore
-                if(error.response.status === 400 || error.response.status === 401) navigate('/login');
+
+            }).catch((response) => { 
+                dispatch({type: "notify", payload: { response: response,
+                    callback: () => {
+                        navigate('/login');
+                    }
+                }});          
             });
     }, [type]);
 
@@ -53,10 +60,13 @@ const Log = () => {
                 'jwt': JWT
         }
         }).then(response => {
-                setMessage("");
-            }).catch(error => {
-                console.log('AXIOS Log Error:', error);
-            });
+            setMessage("");
+
+        }).catch((res) => { 
+            dispatch({type: "notify", payload: { response: res,
+                style: ToastStyle.WARN
+            }});
+        });
     }
     
     return (

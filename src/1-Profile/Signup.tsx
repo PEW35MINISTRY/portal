@@ -6,7 +6,8 @@ import { useAppSelector, useAppDispatch } from '../hooks';
 import './form.scss'; 
 import FormProfile from './FormProfile';
 import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists, REQUIRED_FIELDS, Profile_Validation_Mode } from './validateProfile';
-
+import { toast } from 'react-toastify';
+import { serverErrorResponse, ToastStyle } from '../app-types';
 
 
 const Signup = () => {
@@ -18,13 +19,11 @@ const Signup = () => {
         ['userRole']: 'STUDENT',
         ['dailyNotificationHour']: "09:00",
     });
-    const [statusMessage, setStatusMessage] = useState<string>('');
     const [validation, setValidation] = useState<any>({});
     const [requiredProfileFields, setRequiredProfileFields] = useState<any>({}); //Uses SIGNUP access list
 
     //Trigger
     // useEffect(() => {setInput({...input, 'displayName': input.firstName})}, [input.firstName]);
-    useEffect(() => {if(statusMessage.length > 0) setTimeout(() => setStatusMessage(""), 5000);},[statusMessage]);
 
     //onStart
     useEffect(() => {   
@@ -34,8 +33,11 @@ const Signup = () => {
 
         axios.get(`${process.env.REACT_APP_DOMAIN}/resources/profile-edit-list`) //No headers to get default SIGNUP list
             .then(response => setRequiredProfileFields(response.data || []))
-            .catch(error => {
-                console.error('Failed to find required fields.', error);});
+            .catch(response => {
+                dispatch({type: "notify", payload: { response: response,
+                    message: 'Failed to find required fields.'
+                }});
+            });
         },[]);
 
     const onSubmit = async(e:any) => {
@@ -51,12 +53,18 @@ const Signup = () => {
         const finalValidations = await [...validationSet].reduce(async (result, fieldName) => await validateInput(fieldName, input[fieldName] || '', input, await result, requiredProfileFields, Profile_Validation_Mode.SIGNUP), validation);
 
         if(Object.keys(finalValidations).length  > 0) {
-            setStatusMessage("Please fix all validation before creating a new account.")
+            dispatch({type: "notify", payload: { message: 'Please fix all validation before creating a new account.' }});
             return;
         } else 
+
         if(input.email && await testEmailExists(input.email)) {
-            setStatusMessage("Account already exists with this email, please login.");
-            navigate(`/login?email=${input.email}`);
+            dispatch({type: "notify", payload: {
+                message: "Account already exists with this email, please login.",
+                callback: () => {
+                    navigate(`/login?email=${input.email}`);
+                }
+            }});
+
             return;
         }
 
@@ -75,10 +83,16 @@ const Signup = () => {
                 }
             });
             setInput({});
-            navigate('/dashboard');
-            setStatusMessage('Welcome to Encouraging Prayer!');
+            dispatch({type: "notify", payload: {
+                response: response,
+                message: 'Welcome to Encouraging Prayer!',
+                callback: () => {
+                    navigate('/portal/dashboard');
+                }
+            }});
 
-        }).catch(error => {setStatusMessage('Failed to create new user account'); console.error('Failed to create new user account', error);});
+        }).catch((res) => { dispatch({type: "notify", payload: { response: res }});
+        });
     }
 
 

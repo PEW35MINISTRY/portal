@@ -4,9 +4,13 @@ import { io, Socket } from "socket.io-client";
 import { Contact, SocketMessage } from './chat-types';
 import './chat.scss'; 
 import axios from 'axios';
+import { serverErrorResponse } from '../app-types';
+import { toast } from 'react-toastify';
 
 
 const DirectChat = () => {
+    const dispatch = useAppDispatch();
+
     const JWT:string = useAppSelector((state) => state.account.JWT);
     const userId:number = useAppSelector((state) => state.account.userId);
 
@@ -37,7 +41,9 @@ const DirectChat = () => {
             setContactId(response.data[0].id);
             console.log('Contacts List ', response.data);
             
-        }).catch(error => console.log('AXIOS Contacts Error:', error));
+        }).catch((res) => { 
+            dispatch({type: "notify", payload: { response: res }});
+        });
 
     /* Socket Communication */
         const socket = io(`${process.env.REACT_APP_SOCKET_PATH}`, {

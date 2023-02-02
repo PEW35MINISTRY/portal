@@ -4,9 +4,13 @@ import { io, Socket } from "socket.io-client";
 import { Contact, SocketMessage } from '../3-Chat-Direct-Demo/chat-types';
 import '../3-Chat-Direct-Demo/chat.scss'; 
 import axios from 'axios';
+import { serverErrorResponse } from '../app-types';
+import { toast } from 'react-toastify';
 
 
 const CircleChat = () => {
+    const dispatch = useAppDispatch();
+    
     const JWT:string = useAppSelector((state) => state.account.JWT);
     const userId:number = useAppSelector((state) => state.account.userId);
 
@@ -62,7 +66,9 @@ const CircleChat = () => {
             //@ts-ignore Join All Circles @ts-ignore
             Array.from(response.data).forEach((circle) => socket.emit('circle-join', circle.id));
             
-        }).catch(error => console.log('AXIOS Contacts Error:', error));
+        }).catch((res) => { 
+            dispatch({type: "notify", payload: { response: res }});
+        });
 
 
     /* Socket Communication */ 

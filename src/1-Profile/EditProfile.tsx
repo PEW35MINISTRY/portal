@@ -5,6 +5,8 @@ import { useAppSelector, useAppDispatch } from '../hooks';
 import './form.scss'; 
 import FormProfile from './FormProfile';
 import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles } from './validateProfile';
+import { serverErrorResponse, ToastStyle } from '../app-types';
+
 
 type AccessProfile = { 
     user_id: number,
@@ -22,7 +24,6 @@ const EditProfile = () => {
 
     const [input, setInput] = useState<ProfileType>({});
     const [original, setOriginal] = useState<ProfileType>({});
-    const [statusMessage, setStatusMessage] = useState<string>('');
     const [validation, setValidation] = useState<any>({});
     const [requiredProfileFields, setRequiredProfileFields] = useState<any>({}); //Uses SIGNUP access list
     const [accessProfiles, setAccessProfiles] = useState<AccessProfile[]>([]);
@@ -30,13 +31,15 @@ const EditProfile = () => {
 
     //Triggers
     useEffect(() => {if(id > 0) setEditingUserId(parseInt(id.toString()));}, [id]);
-    // useEffect(() => {if(statusMessage.length > 0) setTimeout(() => setStatusMessage(""), 5000);},[statusMessage]);
 
     useEffect(() => {
         axios.get(`${process.env.REACT_APP_DOMAIN}/resources/profile-edit-list`) //No headers to get default SIGNUP list
             .then(response => setRequiredProfileFields(response.data || []))
-            .catch(error => {
-                console.error('Failed to find required fields.', error);});
+
+            .catch((res) => { 
+                dispatch({type: "notify", payload: {response: res,
+                    message: 'Failed to find required fields.'}});
+            });
         
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/profile/access`,{
             headers: {
@@ -44,9 +47,12 @@ const EditProfile = () => {
                 jwt: JWT
             }})
             .then(response => setAccessProfiles(response.data))
-            .catch(error => {
-                console.error('Failed to fetch all user credentials', error);});
-            },[]);
+
+            .catch((res) => { 
+                dispatch({type: "notify", payload: {response: res}});
+            });
+
+        },[]);
             
 
     useEffect(() => { if(editingUserId > 0) fetchProfile(editingUserId);}, [editingUserId]);
@@ -57,12 +63,17 @@ const EditProfile = () => {
             jwt: JWT
         }})
         .then(response => {setOriginal(response.data); })
-        .catch(error => {
-            navigate(`/edit-profile/${userId}`);
-
-            setStatusMessage('Failed to retrieve requested Profile'); 
-            console.error('Failed to fetch current Profile',  editingUserId, error);});
-
+        .catch((res) => { 
+            dispatch({type: "notify", payload: {
+                response: res,
+                message: 'Failed to retrieve requested Profile',
+                //@ts-ignore
+                log: editingUserId,
+                callback: () => {
+                    navigate(`/portal/edit-profile/${userId}`);
+                }
+            }});
+        });
 
     const onSubmit = async(e:any) => {
         if(e)
@@ -77,7 +88,10 @@ const EditProfile = () => {
         const finalValidations = await [...validationSet].reduce(async (result, fieldName) => await validateInput(fieldName, input[fieldName] || '', input, await result, requiredProfileFields), validation);
 
         if(Object.keys(finalValidations).length  > 0) {
-            setStatusMessage("Please fix all validation before creating a new account.")
+            dispatch({type: "notify", payload: {
+                message: 'Please fix all validation before saving account changes.',
+            }});
+
             return;
         } 
             axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/profile/${editingUserId}`, {
@@ -92,11 +106,16 @@ const EditProfile = () => {
         })
         .then(response => { //Saved Successfully
             setInput(response.data);
-            setStatusMessage("Profile update saved successfully.");
-            fetchProfile(editingUserId);
-            console.log('AXIOS Profile Update Successfully', response.data);
+            dispatch({type: "notify", payload: {
+                response: response,
+                message: 'Changes saved.'
+            }});
 
-        }).catch(error => {setStatusMessage('Failed to Save Profile Changes'); console.error(error);});
+            fetchProfile(editingUserId);
+
+        }).catch((response) => { 
+            dispatch({type: "notify", payload: { response: response }});
+        });
     }
 
 
@@ -127,7 +146,7 @@ const EditProfile = () => {
                 headerChildren={
                     <div className='children'>
                         <label htmlFor='Available Profiles'>Edit User</label>
-                        <select name="credentialSelect" onChange={(e)=>navigate(`/edit-profile/${e.target.value}`)} value={editingUserId}>
+                        <select name="credentialSelect" onChange={(e)=>navigate(`/portal/edit-profile/${e.target.value}`)} value={editingUserId}>
                             {accessProfiles?.sort((a,b)=>(a.user_id < b.user_id ? -1 : 1)).map((user,i)=>
                                 <option key={`${i}-${user.user_id}`} value={user.user_id}>{user.user_id} | {user.display_name} | {user.user_role}</option>
                             )}

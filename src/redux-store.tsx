@@ -2,30 +2,50 @@ import React from 'react';
 import {createStore, combineReducers} from 'redux';
 import { configureStore } from '@reduxjs/toolkit'
 import axios from 'axios';
+import { Id, toast } from 'react-toastify';
+import { ToastStyle, serverErrorResponse, ProfileResponse } from './app-types';
 
+
+/******************************
+   Account | Credentials Redux Reducer
+*******************************/
 
 const initialAccountState = {
   userId: 0,
   JWT: '',
-  userProfile: {}
+  userProfile: {} as ProfileResponse
 }; 
 
 const accountReducer = (state = initialAccountState, action: { type: string; payload: any; }) => { 
   switch(action.type) {
    
+/* Verify cached JWT | auto login   */
     case 'authenticate':
       axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
         headers: {
           'jwt': '100.100.100'
         }
-      }).then(response => { console.log(response, state.JWT);
-      }).catch(error => {console.log('REDUX AXIOS AUTHENTICATE JWT Error:', error, state.JWT);
-          if(state.JWT !== initialAccountState.JWT) 
-              store.dispatch({type: 'logout', payload: undefined});
-            });
+      }).then(response => { 
+        store.dispatch({type: "notify", payload: {
+          response: response,
+          message: `Logging in ${state.userProfile.firstName}`,
+        }});
+        
+      }).catch((response) => {
+        if(window.location.pathname !== '/login')
+            store.dispatch({type: "notify", payload: {
+              response: response,
+              message: 'Please Login',
+              callback: () => {
+                if(state.JWT !== initialAccountState.JWT) 
+                  store.dispatch({type: 'logout', payload: undefined});
+              }
+            }});
+      });
 
       return state;
 
+/* Logging Out User   */
       case 'load-login':
         try{
           if(window.localStorage.getItem('user') === null || !window.localStorage.getItem('user')?.length)
@@ -51,9 +71,11 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
       
         return {...initialAccountState};
 
+/* Save Payload to Account State | complete replace   */
     case 'save-login': 
       return {...action.payload};
 
+/* Logging In User   */
     case 'login':
       axios.post(`${process.env.REACT_APP_DOMAIN}/login`, {
         email: action.payload.email,
@@ -67,17 +89,32 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
                 userProfile: response.data.userProfile,
               };
 
-          console.log('REDUX Login Successfully', response.data.userId, response.data.service);
+          store.dispatch({type: "notify", payload: {
+              response: response,
+              message: `Welcome`,
+              callback: () => {
+                store.dispatch({type: "reset-login", payload: {}});
+              }
+            }});
 
           window.localStorage.setItem('user', JSON.stringify(userPayload));
-          window.location.assign('/dashboard');
+          window.location.assign('/portal/dashboard');
 
           store.dispatch({type: "save-login", payload: userPayload});
 
-        }).catch(error => console.log('REDUX AXIOS Login Error:', error, state));
+        }).catch((response) => { 
+
+          store.dispatch({type: "notify", payload: {
+            response: response,
+            toastType: ToastStyle.ERROR, 
+            message: 'Please login',
+          }});
+
+        });
 
         return state;
 
+  /* Logging Out User   */
       case 'logout':
         console.log(state);
         const userId = state.userId;
@@ -87,18 +124,38 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
             'user-id': userId,
             'jwt': '100.100.100'
         }}
-        ).then(response => { console.log(response, state.userId);
-          store.dispatch({type: "reset-login", payload: {}});
-        }).catch(error => console.log('REDUX AXIOS LOGOUT Error:', error, state.userId));
+        ).then(response => { 
+          store.dispatch({type: "notify", payload: {
+            response: response,
+            toastType: ToastStyle.WARN, 
+            message: `${state.userProfile.firstName} Logged Out`,
+            callback: () => {
+              store.dispatch({type: "reset-login", payload: {}});
+              window.location.assign('/login');
+            }
+          }});
 
-        window.localStorage.removeItem('user');
+        }).catch((response) => { 
 
-        if(window.location.pathname != '/login') //clears state on 'load-login'
-            window.location.assign('/login');
+          store.dispatch({type: "notify", payload: {
+            response: response,
+            toastType: ToastStyle.WARN, 
+            message: 'Please login',
+            callback: () => {
+              window.localStorage.removeItem('user');
+
+              if(window.location.pathname.includes('portal')) //clears state on 'load-login'
+                  window.location.assign('/login');
+            }
+          }});
+        });
+
+        
 
         // return {...initialAccountState};
         return state;
 
+/* Resetting Account State to defaults */
       case 'reset-login':
         return {...initialAccountState};
 
@@ -106,9 +163,77 @@ const accountReducer = (state = initialAccountState, action: { type: string; pay
   }
 }
 
+/******************************
+   notify Redux Reducer
+*******************************/
+
+//ToastID List | keeping track to prevent duplicates
+const initialNotificationState: Array<string> = []; 
+const toastDuration = 5000;
+//Note: ToastStyle defined: app-types.tsx
+const notificationReducer = (state = initialNotificationState, action: { type: string, payload: {style: ToastStyle; message: string; status:number; log:any, callback: () => void; response: any}}) => { 
+
+  if(action.type === 'notify') {
+
+    let toastStyle:ToastStyle = action.payload.style || ToastStyle.ERROR;
+    let status:number = action.payload.status || 500;
+    let message:string = action.payload.message || '';
+
+    if(action.payload.response?.response?.data) {
+      const serverError:serverErrorResponse = action.payload.response.response.data;
+      status = action.payload.status || serverError.status;
+      message = action.payload.message || serverError.message;
+      action.payload.log = action.payload.log || serverError;
+    } else if(action.payload.response) {
+      status = action.payload.status || action.payload.response.status;
+    }
+
+    console.log(toastStyle, status, message, action.payload.log);
+
+    if(state.includes(message))
+      return state;
+
+    if(status == 400) {
+      toast.error('Missing details');
+    } else if(status == 401) {
+      toast.error('Sorry not permitted');
+    } else if(status == 404) {
+      toast.error('Not found');
+
+    //Requiring Message length to display
+    } else if(!message?.length) {
+      toast.error('Unknown error has occurred');   
+
+    } else if(status == 202 || toastStyle == ToastStyle.SUCCESS) {
+      toast.success(message);
+      //@ts-ignore
+    } else if(status < 300 || toastStyle == ToastStyle.INFO) {
+      toast.info(message);
+    } else if(status < 500 || toastStyle == ToastStyle.WARN) {
+      toast.warn(message);
+    } else {
+      toast.error(message);
+    }   
+
+    //Auto Removal
+    setTimeout(()=>{
+      store.dispatch({type: "remove-notification", payload: {message: message}});
+      if(action.payload.callback) action.payload.callback();
+    }, toastDuration);
+
+    return [...state, message];
+
+  } else if(action.type === 'remove-notification') {
+    return [...state.filter(text => text !== action.payload.message)];
+
+  } else
+    return state;
+}
+
 //Redux Store
 const allStateDomains = combineReducers({
   account: accountReducer,
+  notify: notificationReducer,
 });
 
 const store = createStore(allStateDomains,{});

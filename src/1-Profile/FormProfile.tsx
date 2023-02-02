@@ -4,16 +4,18 @@ import { useNavigate  } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import './form.scss'; 
 import {ProfileType, getAvailableUserRoles } from './validateProfile';
+import { serverErrorResponse } from '../app-types';
+
 
 const FormProfile = ({...props}:{onInput:FormEventHandler, getInput:Function, validation:ProfileType, headerChildren?:ReactElement, footerChildren:ReactElement}) => {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const JWT:string = useAppSelector((state) => state.account.JWT);
     const userId:number = useAppSelector((state) => state.account.userId);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
 
     const [availableUserRoles, setAvailableUserRoles] = useState<string[]>([]); 
     const [accessFields, setAccessFields] = useState<string[]>([]);
-    const [statusMessage, setStatusMessage] = useState<string>('');
 
 //onRender
     useEffect(() => {      
@@ -27,18 +29,15 @@ const FormProfile = ({...props}:{onInput:FormEventHandler, getInput:Function, va
                 userRole: userRole
             }})
             .then(response => setAccessFields(response.data || []))
-            .catch(error => {
-                console.error('User is not allowed to edit profile fields.', error);});
+            .catch((res) => { 
+                dispatch({type: "notify", payload: {response: res}});
+            });
             },[]);           
 
     const access = (field:string):boolean => accessFields.includes(field);
 
     return (
         <form>
-            {(statusMessage.length > 0) && <h4>{statusMessage}</h4>}
-            {(statusMessage.length > 0) && <button type='submit' onClick={()=>navigate('/dashboard')}>Return to Dashboard</button>}
-            {(statusMessage.length > 0) && <hr/>}
-
             {props.headerChildren}
 
             {access('userRole') && <label htmlFor='userRole'>Account Type</label>}
@@ -122,3 +121,7 @@ const FormProfile = ({...props}:{onInput:FormEventHandler, getInput:Function, va
 }
 
 export default FormProfile;
+function dispatch(arg0: { type: string; payload: { message: string; status: number; log: serverErrorResponse; }; }) {
+    throw new Error('Function not implemented.');
+}
+
