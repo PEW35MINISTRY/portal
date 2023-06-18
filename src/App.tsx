@@ -3,10 +3,9 @@ import{Provider} from 'react-redux';
 import { BrowserRouter, Route, Routes, Navigate, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import "./App.scss";
 import { useAppSelector, useAppDispatch } from './hooks';
-import { ToastContainer, Slide, toast } from 'react-toastify';
+import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-import store from './redux-store';
+import store, { AppDispatch, logoutAccount } from './redux-store';
 
 //Components
 import Login from "./1-Profile/Login";
@@ -83,7 +82,7 @@ const AppContent = () => {
               &#9840; Logs
             </NavLink>
 
-            <button className={'page'} onClick={()=>dispatch({type: "logout", payload: {}})}>
+            <button className={'page'} onClick={()=>store.dispatch((logoutAccount) as AppDispatch)}>
               - Logout
             </button>
           </div>

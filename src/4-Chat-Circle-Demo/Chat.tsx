@@ -1,11 +1,9 @@
 import React, {useState, useEffect, forwardRef, useRef} from 'react';
-import { useAppSelector, useAppDispatch } from '../hooks';
+import { useAppSelector, useAppDispatch, processAJAXError } from '../hooks';
+import axios from 'axios';
 import { io, Socket } from "socket.io-client";
 import { Contact, SocketMessage } from '../3-Chat-Direct-Demo/chat-types';
 import '../3-Chat-Direct-Demo/chat.scss'; 
-import axios from 'axios';
-import { serverErrorResponse } from '../app-types';
-import { toast } from 'react-toastify';
 
 
 const CircleChat = () => {
@@ -66,9 +64,7 @@ const CircleChat = () => {
             //@ts-ignore Join All Circles @ts-ignore
             Array.from(response.data).forEach((circle) => socket.emit('circle-join', circle.id));
             
-        }).catch((res) => { 
-            dispatch({type: "notify", payload: { response: res }});
-        });
+        }).catch((error) => processAJAXError(error));
 
 
     /* Socket Communication */ 

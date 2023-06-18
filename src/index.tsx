@@ -3,12 +3,17 @@ import ReactDOM from 'react-dom/client';
 import './index.scss';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import store, { loadCacheLogin } from './redux-store';
+import type { AppDispatch } from './redux-store';
 
-//Import Redux Store
+
+//Attempt auto login from local storage
+store.dispatch((loadCacheLogin) as AppDispatch);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
 root.render(
   <React.StrictMode>
       <App />

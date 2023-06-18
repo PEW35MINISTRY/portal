@@ -1,14 +1,17 @@
-//For Redux Toast Notifications
+import { TypeOptions } from "react-toastify";
+
+//For Redux Toast Notifications | (lowercase enum exception compatibility with TypeOptions from react-toastify)
 export enum ToastStyle {
-    INFO = 'INFO', 
-    WARN = 'WARNING', 
-    ERROR = 'ERROR', 
-    SUCCESS = 'SUCCESS'
+    INFO = 'info', 
+    WARN = 'warning', 
+    ERROR = 'error', 
+    SUCCESS = 'success'
 }
 
 //Sync with Server server.mts
-export type serverErrorResponse = {
+export type ServerErrorResponse = {
     status: number, 
+    notification: string,
     message: string,
     action: string,
     type: string,
@@ -19,29 +22,15 @@ export type serverErrorResponse = {
     body: string | object
 };
 
-//Sync with Server profile-types.mts
-export interface ProfilePublicResponse {
-    userId: number, 
-    userRole: string, 
-    displayName: string, 
-    profileImage: string, 
-    gender:string,
-    dob:number,
-    proximity?:number,
-    circleList: {
-        circleId: string,
-        title: string,
-        image: string,
-        sameMembership: boolean
-    }[],
-};
-
-export interface ProfileResponse extends ProfilePublicResponse  {
-    firstName: string, 
-    lastName: string, 
-    email:string,
-    phone: string, 
-    zipcode: string, 
-    stage: any, 
-    dailyNotificationHour: number
-};
+export type AXIOSError = {
+    code: string,
+    message: string,
+    name: string, //"AxiosError"
+    request: XMLHttpRequest,
+    //Only available if server responds
+    response?: {
+      data: ServerErrorResponse,
+      status: number,
+      statusText: string,
+    }
+  }

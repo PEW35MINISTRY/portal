@@ -1,5 +1,5 @@
 # Encouraging Prayer
-Site is live at: Learn More at: [encouragingprayer.org](https://encouragingprayer.org/)
+Learn More at: [encouragingprayer.org](https://encouragingprayer.org/)
 
 The **Encouraging Prayer Portal** will allow circle leader and admin management on the Encouraging Prayer system.
 
