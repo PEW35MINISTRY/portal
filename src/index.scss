@@ -19,15 +19,15 @@ html {
   overflow-x: hidden;
 
   @media screen and (max-width: 1200px) {
-    font-size: 18px;
-  }
-
-  @media screen and (max-width: 991px) {
     font-size: 15px;
   }
 
+  @media screen and (max-width: 991px) {
+    font-size: 14px;
+  }
+
   @media screen and (max-width: 576px) {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
@@ -68,7 +68,7 @@ div {
 }
 
 button {
-  padding: 0.5rem 1.0rem;
+  padding: 0.3rem 1.0rem;
   font-family: 'EB Garamond';
   font-weight: 600;
   font-size: 1.3rem;
@@ -88,14 +88,14 @@ h1 {
 h2 {
   font-family: 'Playfair Display';
   font-weight: 500;
-  font-size: 2.5rem;
+  font-size: 2.0rem;
 }
 
 h3,
 label {
   font-family: 'EB Garamond';
   font-weight: 500;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: $blue;
 }
 
@@ -104,9 +104,30 @@ h5,
 h6 {
   font-family: 'Roboto';
   font-weight: 300;
-  font-size: 1.15rem;
+  font-size: 1.0rem;
 }
 
+input, select, textarea {
+  text-align: left;
+  margin: 0.25rem 0;
+  padding: 0.15rem 0.7rem;
+  border: none;
+  font-size: 0.9rem;
+  background-color: white;
+}
+
+textarea {
+  height: 5.0rem;
+}
+
+.validation {
+  color: $red;
+  font-family: 'Roboto';
+  font-weight: 300;
+  font-size: 0.5rem;
+  font-style: oblique;
+  margin: 0 0 1.0rem auto;
+}
 
 //Animations
 @keyframes zoom-pulse {

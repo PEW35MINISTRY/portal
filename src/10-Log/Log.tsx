@@ -1,11 +1,8 @@
 import axios from 'axios';
-import { error } from 'console';
 import React, {useState, useEffect, forwardRef, useRef} from 'react';
 import { useNavigate } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from '../hooks';
-import { toast } from 'react-toastify';
+import { useAppSelector, useAppDispatch, processAJAXError } from '../hooks';
 import './log.scss'; 
-import { serverErrorResponse, ToastStyle } from '../app-types';
 
 
 const LOG_TYPES = new Map();
@@ -41,13 +38,7 @@ const Log = () => {
                 // console.log('Log Retrieved', response.data);
                 setLoading(false);
 
-            }).catch((response) => { 
-                dispatch({type: "notify", payload: { response: response,
-                    callback: () => {
-                        navigate('/login');
-                    }
-                }});          
-            });
+            }).catch((error) => processAJAXError(error, ()=>navigate('/login')));
     }, [type]);
 
     const saveLog = (event:any) => {
@@ -62,11 +53,7 @@ const Log = () => {
         }).then(response => {
             setMessage("");
 
-        }).catch((res) => { 
-            dispatch({type: "notify", payload: { response: res,
-                style: ToastStyle.WARN
-            }});
-        });
+        }).catch((error) => processAJAXError(error));
     }
     
     return (

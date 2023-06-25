@@ -1,18 +1,14 @@
 import axios from 'axios';
-import React, {useState, useEffect, forwardRef, useRef} from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../hooks';
-import validateInput, {ProfileType, convertDate, convertHour, getAvailableUserRoles, testEmailExists, emailRegex } from './validateProfile';
-import { toast } from 'react-toastify';
+import React, {useState, useEffect, forwardRef, useRef, ReactElement} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { setAccount, AccountState } from '../redux-store';
+import { useAppDispatch, processAJAXError, notify } from '../hooks';
+import { ToastStyle } from '../app-types';
+import { InputField, LOGIN_PROFILE_FIELDS } from './Fields-Sync/profile-field-config';
+import FormProfile from './FormProfile';
 import './form.scss'; 
-import { serverErrorResponse } from '../app-types';
 
-type contact = {
-    id: number,
-    name: string,
-}
-
-//temporary for debugging
+/* [TEMPORARY] Credentials fetched for Debugging */
 type CredentialProfile = { 
     user_id: number,
     display_name: string,
@@ -24,116 +20,93 @@ type CredentialProfile = {
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const location = useLocation();  
-    const [input, setInput] = useState<ProfileType>({});
+    const [inputMap, setInputMap] = useState<Map<string, string>>(new Map());
 
-    //TODO Temporary for Debugging
+    /************************************************** //TODO Remove for Production
+     *  [TEMPORARY] Credentials fetched for Debugging
+     * ************************************************/
     const [credentialList, setCredentialList] = useState<CredentialProfile[]>([]);
 
+    //componentDidMount
     useEffect(() => {
         axios.get(`${process.env.REACT_APP_DOMAIN}/login/credentials`)
             .then(response => setCredentialList(response.data))
-            .catch((res) => { 
-                dispatch({type: "notify", payload: { response: res,
-                    message: 'Failed to fetch all user credentials.'
-                }});
-            });
-
-            //Failed /signup redirects with email in query parameter
-            if(new URLSearchParams(location.search).get('email')) 
-                setInput({...input, 'email': input.email});
-            if(new URLSearchParams(location.search).get('displayName')) 
-                setInput({...input, 'displayName': input.displayName});
+            .catch((error) => processAJAXError(error));
     }, []);
 
     const onCredentialSelect = (e:any) => {
         if(e)
             e.preventDefault();
         const user:CredentialProfile = credentialList[e.target.value];
-        makeLoginRequest(user.email, user.display_name, user.password_hash);
-        setInput({...input, 'email': user.email, 'displayName': user.display_name, 'password': user.password_hash});
+
+        console.info("Attempting to Login in:", user);
+        makeLoginRequest(new Map([['email', user.email], ['password', user.password_hash]]));        
     }
 
-    const onLogin = (e:any) => {
-        if(e)
-            e.preventDefault();
+    /*******************************************
+     *          SEND REQUEST TO SEVER
+     * FormProfile already handled validations
+     * *****************************************/
+    const makeLoginRequest = async(result?:Map<string,string>) => {
+        const finalMap = result || inputMap;
+        //Assemble Request Body (Simple JavaScript Object)
+        const requestBody = {};
+        //@ts-ignore
+        finalMap.forEach((value, field) => {requestBody[field] = value});
 
-        makeLoginRequest(input.email, input.displayName, input.password);
-    }
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, requestBody)
+            .then(response => {
+                const account:AccountState = {
+                    JWT: response.data.JWT,
+                    userId: response.data.userId,
+                    userProfile: response.data.userProfile,
+                };
+                //Save to Redux for current session
+                dispatch(setAccount(account));
+                //Save to Cache for reauthenticate if JWT is still valid in redux-store.tsx
+                window.localStorage.setItem('user', JSON.stringify(account));
 
-    const makeLoginRequest = (email:string = '', displayName:string = '', password:string = '') => ((email.length || displayName.length) && password.length) &&
-        dispatch({
-            type: "login",
-            payload: {
-                email: email,
-                displayName: displayName,
-                password: password
-            }
-        });    
+                notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
+                navigate('/portal/dashboard');
 
-    //Moved to REDUX
+            }).catch((error) => processAJAXError(error));
+    }   
 
-    // axios.post(`${process.env.REACT_APP_DOMAIN}/login`, {
-    //         email: userEmail,
-    //         password: userPassword
+    const getInputField = (field:string):string|undefined => inputMap.get(field);
+    const setInputField = (field:string, value:string):void => setInputMap(map => new Map(map.set(field, value)));
 
-    //     }).then(response => {
-    //         dispatch({
-    //             type: "login",
-    //             payload: {
-    //                 JWT: response.data.JWT,
-    //                 userId: response.data.userId,
-    //                 userProfile: response.data.userProfile,
-    //             }
-    //         });
-
-        //     setStatusMessage(`Welcome to Encouraging Prayer ${response.data.userProfile.displayName}!`)
-        //     console.log('Login Successfully', response.data.userId, response.data.service);
-        //     navigate('/portal/dashboard');
-
-        // }).catch(error => {
-        //     if(error.response.status === 403)
-        //         setStatusMessage(`Account identified, please  verify account to login`);
-        //     else            
-        //         setStatusMessage(`Login unsuccessfully, please try again`);
-
-        //     setPassword('');
-        //     console.log('AXIOS Login Error:', error);
-    
-
-    const onInput = async (event:any) => {
-        let {name, value} = event?.target;
-        
-        if(name === 'emailUsername') {
-            name = emailRegex.test(value) ? 'email' : 'username';
-        }
-        setInput({...input, [name]: value});
-        console.log(name, value, {...input, [name]: value});
-    }
-    
-
+    /*********************
+     *   RENDER DISPLAY 
+     * *******************/
     return (
-        <div id='login'  className='form-page'>
-            <form onSubmit={onLogin}>
+        <div id='login-profile'  className='form-page'>
+            <h2>Login</h2>
 
-                <label htmlFor='credentialSelect'>Select User</label>
-                <select name="credentialSelect" onChange={onCredentialSelect} defaultValue='default'>
-                <option value="default" disabled hidden>Login as:</option>
-                    {credentialList?.sort((a,b)=>(a.user_role < b.user_role ? -1 : 1)).map((user,i)=>
-                        <option key={`${i}-${user.user_id}`} value={i}>{user.user_id} | {user.display_name} | {user.user_role}</option>
-                    )}
-                </select>
-
-                <h2>Login</h2>
-
-                <label htmlFor='emailUsername'>Email address</label>
-                <input name='emailUsername' type='email' onChange={onInput}  value={input.email || ''}/>
-
-                <label htmlFor='password'>Password</label>
-                <input name='password' type='password' onChange={onInput}  value={input.password || ''}/>
-
-                <button onClick={onLogin}>Login</button>
+            <form id='credentialSelectWrapper' >
+                <div className='inputWrapper'>
+                    <label htmlFor='credentialSelect'>Debug User</label>
+                    <select name="credentialSelect" onChange={onCredentialSelect} defaultValue='default'>
+                    <option value="default" disabled hidden>Login as:</option>
+                        {credentialList && credentialList?.sort((a,b)=>(a.user_role < b.user_role ? -1 : 1)).map((user,i)=>
+                            <option key={`${i}-${user.user_id}`} value={i}>{user.user_id} | {user.display_name} | {user.user_role}</option>
+                        )}
+                    </select>
+                </div>
             </form>
+
+            <hr/>
+
+            <FormProfile
+                validateUniqueFields={false}
+                getInputField={getInputField}
+                setInputField={setInputField}
+                PROFILE_FIELDS={LOGIN_PROFILE_FIELDS}
+                onSubmitText='Login'              
+                onSubmitCallback={makeLoginRequest}
+            />
+
+            <button id='createAccountButton' onClick={()=>navigate('/signup')}>Create Account</button>
+
         </div>
     );
 }

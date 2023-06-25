@@ -1,6 +1,10 @@
 @import "../index.scss";
 
 .form-page {
+    display: flex;
+    flex-direction: column;
+    justify-items: center;
+    // overflow-x: hidden;
 
     h2 {
         color: $red;
@@ -8,111 +12,89 @@
         margin-bottom: 1.0rem;
     }
 
-    h4 {
-        grid-column: 1 /span 2;
-        color: $red;
-        font-weight: 600;
+    hr {
+        width: 100%;
+        max-width: 700px;
+        border: none;
+        border-bottom: 1px solid $blue;
     }
+
+    // #accessProfilesForm, #credentialSelectWrapper {
+        // overflow: hidden;
+    // }
 
     form {
         text-align: center;
-        max-width: 700px;
+        overflow-x: hidden;
         overflow-y: auto;
         margin: auto;
+        justify-items:first baseline;
 
-        display: grid;
-        grid-template-columns: 50% 50%;
-        grid-column-gap: 1.0rem;
+        display: flex;
+        flex-direction: column;
 
         @media only screen and (max-width: 768px) {
             grid-template-columns: 100%;
-            // grid-auto-flow: row;
-            // font-weight: 800;
         }
 
-        h3 {
-            grid-column: 1 / span 2;
-            color: $blue;
-            text-align: left;
-            margin: 1.0rem 0 0.5rem 0;
-        }
-
-        label {
-            text-align: right;
-            grid-column: 1;
-            margin-right: 1.0rem;
-            color: $blue-dark;
-
-            @media only screen and (max-width: 768px) {
-                text-align: left;
-            }
-        }
-
-        input, select, textarea {
-            text-align: left;
-            min-width: 250px;
-            margin: 0.25rem 0;
-            grid-column: 2;
-            background-color: white;
-            border: none;
-            font-size: 1.0rem;
-            padding: 0.3rem 1.0rem;
-            
-
-            @media only screen and (max-width: 768px) {
-                grid-column: 1;
-            }
-        }
-
-        textarea {
-            height: 5.0rem;
-        }
-
-        .error {
-            grid-column: 2;
-            color: $red;
-            font-size: 0.8rem;
-            margin: 0.15rem 1.0rem 1.0rem auto;
-
-            @media only screen and (max-width: 768px) {
-                grid-column: 1;
-            }
-        }
         
 
-        button {
-            grid-column: 1 /span 2;
-            background-color: $red;
-            color: white;
-            width: 15rem;
-            margin: 2.0rem auto;
-    
-            &:hover {
-                background-color: $blue;
-            }
-        }
+        .inputWrapper {
+            grid-column: 2;
+            max-width: 700px;
 
-        hr {
-            grid-column: 1 /span 2;
-            width: 100%;
-            color: $red;
-        }
-
-        .children {
-            grid-column: 1 /span 2;
-            width: 100%;
-            text-align: center;
+            display: grid;
+            grid-template-columns: 35% auto;
+            grid-column-gap: 1.0rem;
 
             label {
                 text-align: right;
-                margin-right: 1.0rem;
+                grid-column: 1;
                 color: $blue-dark;
     
                 @media only screen and (max-width: 768px) {
                     text-align: left;
                 }
             }
-        }
-    }
     
+            input, select, textarea {
+                grid-column: 2;               
+    
+                @media only screen and (max-width: 768px) {
+                    grid-column: 1;
+                }
+            }
+        
+            .validation {
+                grid-column: 2;
+                color: $red;
+                font-size: 0.7rem;
+                margin: 0 0 1.0rem auto;
+    
+                @media only screen and (max-width: 768px) {
+                    grid-column: 1;
+                }
+            }
+        }        
+
+        button {
+            grid-column: 1 /span 2;
+            background-color: $red;
+            color: white;
+            width: 15rem;
+            margin: 1.0rem auto;
+    
+            &:hover {
+                background-color: $blue;
+            }
+        }
+    }    
+
+    #createAccountButton {
+        margin: auto;
+        width: 15rem;
+        color: $red;
+        border-top: 1px solid $blue;
+        border-radius: 0;
+    }
 }

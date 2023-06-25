@@ -1,247 +1,106 @@
 import React from 'react';
-import {createStore, combineReducers} from 'redux';
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import axios from 'axios';
-import { Id, toast } from 'react-toastify';
-import { ToastStyle, serverErrorResponse, ProfileResponse } from './app-types';
+import { ToastStyle, AXIOSError } from './app-types';
+import { JWTResponseBody, ProfileResponse } from './1-Profile/profile-types';
+import { notify } from './hooks';
 
 
-/******************************
+/**************************************
    Account | Credentials Redux Reducer
-*******************************/
+   Tracks 'logged-in' user's status
+***************************************/
 
-const initialAccountState = {
-  userId: 0,
+export type AccountState = {
+  userId: number,
+  JWT: string, 
+  userProfile: ProfileResponse,
+}
+
+const initialAccountState:AccountState = {
+  userId: -1,
   JWT: '',
   userProfile: {} as ProfileResponse
 }; 
 
-const accountReducer = (state = initialAccountState, action: { type: string; payload: any; }) => { 
-  switch(action.type) {
-   
-/* Verify cached JWT | auto login   */
-    case 'authenticate':
-      axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
+//Must keep state reducers pure (No side effects: Ajax => Use Middelware)
+// createSlice creates a reducer and actions automatically: https://dev.to/raaynaldo/redux-toolkit-setup-tutorial-5fjf
+const accountSlice = createSlice({
+  name: 'account',
+  initialState: initialAccountState,
+  reducers: {
+    setAccount: (state, action:PayloadAction<AccountState>) => state = action.payload,
+    resetAccount: () => initialAccountState,
+    updateJWT: (state, action:PayloadAction<string>) => state = {...state, JWT: action.payload},
+    updateProfile: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: action.payload},
+  },
+});
+
+//Export Dispatch Actions
+export const { setAccount, resetAccount, updateJWT, updateProfile } = accountSlice.actions;
+
+/**********************************************************
+ * REDUX MIDDLEWARE: for non-static/async state operations
+ **********************************************************/
+
+//Custom Redux (Static) Middleware: https://redux.js.org/tutorials/fundamentals/part-6-async-logic
+//Called directly in index.tsx: store.dispatch(loadCacheLogin); 
+export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; type: "account/setAccount"; }|{type: "account/resetAccount"; }|{ payload: string; type: "account/updateJWT"; }) => void, getState: AccountState) => {
+  if(!window.location.pathname.includes('login')) {
+    try {
+      if(window.localStorage.getItem('user') === null || !window.localStorage.getItem('user')?.length) //Set in Login.tsx
+        throw "No Cached Credentials";
+
+      const user = JSON.parse(window.localStorage.getItem('user') || '');
+      const userId = user.userId;
+      const JWT = user.JWT;
+      const userProfile = user.userProfile;
+
+      if(!userId || !JWT || !userProfile) 
+        throw "Invalid Cached Credentials";
+
+      //Re-authenticate JWT
+      await axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
         headers: {
-          'jwt': '100.100.100'
+          ['user-id']: userId,
+          jwt: JWT
         }
       }).then(response => { 
-        store.dispatch({type: "notify", payload: {
-          response: response,
-          message: `Logging in ${state.userProfile.firstName}`,
-        }});
+        const body:JWTResponseBody = response.data;
+        dispatch(setAccount({userId: userId, JWT: body.JWT, userProfile: userProfile}));
+        notify(`Welcome ${userProfile?.firstName}`, ToastStyle.INFO);
         
-      }).catch((response) => {
-        if(window.location.pathname !== '/login')
-            store.dispatch({type: "notify", payload: {
-              response: response,
-              message: 'Please Login',
-              callback: () => {
-                if(state.JWT !== initialAccountState.JWT) 
-                  store.dispatch({type: 'logout', payload: undefined});
-              }
-            }});
+      }).catch((response:AXIOSError) => {
+        throw response.response?.data.action || "Invalid JWT Token";
       });
 
-      return state;
+    } catch(error) {
+      console.error('Auto attempt failed to Re-login with cached credentials', error);
 
-/* Logging Out User   */
-      case 'load-login':
-        try{
-          if(window.localStorage.getItem('user') === null || !window.localStorage.getItem('user')?.length)
-            throw new Error("No Cache");
-  
-          const user = JSON.parse(window.localStorage.getItem('user') || '');
-          console.log('Redux Cache User: ', user);
-          const userId = user.userId;
-          const JWT = user.JWT;
-          const profile = user.userProfile;
-  
-          if(!userId || !JWT || !profile) 
-            throw new Error("Invalid Cache");
-  
-          setTimeout(()=>store.dispatch({type: "authenticate", payload: {}}), 1);
+      logoutAccount(dispatch, getState);
 
-          return {userId: userId, JWT: JWT, userProfile: profile};
-
-        } catch(error) {
-          console.error('Redux Re-login Failed', error);
-          setTimeout(()=>store.dispatch({type: "logout", payload: {}}), 1)
-        }
-      
-        return {...initialAccountState};
-
-/* Save Payload to Account State | complete replace   */
-    case 'save-login': 
-      return {...action.payload};
-
-/* Logging In User   */
-    case 'login':
-      axios.post(`${process.env.REACT_APP_DOMAIN}/login`, {
-        email: action.payload.email,
-        displayName: action.payload.displayName,
-        password: action.payload.password,
-
-        }).then(response => {
-          const userPayload =  {
-                JWT: response.data.JWT,
-                userId: response.data.userId,
-                userProfile: response.data.userProfile,
-              };
-
-          store.dispatch({type: "notify", payload: {
-              response: response,
-              message: `Welcome`,
-              callback: () => {
-                store.dispatch({type: "reset-login", payload: {}});
-              }
-            }});
-
-          window.localStorage.setItem('user', JSON.stringify(userPayload));
-          window.location.assign('/portal/dashboard');
-
-          store.dispatch({type: "save-login", payload: userPayload});
-
-        }).catch((response) => { 
-
-          store.dispatch({type: "notify", payload: {
-            response: response,
-            toastType: ToastStyle.ERROR, 
-            message: 'Please login',
-          }});
-
-        });
-
-        return state;
-
-  /* Logging Out User   */
-      case 'logout':
-        console.log(state);
-        const userId = state.userId;
-        const jwt = state.JWT;
-        axios.post(`${process.env.REACT_APP_DOMAIN}/api/logout/${userId}`,{},{
-          headers: {
-            'user-id': userId,
-            'jwt': '100.100.100'
-        }}
-        ).then(response => { 
-          store.dispatch({type: "notify", payload: {
-            response: response,
-            toastType: ToastStyle.WARN, 
-            message: `${state.userProfile.firstName} Logged Out`,
-            callback: () => {
-              store.dispatch({type: "reset-login", payload: {}});
-              window.location.assign('/login');
-            }
-          }});
-
-        }).catch((response) => { 
-
-          store.dispatch({type: "notify", payload: {
-            response: response,
-            toastType: ToastStyle.WARN, 
-            message: 'Please login',
-            callback: () => {
-              window.localStorage.removeItem('user');
-
-              if(window.location.pathname.includes('portal')) //clears state on 'load-login'
-                  window.location.assign('/login');
-            }
-          }});
-        });
-
-        
-
-        // return {...initialAccountState};
-        return state;
-
-/* Resetting Account State to defaults */
-      case 'reset-login':
-        return {...initialAccountState};
-
-    default: return state; 
+      notify('Please Login', ToastStyle.WARN, ()=>window.location.assign('/login'));
+    }
   }
 }
 
-/******************************
-   notify Redux Reducer
-*******************************/
-
-//ToastID List | keeping track to prevent duplicates
-const initialNotificationState: Array<string> = []; 
-const toastDuration = 5000;
-//Note: ToastStyle defined: app-types.tsx
-const notificationReducer = (state = initialNotificationState, action: { type: string, payload: {style: ToastStyle; message: string; status:number; log:any, callback: () => void; response: any}}) => { 
-
-  if(action.type === 'notify') {
-
-    let toastStyle:ToastStyle = action.payload.style || ToastStyle.ERROR;
-    let status:number = action.payload.status || 500;
-    let message:string = action.payload.message || '';
-
-    if(action.payload.response?.response?.data) {
-      const serverError:serverErrorResponse = action.payload.response.response.data;
-      status = action.payload.status || serverError.status;
-      message = action.payload.message || serverError.message;
-      action.payload.log = action.payload.log || serverError;
-    } else if(action.payload.response) {
-      status = action.payload.status || action.payload.response.status;
-    }
-
-    console.log(toastStyle, status, message, action.payload.log);
-
-    if(state.includes(message))
-      return state;
-
-    if(status == 400) {
-      toast.error('Missing details');
-    } else if(status == 401) {
-      toast.error('Sorry not permitted');
-    } else if(status == 404) {
-      toast.error('Not found');
-
-    //Requiring Message length to display
-    } else if(!message?.length) {
-      toast.error('Unknown error has occurred');   
-
-    } else if(status == 202 || toastStyle == ToastStyle.SUCCESS) {
-      toast.success(message);
-      //@ts-ignore
-    } else if(status < 300 || toastStyle == ToastStyle.INFO) {
-      toast.info(message);
-    } else if(status < 500 || toastStyle == ToastStyle.WARN) {
-      toast.warn(message);
-    } else {
-      toast.error(message);
-    }   
-
-    //Auto Removal
-    setTimeout(()=>{
-      store.dispatch({type: "remove-notification", payload: {message: message}});
-      if(action.payload.callback) action.payload.callback();
-    }, toastDuration);
-
-    return [...state, message];
-
-  } else if(action.type === 'remove-notification') {
-    return [...state.filter(text => text !== action.payload.message)];
-
-  } else
-    return state;
+export const logoutAccount = async(dispatch: (arg0: {type: "account/resetAccount"; }) => void, getState: AccountState) => {
+  console.warn('REDUX Account & localStorage cleared: logoutAccount');
+  dispatch(resetAccount());
+  window.localStorage.setItem('user', '');
+  window.location.assign('/login');
 }
 
-//Redux Store
-const allStateDomains = combineReducers({
-  account: accountReducer,
-  notify: notificationReducer,
+//Redux Middleware Listeners: https://redux-toolkit.js.org/api/createListenerMiddleware
+
+const store = configureStore({
+  reducer: {
+    account: accountSlice.reducer,
+  },
+  //Note: May Define Middleware; however w/o defining types: return and types are automatic: https://v1-2-5--redux-starter-kit-docs.netlify.app/api/getDefaultMiddleware
 });
 
-const store = createStore(allStateDomains,{});
-
-export default  store;
-
-//Auto Authenticate JWT
-store.dispatch({type: "load-login", payload: {}});
+export default store;
 
 //Typescript Redux Setup: https://react-redux.js.org/tutorials/typescript-quick-start
 // Infer the `RootState` and `AppDispatch` types from the store itself
