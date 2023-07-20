@@ -48,8 +48,8 @@ const AppContent = () => {
   const dispatch = useAppDispatch();
 
   const displayName:string = useAppSelector((state) => state.account.userProfile.displayName);
-  const userId:number = useAppSelector((state) => state.account.userId);
-  const JWT:string = useAppSelector((state) => state.account.JWT);
+  const userID:number = useAppSelector((state) => state.account.userID);
+  const jwt:string = useAppSelector((state) => state.account.jwt);
 
   return (
       <div id="app">
@@ -69,7 +69,7 @@ const AppContent = () => {
             <NavLink to="/signup" className={({ isActive }) => (isActive ? 'active' : '')+' page'}>
               &#9840; Sign Up
             </NavLink>
-            <NavLink to={`/portal/edit-profile/${userId}`} className={({ isActive }) => (isActive ? 'active' : '')+' page'}>
+            <NavLink to={`/portal/edit-profile/${userID}`} className={({ isActive }) => (isActive ? 'active' : '')+' page'}>
               &#9840; Edit Profile
             </NavLink>
             <NavLink to="/portal/direct-chat" className={({ isActive }) => (isActive ? 'active' : '')+' page'}>
@@ -93,7 +93,7 @@ const AppContent = () => {
           <div id="app-header">
               <h2>Welcome to the Portal</h2>
               <NavLink to="/login" id='profile-box'>
-                <label >{displayName} | {userId} </label>
+                <label >{displayName} | {userID} </label>
               </NavLink>
           </div>
 

@@ -4,20 +4,21 @@ import axios from 'axios';
 import { io, Socket } from "socket.io-client";
 import { Contact, SocketMessage } from './chat-types';
 import './chat.scss'; 
+import { ProfileListItem } from '../1-Profile/profile-types';
 
 
 const DirectChat = () => {
     const dispatch = useAppDispatch();
 
-    const JWT:string = useAppSelector((state) => state.account.JWT);
-    const userId:number = useAppSelector((state) => state.account.userId);
+    const jwt:string = useAppSelector((state) => state.account.jwt);
+    const userID:number = useAppSelector((state) => state.account.userID);
 
     const [message, setMessage] = useState<string>(''); 
 
     const [chatSocket, setChatSocket] = useState<Socket>();
 
     const [contactList, setContactList] = useState<Contact[]>([]);
-    const [contactId, setContactId] = useState<number>(0);
+    const [contactID, setContactID] = useState<number>(0);
     const [directLog, setDirectLog] = useState<Array<string>>([]);
     
     
@@ -31,12 +32,12 @@ const DirectChat = () => {
     /* Fetch Contacts */
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/contacts`, 
             { headers: {
-                'user-id': userId,
-                'jwt': JWT
+                'user-id': userID,
+                'jwt': jwt
             }
         }).then(response => {
-            setContactList(response.data);
-            setContactId(response.data[0].id);
+            setContactList(response.data.map((user:ProfileListItem) => ({ID: user.userID, name: user.displayName})));
+            setContactID(response.data[0].id);
             console.log('Contacts List ', response.data);
             
         }).catch((error) => processAJAXError(error));
@@ -45,8 +46,8 @@ const DirectChat = () => {
         const socket = io(`${process.env.REACT_APP_SOCKET_PATH}`, {
             path: '/chat',
             auth: {
-                JWT: JWT,
-                userId: userId
+                jwt: jwt,
+                userID: userID
               }
         });  
 
@@ -72,7 +73,7 @@ const DirectChat = () => {
           });
 
           return () => { //Clean Up
-            socket.emit('leave', userId);
+            socket.emit('leave', userID);
             socket.disconnect();
          }
 
@@ -83,8 +84,8 @@ const DirectChat = () => {
         e.preventDefault();
 
         chatSocket?.emit("direct-message", {
-            senderId: userId,
-            recipientId: contactId,
+            senderID: userID,
+            recipientID: contactID,
             message: message
         });  
         setMessage('');
@@ -104,9 +105,9 @@ const DirectChat = () => {
 
                     <section id='contact-select'>
                         <label >Select Contact:</label>
-                        <select name="contact" id="contact-select" placeholder='Select Online Contact' defaultValue={(contactId)} >
+                        <select name="contact" id="contact-select" placeholder='Select Online Contact' defaultValue={(contactID)} >
                             {(contactList).map((contact, i) => 
-                                <option key={i} className="entry" onClick={()=>(setContactId(contact.id))} value={contact.id}>{contact.name}</option>
+                                <option key={i} className="entry" onClick={()=>(setContactID(contact.ID))} value={contact.ID}>{contact.name}</option>
                             )}
                         </select>
                         

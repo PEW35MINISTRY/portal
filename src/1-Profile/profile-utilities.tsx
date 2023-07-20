@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { notify } from '../hooks';
+import { RoleEnum } from './Fields-Sync/profile-field-config';
 
 export const testAccountAvailable = async(fields:Map<string, string>):Promise<boolean|undefined> => new Promise((resolve, reject) => {
     const fieldQuery:string = Array.from(fields.entries()).map(([key, value]) => `${key}=${value}`).join('&');
@@ -16,3 +17,12 @@ export const testAccountAvailable = async(fields:Map<string, string>):Promise<bo
             }
         });
     });
+
+//Searches Profile Input for max userRole for accurate validations
+export const getInputHighestRole = (getInputField:Function):RoleEnum => {
+    const roleMap:Map<string, string> = getInputField('userRoleTokenList') || new Map();
+
+    return Object.values(RoleEnum).reverse().find((role, index) => (roleMap.has(RoleEnum[role]))) as RoleEnum
+        || getInputField('userRole') as RoleEnum
+        || RoleEnum.STUDENT
+}

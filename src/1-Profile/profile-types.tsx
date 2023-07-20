@@ -1,14 +1,15 @@
-import { RoleEnum } from "./Fields-Sync/profile-field-config"
+import { GenderEnum, RoleEnum } from "./Fields-Sync/profile-field-config"
 
-export interface JWTResponseBody {
-    JWT: string, 
-    userId: number, 
+/* Sync between Server and Portal "auth-types" */
+export interface JwtResponseBody {
+    jwt: string, 
+    userID: number, 
     userRole: RoleEnum
 };
 
-export interface JWTResponse extends Response, JWTResponseBody {};
+export interface JwtResponse extends Response, JwtResponseBody {};
 
-export interface LoginResponseBody extends JWTResponseBody {
+export interface LoginResponseBody extends JwtResponseBody {
     userProfile: ProfileResponse,
     service:string
 };
@@ -16,49 +17,48 @@ export interface LoginResponseBody extends JWTResponseBody {
 export interface LoginResponse extends Response, LoginResponseBody {};
 
 /* Sync between Server and Portal "profile-types" */
+export interface ProfileListItem {
+    userID: number,
+    firstName: string,
+    displayName: string,
+    image: string,
+}
+
+/* [TEMPORARY] Credentials fetched for Debugging */
+export type CredentialProfile = { 
+    userID: number,
+    displayName: string,
+    userRole: string,
+    email: string,
+    passwordHash: string,
+}
+
+/* Sync between Server and Portal "profile-types" */
 export interface ProfilePublicResponse {
-    userId: number, 
+    userID: number, 
     userRole: string, 
+    firstName: string,
     displayName: string, 
-    profileImage: string, 
-    gender:string,
-    dob:number,
-    proximity?:number,
-    circleList: {
-        circleId: string,
-        title: string,
-        image: string,
-        sameMembership: boolean
-    }[],
+    gender: GenderEnum,
+    image: string,
+    // circleList: CircleListItem[],
+};
+
+/* Sync between Server and Portal "profile-types" */
+export interface ProfilePartnerResponse extends ProfilePublicResponse {
+    walkLevel: number,
+};
+
+/* Sync between Server and Portal "profile-types" */
+export interface ProfileResponse extends ProfilePartnerResponse  {
+    lastName: string, 
+    email:string,
+    postalCode: string, 
+    dateOfBirth: Date,
+    isActive: boolean,
+    partnerList: ProfileListItem[],
 };
 
 /*[TEMPORARY] For Syncing Types with Server */ //TODO until Features are Implemented
 type Message = {texts:string[]}
 type PrayerRequest = {requests:string[]}
-
-enum StageEnum {
-    LEARNING = 'LEARNING',
-    GROWING = 'GROWING', 
-    LIVING = 'LIVING'
-}
-
-/* Sync between Server and Portal "profile-types" */
-export interface ProfileResponse extends ProfilePublicResponse  {
-    firstName: string, 
-    lastName: string, 
-    email:string,
-    phone: string, 
-    zipcode: string, 
-    stage: StageEnum, 
-    dailyNotificationHour: number
-};
-
-/* Sync between Server and Portal "profile-types" */
-export interface ProfilePartnerResponse extends ProfilePublicResponse  {
-    zipcode: string, 
-    stage: StageEnum, 
-    dailyNotificationHour: number,
-    pendingPrayerRequestList: PrayerRequest[],
-    answeredPrayerRequestList: PrayerRequest[],
-    messageList: Message[],
-};

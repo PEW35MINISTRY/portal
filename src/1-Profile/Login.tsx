@@ -4,18 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { setAccount, AccountState } from '../redux-store';
 import { useAppDispatch, processAJAXError, notify } from '../hooks';
 import { ToastStyle } from '../app-types';
-import { InputField, LOGIN_PROFILE_FIELDS } from './Fields-Sync/profile-field-config';
+import { CredentialProfile } from './profile-types';
+import { LOGIN_PROFILE_FIELDS } from './Fields-Sync/profile-field-config';
 import FormProfile from './FormProfile';
 import './form.scss'; 
 
-/* [TEMPORARY] Credentials fetched for Debugging */
-type CredentialProfile = { 
-    user_id: number,
-    display_name: string,
-    user_role: string,
-    email: string,
-    password_hash: string,
-}
 
 const Login = () => {
     const navigate = useNavigate();
@@ -40,7 +33,7 @@ const Login = () => {
         const user:CredentialProfile = credentialList[e.target.value];
 
         console.info("Attempting to Login in:", user);
-        makeLoginRequest(new Map([['email', user.email], ['password', user.password_hash]]));        
+        makeLoginRequest(new Map([['email', user.email], ['password', user.passwordHash]]));        
     }
 
     /*******************************************
@@ -57,8 +50,8 @@ const Login = () => {
         await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, requestBody)
             .then(response => {
                 const account:AccountState = {
-                    JWT: response.data.JWT,
-                    userId: response.data.userId,
+                    jwt: response.data.jwt,
+                    userID: response.data.userID,
                     userProfile: response.data.userProfile,
                 };
                 //Save to Redux for current session
@@ -87,8 +80,8 @@ const Login = () => {
                     <label htmlFor='credentialSelect'>Debug User</label>
                     <select name="credentialSelect" onChange={onCredentialSelect} defaultValue='default'>
                     <option value="default" disabled hidden>Login as:</option>
-                        {credentialList && credentialList?.sort((a,b)=>(a.user_role < b.user_role ? -1 : 1)).map((user,i)=>
-                            <option key={`${i}-${user.user_id}`} value={i}>{user.user_id} | {user.display_name} | {user.user_role}</option>
+                        {credentialList.length > 0 && credentialList.map((user,i)=>
+                            <option key={`${i}-${user.userID}`} value={i}>{user.userID} | {user.displayName} | {user.userRole}</option>
                         )}
                     </select>
                 </div>
@@ -97,16 +90,17 @@ const Login = () => {
             <hr/>
 
             <FormProfile
+                key={'Login'}
                 validateUniqueFields={false}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 PROFILE_FIELDS={LOGIN_PROFILE_FIELDS}
                 onSubmitText='Login'              
                 onSubmitCallback={makeLoginRequest}
+                onAlternativeText='Create Account'
+                onAlternativeCallback={()=>navigate('/signup')}
             />
-
-            <button id='createAccountButton' onClick={()=>navigate('/signup')}>Create Account</button>
-
+            
         </div>
     );
 }
