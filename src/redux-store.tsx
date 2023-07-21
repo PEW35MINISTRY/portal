@@ -2,7 +2,7 @@ import React from 'react';
 import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import axios from 'axios';
 import { ToastStyle, AXIOSError } from './app-types';
-import { JWTResponseBody, ProfileResponse } from './1-Profile/profile-types';
+import { JwtResponseBody, ProfileResponse } from './1-Profile/profile-types';
 import { notify } from './hooks';
 
 
@@ -12,14 +12,14 @@ import { notify } from './hooks';
 ***************************************/
 
 export type AccountState = {
-  userId: number,
-  JWT: string, 
+  userID: number,
+  jwt: string, 
   userProfile: ProfileResponse,
 }
 
 const initialAccountState:AccountState = {
-  userId: -1,
-  JWT: '',
+  userID: -1,
+  jwt: '',
   userProfile: {} as ProfileResponse
 }; 
 
@@ -31,7 +31,7 @@ const accountSlice = createSlice({
   reducers: {
     setAccount: (state, action:PayloadAction<AccountState>) => state = action.payload,
     resetAccount: () => initialAccountState,
-    updateJWT: (state, action:PayloadAction<string>) => state = {...state, JWT: action.payload},
+    updateJWT: (state, action:PayloadAction<string>) => state = {...state, jwt: action.payload},
     updateProfile: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: action.payload},
   },
 });
@@ -52,22 +52,22 @@ export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; ty
         throw "No Cached Credentials";
 
       const user = JSON.parse(window.localStorage.getItem('user') || '');
-      const userId = user.userId;
-      const JWT = user.JWT;
+      const userID = user.userID;
+      const jwt = user.jwt;
       const userProfile = user.userProfile;
 
-      if(!userId || !JWT || !userProfile) 
+      if(!userID || !jwt || !userProfile) 
         throw "Invalid Cached Credentials";
 
       //Re-authenticate JWT
       await axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
         headers: {
-          ['user-id']: userId,
-          jwt: JWT
+          ['user-id']: userID,
+          jwt: jwt
         }
       }).then(response => { 
-        const body:JWTResponseBody = response.data;
-        dispatch(setAccount({userId: userId, JWT: body.JWT, userProfile: userProfile}));
+        const body:JwtResponseBody = response.data;
+        dispatch(setAccount({userID: userID, jwt: body.jwt, userProfile: userProfile}));
         notify(`Welcome ${userProfile?.firstName}`, ToastStyle.INFO);
         
       }).catch((response:AXIOSError) => {

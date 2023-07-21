@@ -13,10 +13,10 @@ import { ProfileResponse } from './profile-types';
 const Signup = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const JWT:string = useAppSelector((state) => state.account.JWT);
+    const JWT:string = useAppSelector((state) => state.account.jwt);
     const profile:ProfileResponse = useAppSelector((state) => state.account.userProfile);
 
-    const [inputMap, setInputMap] = useState<Map<string, string>>(new Map());
+    const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
 
     //componentDidMount
     useEffect(() => {   
@@ -37,14 +37,19 @@ const Signup = () => {
         const finalMap = result || inputMap;
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody = {};
-        //@ts-ignore
-        finalMap.forEach((value, field) => {requestBody[field] = value});
+        finalMap.forEach((value, field) => {
+            if(field === 'userRoleTokenList') { //@ts-ignore
+                requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
+                                        .map(([role, token]) => ({role: role, token: token || ''}));
+            } else //@ts-ignore
+                requestBody[field] = value;
+        });
 
         axios.post(`${process.env.REACT_APP_DOMAIN}/signup`, requestBody)
             .then(response => { //AUTO LOGIN               
                 const account:AccountState = {
-                    JWT: response.data.JWT,
-                    userId: response.data.userId,
+                    jwt: response.data.jwt,
+                    userID: response.data.userID,
                     userProfile: response.data.userProfile,
                 };
                 //Save to Redux for current session
@@ -58,8 +63,8 @@ const Signup = () => {
             }).catch((error) => { processAJAXError(error); });
     }
 
-    const getInputField = (field:string):string|undefined => inputMap.get(field);
-    const setInputField = (field:string, value:string):void => setInputMap(map => new Map(map.set(field, value)));
+    const getInputField = (field:string):any|undefined => inputMap.get(field);
+    const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
     /*********************
      *   RENDER DISPLAY 
@@ -69,12 +74,15 @@ const Signup = () => {
             <h2>Create Account</h2>
 
             <FormProfile
+                key={'SIGN-UP'}
                 validateUniqueFields={true}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 PROFILE_FIELDS={SIGNUP_PROFILE_FIELDS}
                 onSubmitText='Create Account'              
                 onSubmitCallback={makeNewProfileRequest}
+                onAlternativeText='Already have an account?'
+                onAlternativeCallback={()=>navigate('/login')}
             />
         </div>
     );

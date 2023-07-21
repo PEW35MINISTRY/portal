@@ -16,8 +16,8 @@ const Log = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
 
-    const userId:number = useAppSelector((state) => state.account.userId);
-    const JWT:string = useAppSelector((state) => state.account.JWT);
+    const userID:number = useAppSelector((state) => state.account.userID);
+    const jwt:string = useAppSelector((state) => state.account.jwt);
 
     const [type, setType] = useState<string>("error");
     const [logEntries, setLogEntries] = useState<string[]>(["Log Data"]);
@@ -30,8 +30,8 @@ const Log = () => {
     useEffect(() => {setLoading(true);
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/admin/log/${type}`, { 
             headers: {
-                'user-id': userId,
-                'jwt': JWT
+                'user-id': userID,
+                'jwt': jwt
         }
         }).then(response => {
                 setLogEntries(response.data.split(/(?=\[\d{1,2}-\d{1,2}-\d{4} \d{1,2}:\d{1,2}:\d{1,2}])/g).reverse());
@@ -47,8 +47,8 @@ const Log = () => {
         axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/admin/log/${type}`, message.toString(), { 
             headers: {
                 'Content-Type': 'text/plain',
-                'user-id': userId,
-                'jwt': JWT
+                'user-id': userID,
+                'jwt': jwt
         }
         }).then(response => {
             setMessage("");

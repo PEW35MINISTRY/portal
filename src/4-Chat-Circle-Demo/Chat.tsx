@@ -9,15 +9,15 @@ import '../3-Chat-Direct-Demo/chat.scss';
 const CircleChat = () => {
     const dispatch = useAppDispatch();
     
-    const JWT:string = useAppSelector((state) => state.account.JWT);
-    const userId:number = useAppSelector((state) => state.account.userId);
+    const jwt:string = useAppSelector((state) => state.account.jwt);
+    const userID:number = useAppSelector((state) => state.account.userID);
 
     const [message, setMessage] = useState<string>(''); 
 
     const [chatSocket, setChatSocket] = useState<Socket>();
 
     const [circleList, setCircleList] = useState<Contact[]>([]);
-    const [circleId, setCircleId] = useState<number>(0);
+    const [circleID, setCircleID] = useState<number>(0);
     const [circleMapLog, setCircleMapLog] = useState<Map<number, Array<string>>>(new Map());
 
     
@@ -26,12 +26,12 @@ const CircleChat = () => {
         return time.getMinutes() + ":" + time.getSeconds() + ' | ' + entry;
     }
 
-    const addCircleMessage = (id:number, text:string) => { console.log('Updating Map', circleMapLog);
+    const addCircleMessage = (ID:number, text:string) => { console.log('Updating Map', circleMapLog);
         setCircleMapLog(oldMap => {
             // const newMap:Map<number, Array<string>> = new Map<number, Array<string>>();
-            const oldCircle:string[]= [formatEntry(text), ...oldMap.get(id) || []];
-            // oldMap.set(id, oldCircle);
-            // console.log(oldMap, oldCircle, circleId);
+            const oldCircle:string[]= [formatEntry(text), ...oldMap.get(ID) || []];
+            // oldMap.set(ID, oldCircle);
+            // console.log(oldMap, oldCircle, circleID);
             return new Map(oldMap);
         });
     }
@@ -43,8 +43,8 @@ const CircleChat = () => {
         const socket = io(`${process.env.REACT_APP_SOCKET_PATH}`, {
             path: '/chat',
             auth: {
-                JWT: JWT,
-                userId: userId
+                jwt: jwt,
+                userID: userID
                 }
         });  
 
@@ -53,12 +53,12 @@ const CircleChat = () => {
     /* Fetch Circles */
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/circles`, 
             { headers: {
-                'user-id': userId,
-                'jwt': JWT
+                'user-id': userID,
+                'jwt': jwt
             }
         }).then(response => {
             setCircleList(response.data);
-            setCircleId(response.data[0].id);
+            setCircleID(response.data[0].id);
             console.log('Circles List ', response.data);
 
             //@ts-ignore Join All Circles @ts-ignore
@@ -70,12 +70,12 @@ const CircleChat = () => {
     /* Socket Communication */ 
 
           socket.on("circle-message", (content: SocketMessage) => {
-            addCircleMessage(content.recipientId, content.senderName+': '+content.message);
+            addCircleMessage(content.recipientID, content.senderName+': '+content.message);
             console.log('New Circle:', content); 
           });
 
           socket.on("server", (data: string) => {
-            addCircleMessage(circleId, 'Server: '+data);
+            addCircleMessage(circleID, 'Server: '+data);
             console.log('Server:', data); 
           });
 
@@ -84,12 +84,12 @@ const CircleChat = () => {
           });
 
           socket.on("connect_error", (error) => { //https://socket.io/docs/v3/emitting-events/
-            addCircleMessage(circleId, 'Error: '+error.message);
+            addCircleMessage(circleID, 'Error: '+error.message);
             console.error(error.message); 
           });
 
           return () => { //Clean Up
-            socket.emit('leave', userId);
+            socket.emit('leave', userID);
             socket.disconnect();
          }
 
@@ -100,8 +100,8 @@ const CircleChat = () => {
         e.preventDefault();
 
         chatSocket?.emit("circle-message", {
-            senderId: userId,
-            recipientId: circleId,
+            senderID: userID,
+            recipientID: circleID,
             message: message
         });     
         setMessage('');
@@ -121,9 +121,9 @@ const CircleChat = () => {
 
                     <section id='contact-select'>
                         <label >Select Contact:</label>
-                        <select name="contact" id="contact-select" placeholder='Select Online Contact' defaultValue={(circleId)} >
+                        <select name="contact" id="contact-select" placeholder='Select Online Contact' defaultValue={(circleID)} >
                             {(circleList).map((contact, i) => 
-                                <option key={i} className="entry" onClick={()=>(setCircleId(contact.id))} value={contact.id}>{contact.name}</option>
+                                <option key={i} className="entry" onClick={()=>(setCircleID(contact.ID))} value={contact.ID}>{contact.name}</option>
                             )}
                         </select>
                         
@@ -135,7 +135,7 @@ const CircleChat = () => {
             
                 <div id="chat-log">
                     <label >Chat History:</label>
-                    {(circleMapLog.get(circleId) || []).map((item, i) => 
+                    {(circleMapLog.get(circleID) || []).map((item, i) => 
                         <p key={i} className="entry">{item}</p>
                     )}
                 </div>

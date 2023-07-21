@@ -68,11 +68,19 @@ div {
 }
 
 button {
+  margin: 1.0rem auto;
   padding: 0.3rem 1.0rem;
   font-family: 'EB Garamond';
   font-weight: 600;
   font-size: 1.3rem;
   cursor: pointer;
+
+  background-color: $red;
+  color: white;
+
+  &:hover {
+    background-color: $blue;
+  }
 }
 
 NavLink, Link {

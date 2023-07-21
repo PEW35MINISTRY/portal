@@ -1,12 +1,12 @@
 import axios from 'axios';
-import React, {useState, useEffect, forwardRef, useRef, FormEventHandler, ReactElement} from 'react';
+import React, {useState, useEffect, forwardRef, useRef, FormEventHandler, ReactElement, MouseEventHandler} from 'react';
 import { notify } from '../hooks';
 import './form.scss'; 
 import { InputField, InputType, RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from './Fields-Sync/profile-field-config';
 import { ToastStyle } from '../app-types';
-import { testAccountAvailable } from './profile-utilities';
+import { getInputHighestRole, testAccountAvailable } from './profile-utilities';
 
-const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:InputField[], getInputField:(field:string) => string|undefined, setInputField:(field:string, value:string) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
+const FormProfile = ({...props}:{key:any, validateUniqueFields?:boolean, PROFILE_FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
     const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
     /***************************
@@ -32,7 +32,7 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
         /* Call Server if valid */
         const field:InputField|undefined = props.PROFILE_FIELDS.find(f => f["field"] === event.target.name);
         if(field !== undefined && field.unique && new RegExp(field.validationRegex).test(currentValue)) {
-            const available:boolean|undefined = await testAccountAvailable(new Map([[field.field, currentValue]])); //Bad request is 400=>undefined; inconclusive result
+            const available:boolean|undefined = await testAccountAvailable(new Map([[field.field, currentValue], ['userID', props.getInputField("userID") || '-1']])); //Bad request is 400=>undefined; inconclusive result
             if(available !== undefined)
                 setUniqueFieldAvailableCache(map => new Map(map.set(currentValue, available)));
             if(available === false)
@@ -43,7 +43,7 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
     /***************************
      *    VALIDATION HANDLING 
      * *************************/
-    const validateInput = (field:InputField, value?:string, validateRequired?:boolean):boolean => {
+    const validateInput = (field:InputField, value?:any, validateRequired?:boolean):boolean => {
         const currentValue:string|undefined = value || props.getInputField(field.field);
 
         /* Required Fields */
@@ -63,15 +63,17 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
             return false;
 
         /* SELECT_LIST */
-        } else if(field.type === InputType.SELECT_LIST && !field.selectOptionList.includes(currentValue)) {
-            console.error(`Resetting invalid list Input: >${currentValue}< for ${field.field}`, field.selectOptionList);
-            props.setInputField(field.field, field.selectOptionList[0]);
+        } else if(field.type === InputType.SELECT_LIST && !field.selectOptionList.includes(`${currentValue}`)) {
             return false;
 
         /* DATES | dateOfBirth */
         } else if(field.type === InputType.DATE && field.field === 'dateOfBirth') {
-            const currentRole:RoleEnum = props.getInputField('userRole') as RoleEnum;
             const currentDate:Date = new Date(currentValue);
+
+            if(isNaN(currentDate.valueOf()))
+                return false;
+
+            const currentRole:RoleEnum = getInputHighestRole(props.getInputField);
 
             if(currentDate < getDOBMinDate(currentRole)) {
                 notify(`Must be younger than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRole', currentRole)} account`);
@@ -99,7 +101,7 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
 
         setSubmitAttempted(true); //enforces undefined and required validations
 
-        const uniqueFields = new Map([['userId', props.getInputField("userId") || '-1']]);
+        const uniqueFields = new Map([['userID', props.getInputField("userID") || '-1']]);
         props.PROFILE_FIELDS.forEach(f => {
             //Add all fields to list (force validations)
             if(props.getInputField(f.field) === undefined && f.required) {
@@ -178,7 +180,7 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
      *   RENDER DISPLAY 
      * *******************/
     return (
-        <form id={props.onSubmitText} >
+        <form key={props.key} id={props.onSubmitText} >
             {props.headerChildren}
 
             {
@@ -203,12 +205,18 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
                                 ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''}/>
 
                             : (f.type === InputType.SELECT_LIST) 
-                                ? <select name={f.field} onChange={onInput} value={props.getInputField(f.field) || 'defaultValue'}>
+                                ? <select name={f.field} onChange={onInput} value={`${props.getInputField(f.field)}` || 'defaultValue'}>
                                     <option value={'defaultValue'} disabled hidden>Select:</option>
                                     {f.selectOptionList?.map((item, i)=>
-                                        <option key={`${f.field}-${item}`} value={item}>{f.displayOptionList[i]}</option>
+                                        <option key={`${f.field}-${item}`} value={`${item}`}>{f.displayOptionList[i]}</option>
                                     )}
                                 </select>
+                            : (f.field === 'userRoleTokenList') 
+                                ? <FormEditRole
+                                        field={f}
+                                        getInputField={props.getInputField}
+                                        setInputField={props.setInputField}
+                                    />                              
 
                             : <p className='validation' ></p>
                         }
@@ -219,7 +227,8 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
                 )
             }
             
-            <button type='submit' onClick={onSubmit}>{props.onSubmitText}</button>
+            <button id='submit-button' type='submit' onClick={onSubmit}>{props.onSubmitText}</button>
+            { props.onAlternativeText && <button id='alternative-button'  type='button' onClick={props.onAlternativeCallback}>{props.onAlternativeText}</button> }
 
             {props.footerChildren}
         </form>
@@ -227,3 +236,58 @@ const FormProfile = ({...props}:{validateUniqueFields?:boolean, PROFILE_FIELDS:I
 }
 
 export default FormProfile;
+
+const FormEditRole = (props:{ field:InputField, getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void }) => {
+    const [roleSelected, setRoleSelected] = useState<string>('defaultValue');
+    const [tokenInput, setTokenInput] = useState<string>('');
+    const [showValidation, setShowValidation] = useState<boolean>(false);
+
+    const onAdd = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        if(event)
+            event.preventDefault();
+        //Token required for all user roles; except STUDENT
+        if(roleSelected !== 'defaultValue' && tokenInput.length > 0 || roleSelected === 'STUDENT') {
+            props.setInputField('userRoleTokenList', new Map(props.getInputField(props.field.field)).set(roleSelected, tokenInput));
+            setRoleSelected('defaultValue');
+            setTokenInput('');
+            setShowValidation(false);
+        } else
+            setShowValidation(true);
+    }
+
+    const onRemove = (item:string) => {
+        props.setInputField('userRoleTokenList', 
+            new Map(Array.from((props.getInputField(props.field.field) as Map<string, string>).entries())
+            .filter(([role, token]) => (role !== item))));
+    }
+
+    const getDisplayOption = (item:string):string => {
+        const index = props.field.selectOptionList.findIndex((option) => option === item);
+        if(index >= 0) return props.field.displayOptionList[index];
+        else return item;
+    }
+
+    return (
+        <div id='edit-role-section'>
+            { Array.from((props.getInputField(props.field.field) as Map<string, string>)?.keys() || []).map((item, i)=>
+                    <span key={item} id='role-listing'>
+                        <h5>{getDisplayOption(item)}</h5>
+                        <button  type='button' onClick={()=>onRemove(item)} >X</button>
+                    </span>
+            )}
+            <select id='role-select' name={props.field.field} onChange={(e)=>setRoleSelected(e.target.value)} value={roleSelected}>
+                <option value={'defaultValue'} disabled hidden>Select New Role:</option>
+                { Array.from(props.field.selectOptionList)?.map((item, i)=>
+                    <option key={`role-selection-${item}`} value={item}>{props.field.displayOptionList[i]}</option>
+                )}
+            </select>
+            {(roleSelected !== 'defaultValue') && 
+                <section id='token-entry'>
+                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'STUDENT') ? 'hidden' : 'visible'}}/>
+                    <button type='button' onClick={onAdd} >ADD</button>
+                </section>
+            }
+            {showValidation && <p className='validation' >{props.field.validationMessage}</p>}
+        </div>
+    );
+}
