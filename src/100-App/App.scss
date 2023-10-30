@@ -3,109 +3,341 @@
 #app {
     width: 100vw;
     height: 100vh;
-    display: grid;
+    display: flex;
     grid-auto-flow: column;
-    background-color: $gray-light;
+    justify-items: start;
+    align-items: start;
+    background-color: $background;
     color: black;
 
 
 
     #app-navigation {
+        display: flex;
+        flex-direction: column;
         background-color: $gray-dark;
         color: whitesmoke;
-        width: 20vw;
-        height: 100vh;
+        width: min-content;
         border-radius: 0;
-        padding: 0.1rem 0;
+        margin: 0;
+        padding: 0.5rem 0;
+        height: calc(100vh - 1.0rem);
 
-
-        #logo-box {
-            z-index: 10;
-            display: grid;
-            grid-auto-flow: column;
-
-            img {
-                height: 2.5rem;
-                margin: auto 0.5rem auto 0;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-                color: $blue;
-                white-space: auto;
-            }
-        }
-
-        #page-menu {
+        #app-menu {
             display: flex;
             flex-direction: column;
-            // padding-left: 1.5rem;
-            margin-top: 1.0rem;
+            overflow-y: auto;
+        }
 
-            button {
-                background-color: transparent;
-                width: 100%;
+        $leading-column-width: 60px;
+        $trailing-column-width: 2.0rem;
+
+        .page {
+            display: grid;
+            grid-template-columns: $leading-column-width auto $trailing-column-width;
+
+            text-decoration: none;
+            margin: 0;
+            padding: 0.3rem;
+            border-radius: 0;
+
+            img {
+                grid-column: 1;
+                align-self: center;
+                justify-self: center;
                 margin: 0;
+                height: calc($leading-column-width * 0.85);
+                max-width: $leading-column-width;
+
+                font-size: 2.5rem;
             }
 
-            .page {
-                color:whitesmoke;
+            label, p {
+                grid-column: 2;
                 font-family: 'EB Garamond';
                 font-weight: 500;
                 font-size: 1.5rem;
                 text-decoration: none;
-                text-align: left;
-                padding: 0.25rem 0.5rem 0.25rem 1.5rem;
+                white-space: nowrap;
+                color:whitesmoke;
+                margin: 0;
+                margin-left: 0.5rem;
             }
 
-            .active {
-                background-color: $red;
-            }
-        }
-        
-    }
-
-    #app-content {
-        margin: 0;
-        height: 100vh;
-        width: 80vw;
-
-        #app-header {
-            display: flex;
-            background-color: $red;
-            height: 10vh;
-            width: 100%;
-            border-radius: 0;
-            margin: 0;
-
-            h2 {
-                margin: auto;
-                width: fit-content;
-                height: 100%;
-                color: white;
-            }
-
-            #profile-box {
+            .add-button-wrapper {
+                grid-column: 3;
+                display: inline-block;
                 text-decoration: none;
-                margin: auto 1.0rem;
+                justify-self: center;
+                margin: auto 1.0rem auto 0 ;
 
-                label {
-                    align-self: flex-end;
-                    font-size: 1.0rem;
-                    color: $gray-dark;
-                    margin: auto;
+                .add-button {
+                    display: inline-block;
+                    min-width: $trailing-column-width;
+
+                    p {
+                        margin: auto;
+                        padding: 0.15rem;
+                        text-align: center;
+                        color: $blue;
+                    }
+
+                    
+                }
+            }
+
+            .active-icon {
+                display: none;
+            }
+
+            .inactive-icon {
+                display: block;
+            }
+
+            &.active, &:hover {
+                background-color: $red;
+                cursor: grab;
+    
+                h1, h2, h3, h4, h5, h6, label, p {
+                    color: white;
+                    cursor: grab;
+                }
+
+                .add-button-wrapper {
+                    .add-button {
+                        p {
+                            color: white;
+                        }
+
+                        &:hover {
+                            background-color: white;
+                            border-radius: 50%;
+    
+                            p {
+                                color: $red;
+                                cursor: pointer;
+                            }
+                        }
+                    }
+                }
+
+                .active-icon {
+                    display: block;
+                }
+
+                .inactive-icon {
+                    display: none;
                 }
             }
         }
 
-        #app-body {
-            height: 85vh;
-            overflow-x: hidden;
-            overflow-y: auto;
-            margin: 1.0rem;
-            padding-bottom: 3.0rem;
+        .hide {
+            display: none;
 
+            &:not(.active-icon):hover {
+                display: block;
+            }
+
+            &:not(.inactive-icon):hover {
+                display: block;
+            }
+
+        }
+
+        #logo-box {
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid $t-white;
+
+            img {
+                height: $leading-column-width;
+            }
+
+            h1 {
+                grid-column: 2 / span 3;
+                padding-right: 1.0rem;
+                justify-self: start;
+                align-self: center;
+                text-decoration: none;
+                font-size: 1.75rem;
+                white-space: nowrap;
+                margin: 0;
+                margin-left: 0.5rem;
+            }
+        }
+
+        #profile-box {
+            justify-self: flex-end;
+            margin-top: auto;
+            padding-top: 0.5rem;
+            border-top: 2px solid $t-white;
+
+            img {
+                margin: auto;
+                border-radius: 50%;
+            }
+
+            #profile-box-vertical {
+                grid-column: 2 / span 3;
+                justify-self: start;
+                padding-right: 1.0rem;
+                margin-left: 0.5rem;
+
+                display: flex;
+                flex-direction: column;
+                justify-content: start;
+
+                h2 {
+                    margin: 0;
+                    color: $blue;
+                    font-size: 1.15rem;
+                }
+
+                h5 {
+                    margin: 0;
+                    font-size: 0.6rem;
+                }
+            }
+
+            &:hover {
+    
+                #profile-box-vertical {
+                    
+                    h2, h5 {
+                        color: white;
+                    }
+                }
+            }
+        }
+
+        //Detect outside click
+        #absolute-wrapper {
+            display: block;
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: transparent;
+        }
+
+        $close-button-size: 1.75rem;
+
+        #menu-close-button {
+            display: flex;
+            position: relative;
+            align-items: center;
+            justify-items: center;
+            height: $close-button-size;
+            width: $close-button-size;
+            left: calc(-0.25 * $close-button-size);
+            margin: calc(-0.5 * $close-button-size) calc(-0.75 * $close-button-size) 0 auto;
+            padding: 0;
+
+            border: 2px solid $t-white;
+            border-radius: 50%;
+            background-color: $gray-dark;
+
+            p {
+                display: inline-block;
+                position: relative;               
+                margin: 0;
+                padding: 0;
+
+                font-size: calc($close-button-size * 0.75);
+                font-weight: 900;
+                color: white;
+
+                &.less-than {
+                    top: calc(-0.1 * $close-button-size);
+                    left: calc(0.2 * $close-button-size);
+                }
+
+                &.greater-than {
+                    top: calc(-0.1 * $close-button-size);
+                    left: calc(0.3 * $close-button-size);
+                }
+            }
+
+            &.hide {
+                display: flex;
+                visibility: hidden;
+            }
+
+            &:hover {
+                background-color: $blue;
+
+                p {
+                    color: white;
+                }
+            }
+        }
+
+        &.collapse {
+
+            .page, #profile-box {
+                grid-template-columns: $leading-column-width 0 0;
+
+                #profile-box-vertical {
+                    padding-right: 0;
+                }
+            }
+        }
+
+        #profile-menu {
+            position: fixed;
+            bottom: 3.5rem;
+            z-index: 5;
+            width: max-content;
+            background-color: $t-black-dark;
+
+            .page {
+                grid-template-columns: $leading-column-width auto;
+
+                &:nth-child(n) {
+                        border-bottom: 1px solid $t-white;         
+                }
             
+                &:last-child {
+                        border-bottom: none;   
+                }
+            }            
+        }
+        
+        &:hover {
+            #menu-close-button {
+
+                &.hide {
+                    display: flex;
+                    visibility: visible;
+                }
+            }
+        }
+    }
+
+    #app-content {
+        margin: 0;
+        height: $page-height;
+        width: 100%;
+
+        #page-not-found {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            background-color: $gray-dark;
+
+            div {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+
+                h1 {
+                    color: $blue;
+                }
+            }
         }
     }
 }
