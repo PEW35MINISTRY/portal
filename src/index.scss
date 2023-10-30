@@ -1,18 +1,22 @@
-$background: whitesmoke;
+$background: white;
 $red: #B12020;
 $blue: #62D0F5;
 $blue-dark: #003f89;
 $gray-dark: #303030;
 $gray-light: #DCDCDC;
-$t-black: rgba(0, 0, 0, 0.6);
+$t-black: rgba(0, 0, 0, 0.7);
+$t-black-dark: rgba(0, 0, 0, 0.9);
 $t-white: rgba(255, 255, 255, 0.2);
 $radius: 4px;
 
+$page-height: 100vh;
+
 html {
   font-size: 22px;
-  color: white;
+  color: black;
   font-family: 'Roboto';
   font-weight: 300;
+  letter-spacing: 0.04rem;
   background-color: $background;
 
   scroll-behavior: smooth;
@@ -87,27 +91,32 @@ NavLink, Link {
   text-decoration: none;
 }
 
-h1 {
+h1,
+.header {
   font-family: 'Playfair Display';
   font-weight: 700;
-  font-size: 4.0rem;
+  font-size: 2.0rem;
+  color: $red;
 }
 
-h2 {
+h2,
+.sub-header {
   font-family: 'Playfair Display';
-  font-weight: 500;
-  font-size: 2.0rem;
+  font-weight: 600;
+  font-size: 1.50rem;
+  color: $red;
 }
 
 h3,
-label {
+h4,
+label,
+.title {
   font-family: 'EB Garamond';
   font-weight: 500;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   color: $blue;
 }
 
-h4,
 h5,
 h6 {
   font-family: 'Roboto';
@@ -119,9 +128,26 @@ input, select, textarea {
   text-align: left;
   margin: 0.25rem 0;
   padding: 0.15rem 0.7rem;
-  border: none;
+  border: 1px solid $blue;
+  border-radius: 4px;
+  font-family: 'Roboto';
+  font-weight: 300;
   font-size: 0.9rem;
   background-color: white;
+
+
+
+}
+
+input,textarea {
+    border: none;
+    border-bottom: 1px solid $blue;
+    border-radius: 0;
+
+    &:hover, &:active {
+        border: 1px solid $blue;
+        border-radius: 4px;
+    }
 }
 
 textarea {
@@ -132,9 +158,22 @@ textarea {
   color: $red;
   font-family: 'Roboto';
   font-weight: 300;
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   font-style: oblique;
   margin: 0 0 1.0rem auto;
+}
+
+.alternative-button {
+  background-color: transparent;
+  color: $blue;
+  font-size: 0.9em;
+  min-width: 15rem;
+
+  &:hover {
+      color: white;
+      background-color: $blue;
+      border: 1px solid $blue;
+  }
 }
 
 //Animations

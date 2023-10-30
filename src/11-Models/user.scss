@@ -1,0 +1,62 @@
+@import '../index.scss';
+
+#login-page, #sign-up-page {
+    background-color: $gray-dark;
+    border-radius: 0;
+
+    #popup-wrapper {
+        z-index: 10;
+    }
+
+    #shape-rectangle {
+        background-color: $red;
+        border-radius: 0;
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60vh;
+    }
+
+    #shape-curve {
+        @extend #shape-rectangle;
+        position: absolute;
+        background-color: transparent;
+        overflow: hidden;
+        z-index: 1;
+        margin-top: 59vh;
+        height: 35vh;
+
+        svg {
+            height: 100%;
+            width: 100%;
+            
+
+            path {
+                stroke: white;
+                stroke-width: 1px;
+                fill: $red;
+            }
+        }
+    }
+}
+
+
+#logo-box {
+    display: grid;
+    grid-auto-flow: column;
+    margin-bottom: 1.0rem;
+
+    img {
+        height: 2.5rem;
+        margin: auto 0.5rem auto 0;
+    }
+
+    h1 {
+        font-size: 2rem;
+        color: $blue;
+        white-space: auto;
+    }
+}
+

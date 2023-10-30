@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.scss';
-import App from './App';
 import reportWebVitals from './reportWebVitals';
-import store, { loadCacheLogin } from './redux-store';
-import type { AppDispatch } from './redux-store';
+import App from './100-App/App';
+import type { AppDispatch } from './100-App/redux-store';
+import store, { loadCacheLogin } from './100-App/redux-store';
 
+import './index.scss';
 
 //Attempt auto login from local storage
 store.dispatch((loadCacheLogin) as AppDispatch);

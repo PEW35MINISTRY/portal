@@ -1,0 +1,313 @@
+@import '../../index.scss';
+
+
+.center-absolute-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: $t-black;
+}
+
+.center-absolute-inside {
+    padding: 2.0rem;
+    border-radius: calc(2 * $radius);
+    box-shadow: calc(3 * $radius) calc(4 * $radius) $t-black;
+    min-width: 40vw;
+    max-width: min(700px, 80vw);
+    overflow-x: hidden;
+
+    form {
+        @extend form;
+        margin: 0 auto;
+    }
+}
+
+.form-page, .form-page-block {
+    display: flex;
+    flex-direction: row;
+    justify-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: $page-height;
+    background-color: white;
+
+
+    h1, h2 {
+        text-align: left;
+    }
+
+    hr {
+        width: 100%;
+        max-width: 700px;
+        border: none;
+        border-bottom: 1px solid $red;
+    }
+
+    .form-header-vertical {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-header-horizontal {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        max-width: fit-content;
+        margin: auto;
+    }
+
+    .form-header-button {
+        width: 250px;
+        white-space: nowrap;
+        letter-spacing: 0.04em;
+        border: none;
+        border-bottom: 1px solid $blue;
+        margin: 0 auto;
+    }
+
+
+    form {
+        text-align: center;
+        // overflow-x: hidden;
+        // width: 100%;
+        max-width: 800px;
+        overflow-y: auto;
+        margin: 1.0rem;
+        padding: 1.0rem;
+        justify-items:baseline;
+
+        display: flex;
+        flex-direction: column;
+
+        @media only screen and (max-width: 768px) {
+            grid-template-columns: 100%;
+        }
+
+        
+
+        .inputWrapper {
+            grid-column: 2;
+            max-width: 700px;
+
+            display: grid;
+            grid-template-columns: 35% calc(100% - 35% - 1.0rem);
+            grid-column-gap: 1.0rem;
+
+            label {
+                text-align: right;
+                grid-column: 1;
+                color: black;
+    
+                @media only screen and (max-width: 768px) {
+                    text-align: left;
+                }
+            }
+    
+       
+            .validation {
+                grid-column: 2;
+    
+                @media only screen and (max-width: 768px) {
+                    grid-column: 1;
+                }
+            }   
+
+            #edit-role-section {
+                grid-column: 2;
+                display: flex;
+                flex-direction: column;
+
+                @media only screen and (max-width: 768px) {
+                    grid-column: 1;
+                }
+
+                #role-listing {
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+
+                    h5 {
+                        margin-left: 1.0rem;
+                        font-weight: 500;
+                    }
+                    
+                    button {
+                        margin: 0;
+                        color: $red;
+                        background-color: transparent;
+                        font-size: 1.0rem;
+                        font-weight: 800;
+                    }
+                }
+
+                #role-select {
+
+                    option {
+                        width: 100%;
+                    }
+                }
+
+                #token-entry {
+                    display: flex;
+                    flex-direction: row;
+
+                    @media only screen and (max-width: 768px) {
+                        flex-direction: column;
+                    }
+
+                    input {
+                        grid-column: 1;
+                        width: 100%;
+                    }
+
+                    button {
+                        grid-column: 2;
+                        margin: auto;
+                        margin-left: 1.0rem;
+                        font-size: 1.0rem;
+                        padding: 0.2rem 1.0rem;
+
+                        @media only screen and (max-width: 768px) {
+                            margin: auto;
+                        }
+                    }
+                }
+            }
+        }
+    }    
+}
+
+.circle-image, .profile-image {
+    object-fit: contain;
+    max-height: 25vh;
+    margin: 0 auto 1.0rem auto;
+    box-shadow: calc(2 * $radius) calc(2 * $radius) calc(2 * $radius) calc(2 * $radius) rgba(0, 0, 0, 0.3);
+
+}
+
+.circle-image {
+    border-radius: calc(2 * $radius);
+}
+
+.profile-image {
+    border-radius: 50%;
+    margin: auto;
+}
+
+.submit-button {
+    grid-column: 1 /span 2;
+    width: 15rem;
+}
+
+.alternative-button {
+    grid-column: 1 /span 2;
+    border-top: 1px solid $blue;
+    border-radius: 0;
+}
+
+.form-header-detail-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: start;
+    flex-direction: row;
+    align-items: center;
+    
+    span {
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: row;
+        justify-content: start;
+        align-items: center;
+        overflow-x: hidden;
+    }
+
+    .right-align {
+        margin-left: auto;
+    }
+
+    .name {
+        margin: 0 0 0.5rem 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .leader-profile-image {
+        height: 1.5rem;
+        border-radius: 50%;
+        margin: 0 0.5rem;
+    }
+
+    .id-left, .id-right {
+        color: darkgray;
+        font-size: 1.0em;
+        font-weight: 400;
+    };
+}
+
+// Dividers
+.id-left, .id-right {
+    color: darkgray;
+    font-size: 0.9em;
+    font-weight: 400;
+    border-radius: 0;
+    white-space: nowrap;
+}
+
+.id-left {
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid darkgray;
+}
+
+.id-right {
+    margin-right: 0.5rem;
+    padding-right: 0.5rem;
+    border-right: 1px solid darkgray;
+}
+  
+
+.form-page-block {
+    display: block;
+    width: fit-content;
+    height: fit-content;
+    max-height: 70vh;    
+    overflow: scroll;
+}
+
+.form-page-stretch {
+    form {
+        width: 100%;
+        margin-right: 5%;
+    }
+}
+
+.form-page-popup {
+    form {
+        @extend form;
+        width: max-content;
+        margin-right: 5%;
+    }
+}
+
+
+#confirm-delete {
+
+    .center-absolute-inside {
+        display: flex;
+        flex-direction: column;
+        justify-content: start;    
+
+        .form-header-image {
+            max-width: min(50vw, 700px);
+            max-height: 30vh;
+            margin: 1.0rem auto;
+        }        
+    }
+}
