@@ -9,6 +9,7 @@ import './App.scss';
 
 //Components
 import Dashboard from '../10-Dashboard/Dashboard';
+import CircleEditPage from '../11-Models/CircleEditPage';
 import UserEditPage from '../11-Models/UserEditPage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
@@ -59,6 +60,7 @@ const AppContent = () => {
 
     const MENU_CONFIG_LIST:MenuPageListing[] = [
       {label: 'Profile', route: `/portal/edit/profile/${userID}`, activeIcon: PROFILE_ICON_ACTIVE, inactiveIcon: PROFILE_ICON},
+      {label: 'Circle', route: '/portal/edit/circle/-1', activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON},
       {label: 'Circle Chat', route: '/portal/chat/circle', activeIcon: CIRCLE_CHAT_ICON_ACTIVE, inactiveIcon: CIRCLE_CHAT_ICON},
       {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
@@ -139,6 +141,7 @@ const AppContent = () => {
                   <Route path='/portal' element={ <Navigate to='/portal/dashboard' /> }/>
                   <Route path='/portal/dashboard/*' element={<Dashboard/>}/>
                   <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>
+                  <Route path='/portal/edit/circle/:id/*' element={<CircleEditPage/>}/>
                   <Route path='/portal/chat/direct/*' element={<DirectChat/>}/>
                   <Route path='/portal/chat/circle/*' element={<CircleChat/>}/>
                   <Route path='/portal/logs/*' element={<Log/>}/>
