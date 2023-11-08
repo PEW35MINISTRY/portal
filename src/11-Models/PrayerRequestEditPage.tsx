@@ -13,6 +13,8 @@ import { circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Util
 import { ToastStyle } from '../100-App/app-types';
 import { addPrayerRequest, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
+import SearchList from '../2-Widgets/SearchList/SearchList';
+import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -334,6 +336,68 @@ const PrayerRequestEditPage = () => {
                         </div>
                         {(editingPrayerRequestID > 0) && <h2 className='sub-header'>Edit Details</h2>}
                     </div>}
+            />
+
+            <SearchList
+                key={'PrayerRequestEdit-'+editingPrayerRequestID+defaultDisplayTitleList[0]}
+                defaultDisplayTitleKeySearch={userProfileAccessList.length <= 0 ? undefined : defaultDisplayTitleList.includes('Profiles') ? 'Profiles' : 'Circles'}
+                defaultDisplayTitleList={defaultDisplayTitleList}
+                displayMap={new Map([
+                        [
+                            new SearchListKey({displayTitle:'Prayer Requests'}),
+                            [...ownedPrayerRequestList].map((prayerRequest) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayerRequest, 
+                                onClick: (id:number)=>setEditingPrayerRequestID(id),
+                                primaryButtonText: 'Prayed', onPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify('Prayed', ToastStyle.SUCCESS, () => setOwnedPrayerRequestList(current => [...current].map(prayerRequest => 
+                                            (prayerRequest.prayerRequestID === id) ? ({...prayerRequest, prayerCount: prayerRequest.prayerCount + 1}) : prayerRequest))))
+                                        .catch((error) => processAJAXError(error)),  
+                                alternativeButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify('Prayer Request Deleted', ToastStyle.SUCCESS, () => {
+                                            setOwnedPrayerRequestList(current => current.filter(prayerRequest => prayerRequest.prayerRequestID !== id));
+                                            if(searchUserID === userID) dispatch(removePrayerRequest(id))}))
+                                        .catch((error) => processAJAXError(error)),
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Comments'}),
+                            [...commentList].map((comment) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST_COMMENT, displayItem: comment, 
+                                primaryButtonText: 'Like', onPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment/${id}/like`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify('Comment Liked', ToastStyle.SUCCESS, () => setCommentList(current => [...current].map(comment => 
+                                            (comment.commentID === id) ? ({...comment, likeCount: comment.likeCount + 1}) : comment))))
+                                        .catch((error) => processAJAXError(error)),  
+                                alternativeButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment/${id}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify('Comment Deleted', ToastStyle.SUCCESS, () => {
+                                            setCommentList(current => current.filter(comment => comment.commentID !== id));
+                                        }))
+                                        .catch((error) => processAJAXError(error)),                   
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0) ? SearchListSearchTypesEnum.USER : undefined,
+                                onSearchClick: (id:number, item:DisplayItemType)=> {
+                                    setSearchUserID(id);
+                                    setRequestorProfile(item as ProfileListItem);
+                                },
+                                searchPrimaryButtonText: (editingPrayerRequestID <= 0) ? undefined : 'Share', onSearchPrimaryButtonCallback: (id:number) => shareUser(id)}),
+                            userFilterUnique([...userRecipientList, ...userContactList, ...userProfileAccessList]).map((user) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: user, 
+                                onClick: (id:number)=>(userProfileAccessList.map(user => user.userID).includes(id) || userRole === RoleEnum.ADMIN) ? setSearchUserID(id) : undefined,
+                                primaryButtonText: (isUserRecipientPending(user.userID)) ? undefined : isUserRecipient(user.userID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isUserRecipient(id) ? removeUser(id) : shareUser(id),                         
+                                alternativeButtonText: isUserRecipientPending(user.userID) ? 'Pending' : undefined,                         
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE, searchCircleStatus: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
+                                searchPrimaryButtonText: 'Share', onSearchPrimaryButtonCallback: (id:number) => shareCircle(id)}),
+                            (circleFilterUnique([...circleRecipientList, ...userCircleList])).map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
+                                primaryButtonText: (isCircleRecipientPending(circle.circleID)) ? undefined : isCircleRecipient(circle.circleID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isCircleRecipient(id) ? removeCircle(id) : shareCircle(id),                         
+                                alternativeButtonText: isCircleRecipientPending(circle.circleID) ? 'Pending' : undefined,   
+                            }))
+                        ],  
+                    ])}
             />
 
             {(showNewComment && editingPrayerRequestID > 0) &&

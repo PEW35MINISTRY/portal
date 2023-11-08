@@ -10,6 +10,8 @@ import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-U
 import { ToastStyle } from '../100-App/app-types';
 import { removeCircle, removePrayerRequest, resetAccount, updateProfile } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
+import SearchList from '../2-Widgets/SearchList/SearchList';
+import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -175,6 +177,63 @@ const UserEditPage = () => {
                         <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
                         <h2>{`Edit Profile`}</h2>
                     </div>}
+            />
+
+            <SearchList
+                key={'UserEdit-'+editingUserID}
+                defaultDisplayTitleKeySearch='Profiles'
+                defaultDisplayTitleList={['Partners', 'Circles', 'Prayer Request']}
+                displayMap={new Map([
+                        [
+                            new SearchListKey({displayTitle:'Profiles', searchType:SearchListSearchTypesEnum.USER}),
+                            [...userAccessProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number)=>setEditingUserID(id),
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Partners', searchType:SearchListSearchTypesEnum.USER,
+                                searchPrimaryButtonText: 'Join Partnership', onSearchPrimaryButtonCallback: (id:number) => console.log('To Implement: Setup Partnership', editingUserID, id),
+                                }),
+
+                            [...partnerProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number)=>setEditingUserID(id),
+                                primaryButtonText: 'Leave Partnership', onPrimaryButtonCallback: (id:number) => console.log('To Implement: Leave Partnership', editingUserID, id),   //TODO Update requestList state partnerList state and redux                         
+                            }))
+                        ], 
+                        [ //Assumed Circle appearing in search, editingUserID is not a member
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE,
+                                onSearchClick: (id:number)=>navigate(`/portal/edit/circle/${id}`),
+                                searchPrimaryButtonText: (userRole === RoleEnum.ADMIN) ? `Join Circle` : 'Request to Join', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}${
+                                            (userRole === RoleEnum.ADMIN) ? `/api/admin/circle/${id}/join/${editingUserID}`
+                                            : (userRole === RoleEnum.CIRCLE_LEADER) ? `/api/leader/circle/${id}/client/${editingUserID}/invite`
+                                            : `/api/circle/${id}/request`}`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify((userRole === RoleEnum.ADMIN) ? `Joined Circle` : (userRole === RoleEnum.CIRCLE_LEADER) ? 'Circle Invite Sent' : 'Circle Request Sent', 
+                                            ToastStyle.SUCCESS))
+                                        .catch((error) => processAJAXError(error))}),
+
+                            [...memberCircleList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: profile, 
+                                onClick: (id:number)=>navigate(`/portal/edit/circle/${id}`),
+                                primaryButtonText: 'Leave Circle', onPrimaryButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                    : `/api/leader/circle/${id}/client/${editingUserID}/leave`}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Left Circle`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(removeCircle(id))))
+                                        .catch((error) => processAJAXError(error))
+                                    }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Prayer Request'}),
+
+                            [...prayerRequestList].map((prayer) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayer, 
+                                onClick: (id:number)=>navigate(`/portal/edit/prayer-request/${id}`),
+                                alternativeButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Deleted Prayer Request`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(removePrayerRequest(id))))
+                                        .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                    ])}
             />
 
             {(showDeleteConfirmation) &&

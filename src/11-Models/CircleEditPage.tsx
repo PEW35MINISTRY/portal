@@ -11,6 +11,8 @@ import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-U
 import { ToastStyle } from '../100-App/app-types';
 import { addCircle, removeCircle, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
+import SearchList from '../2-Widgets/SearchList/SearchList';
+import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -252,6 +254,122 @@ const CircleEditPage = () => {
                     </div>
                     <h2 className='sub-header'>{getDisplayNew() ? 'Create Details' : `Edit Details`}</h2>
                 </div>}
+            />
+
+            <SearchList
+                key={'CircleEdit-'+editingCircleID}
+                defaultDisplayTitleKeySearch='Circles'
+                defaultDisplayTitleList={['Pending Requests', 'Announcements', 'Events']}
+                displayMap={new Map([
+                        [ 
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE,
+                                }),
+
+                            [...userLeaderCircleList].map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
+                                onClick: (id:number)=>setEditingCircleID(id),
+                                }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Pending Requests', searchType:SearchListSearchTypesEnum.USER,
+                                searchPrimaryButtonText: 'Invite', 
+                                onSearchPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Invite Sent`, ToastStyle.SUCCESS)) //TODO Update inviteList state
+                                        .catch((error) => processAJAXError(error)),
+                            }),
+
+                            [...requestProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                primaryButtonText: 'Accept Request', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}${
+                                            (userRole === RoleEnum.ADMIN) ? `/api/admin/circle/${editingCircleID}/join/${id}`
+                                            : (userRole === RoleEnum.CIRCLE_LEADER) ? `/api/leader/circle/${editingCircleID}/client/${id}/accept`
+                                            : `/api/circle/${editingCircleID}/request`}`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify((userRole === RoleEnum.ADMIN) ? `Joined Circle` : (userRole === RoleEnum.CIRCLE_LEADER) ? 'Circle Request Accepted' : 'Circle Request Sent', ToastStyle.SUCCESS, () => {
+                                                const profile:ProfileListItem|undefined = requestProfileList.find(user => user.userID === id);
+                                                setRequestProfileList(current => current.filter(user => user.userID !== id));
+                                                if(profile !== undefined) setMemberProfileList(current => [profile, ...current]);                                            
+                                            }))
+                                        .catch((error) => processAJAXError(error)),
+
+                                alternativeButtonText: 'Decline', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                            : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Request Revoked`, ToastStyle.SUCCESS,  ()=> setRequestProfileList(current => current.filter(user => user.userID !== id))))
+                                        .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Announcements'}),
+
+                            [...announcementList].map((announcement) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE_ANNOUNCEMENT, displayItem: announcement, 
+                                primaryButtonText: 'Delete', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement/${id}`, 
+                                        { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Announcement Deleted`, ToastStyle.SUCCESS))
+                                        .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Events'}),
+
+                            [...eventList].map((event) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE_EVENT, displayItem: event, 
+                                }))
+                        ],
+                        [
+                            new SearchListKey({displayTitle:'Pending Invites', searchType:SearchListSearchTypesEnum.USER,
+                                searchPrimaryButtonText: 'Invite', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Invite Sent`, ToastStyle.SUCCESS, () =>setInviteProfileList(current => [item as ProfileListItem, ...current])))
+                                        .catch((error) => processAJAXError(error)),
+                            }),
+
+                            [...inviteProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                alternativeButtonText: 'Decline Invite', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                            : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Invite Revoked`, ToastStyle.SUCCESS,  ()=> setInviteProfileList(current => current.filter(user => user.userID !== id))))
+                                        .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Members', searchType:SearchListSearchTypesEnum.USER,
+                                onSearchClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                searchPrimaryButtonText: 'Invite', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Invite Sent`, ToastStyle.SUCCESS), () =>setInviteProfileList(current => [item as ProfileListItem, ...current]))
+                                        .catch((error) => processAJAXError(error)),
+                            }),
+
+                            [...memberProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                alternativeButtonText: 'Remove', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                            : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Member Removed`, ToastStyle.SUCCESS, ()=> setMemberProfileList(current => current.filter(user => user.userID !== id))))
+                                        .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Prayer Requests'}),
+
+                            [...prayerRequestList].map((prayer) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayer, 
+                                primaryButtonText: 'Pray', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}/like`, {}, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Shared Prayer Request`, ToastStyle.SUCCESS))
+                                        .catch((error) => processAJAXError(error)),
+                            }))
+                        ], 
+                    ])}
             />
 
             {(showAnnouncement && editingCircleID > 0) &&
