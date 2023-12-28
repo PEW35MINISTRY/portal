@@ -60,7 +60,7 @@ const SignUpPage = () => {
                 window.localStorage.setItem('user', JSON.stringify(account));
 
                 notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
-                navigate(`/portal/edit/profile/${response.data.userID}/image`);
+                navigate('/portal/dashboard');
 
             }).catch((error) => { processAJAXError(error); });
     }

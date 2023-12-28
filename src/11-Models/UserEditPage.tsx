@@ -8,7 +8,7 @@ import InputField, { makeDisplayList } from '../0-Assets/field-sync/input-config
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
-import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
+import { removeCircle, removePrayerRequest, resetAccount, updateProfile } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
