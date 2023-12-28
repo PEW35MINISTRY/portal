@@ -30,7 +30,7 @@ const CircleEditPage = () => {
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName) || '';
     const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile) || {};
     const userLeaderCircleList:CircleListItem[] = (useAppSelector((state) => state.account.userProfile.circleList) || []).filter(circle => circle.status === CircleStatusEnum.LEADER);
-    const { id = -1 } = useParams();
+    const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
@@ -64,17 +64,31 @@ const CircleEditPage = () => {
             setImage(undefined)
             setLeaderProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
 
-        } else //edit
+        } else if(parseInt(id as string) < 1) //default on navigation
             setEditingCircleID(userLeaderCircleList[0].circleID); //triggers fetchCircle
+        else //edit
+            setEditingCircleID(parseInt(id as string)); //triggers fetchCircle
 
     }, [id, userLeaderCircleList.length]);
+
+
+    /* Sync state change to URL action */
+    useEffect(() => {
+        if(showDeleteConfirmation) 
+            navigate(`/portal/edit/circle/${editingCircleID}/delete`);
+        else if(showAnnouncement) 
+            navigate(`/portal/edit/circle/${editingCircleID}/announcement`);
+        else 
+            navigate(`/portal/edit/circle/${editingCircleID}`);
+
+    }, [showDeleteConfirmation]);
             
 
     /*******************************************
      *     RETRIEVE CIRCLE BEING EDITED
      * *****************************************/
     useLayoutEffect(() => { 
-        if(editingCircleID > 0) navigate(`/portal/edit/circle/${editingCircleID}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
+        if(editingCircleID > 0) navigate(`/portal/edit/circle/${editingCircleID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
         if(editingCircleID > 0) fetchCircle(editingCircleID); }, [editingCircleID]);
 
 
@@ -82,6 +96,13 @@ const CircleEditPage = () => {
         .then(response => {
             const fields:CircleResponse = response.data;
             const valueMap:Map<string, any> = new Map([['circleID', fields.circleID]]);
+            //Clear Lists, not returned if empty
+            setMemberProfileList([]);
+            setRequestProfileList([]);
+            setInviteProfileList([]);
+            setPrayerRequestList([]);
+            setAnnouncementList([]);
+            setImage(undefined);
 
             [...Object.entries(fields)].forEach(([field, value]) => {
                 if(field === 'memberList') {
@@ -107,6 +128,7 @@ const CircleEditPage = () => {
 
                 } else if(field === 'image') {
                     setImage(value);
+                    valueMap.set('image', value);
 
                 } else if(EDIT_FIELDS.some(f => f.field === field))
                     valueMap.set(field, value);
@@ -114,6 +136,12 @@ const CircleEditPage = () => {
                     console.log(`EditCircle-skipping field: ${field}`, value);
             });
             setInputMap(new Map(valueMap));
+
+            /* Update State based on sub route */
+            if(action === 'delete') 
+                setShowDeleteConfirmation(true);
+            else if(action === 'announcement') 
+                setShowAnnouncement(true);
         })
         .catch((error) => processAJAXError(error, () => navigate('/portal/edit/circle/-1')));
 
@@ -155,6 +183,7 @@ const CircleEditPage = () => {
             .then(response =>
                 notify(`Circle Created`, ToastStyle.SUCCESS, () => {
                     setEditingCircleID(response.data.circleID);
+                    navigate(`/portal/edit/circle/${response.data.circleID}/image`);
                     dispatch(addCircle({
                         circleID: response.data.circleID || -1,
                         name: response.data.name || '',
@@ -263,6 +292,7 @@ const CircleEditPage = () => {
                 displayMap={new Map([
                         [ 
                             new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE,
+                                onSearchClick: (id:number)=> (userRole === RoleEnum.ADMIN) ? setEditingCircleID(id) : {}
                                 }),
 
                             [...userLeaderCircleList].map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
@@ -382,12 +412,12 @@ const CircleEditPage = () => {
             {(showDeleteConfirmation) &&
                 <div key={'CircleEdit-confirmDelete-'+editingCircleID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
 
-                    <div className='form-page-block center-absolute-inside'>
+                    <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         {leaderProfile && 
                                 <div className='form-header-detail-box'>
                                     <span>
-                                        {(userRole === RoleEnum.ADMIN) && <label className='id-right'>#{editingCircleID}</label> }
                                         <h1 className='name'>{getInputField('name')}</h1>
+                                        {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingCircleID}</label>}
                                     </span>
                                     <span className='right-align'>
                                         <img className='leader-profile-image' src={leaderProfile.image || PROFILE_DEFAULT} alt={leaderProfile.displayName} />

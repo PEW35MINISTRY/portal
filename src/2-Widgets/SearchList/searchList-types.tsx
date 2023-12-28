@@ -52,7 +52,7 @@ export class SearchListKey {
     constructor({...props}:{displayTitle:string, searchType?:SearchListSearchTypesEnum, searchCircleStatus?:CircleStatusEnum, onSearchClick?:(id:number, item:DisplayItemType)=>void, 
         searchPrimaryButtonText?:string, onSearchPrimaryButtonCallback?:(id:number, item:DisplayItemType)=>void, searchAlternativeButtonText?:string, onSearchAlternativeButtonCallback?:(id:number, item:DisplayItemType)=>void}) {
         this.displayTitle = props.displayTitle;
-        this.searchType = props.searchType;
+        this.searchType = props.searchType || undefined;
         this.searchCircleStatus = props.searchCircleStatus;
         this.onSearchClick = props.onSearchClick;
         this.searchPrimaryButtonText = props.searchPrimaryButtonText;
