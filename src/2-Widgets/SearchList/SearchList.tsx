@@ -26,6 +26,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
     const [displayList, setDisplayList] = useState<SearchListValue[]>([]);
     const [selectedKey, setSelectedKey] = useState<SearchListKey>(new SearchListKey({displayTitle: 'Default'}));
+    const [selectedKeyTitle, setSelectedKeyTitle] = useState<string>('Default'); //Sync state for <select><option> component
     const [searchButtonCache, setSearchButtonCache] = useState<Map<string, SearchListValue>|undefined>(undefined); //Quick pairing for accurate button options
     const [searchFilter, setSearchFilter] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -33,11 +34,16 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const getKey = (keyTitle:string = selectedKey.displayTitle):SearchListKey => Array.from(props.displayMap.keys()).find((k) => k.displayTitle === keyTitle) || new SearchListKey({displayTitle: 'Default'});
     const getList = (keyTitle:string = selectedKey.displayTitle):SearchListValue[] => props.displayMap.get(getKey(keyTitle)) || [];
 
+    /* Sync Selected Key Title | Sync state for <select><option> component */
+    useEffect(() => {
+        setSelectedKeyTitle(selectedKey.displayTitle);
+    }, [selectedKey]);
 
     /*****************
      *  Default List
      * ****************/
     useLayoutEffect(() => {        
+        //Assemble defaultList of SearchListValue from all categories referenced in props.defaultDisplayTitleList
         const defaultList:SearchListValue[] = [];       
         Array.from(props.displayMap.entries()).filter(([key, itemList]) => 
             (props.defaultDisplayTitleList === undefined || Array.from(props.defaultDisplayTitleList).includes(key.displayTitle)))
@@ -55,10 +61,12 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                 setSelectedKey(firstEntry[0] || new SearchListKey({displayTitle: 'Default'}));
             }
 
-        } else if(props.defaultDisplayTitleKeySearch !== undefined) {
-            setSelectedKey(new SearchListKey({...getKey(props.defaultDisplayTitleKeySearch), displayTitle: 'Filter Details'}));
+        //Default to First display Title (Even for multi display of multiple categories)
+        } else if(props.defaultDisplayTitleList !== undefined && props.defaultDisplayTitleList.length > 0) {
+            setSelectedKey(getKey(props.defaultDisplayTitleList[0]));
         }
         setDisplayList(defaultList);
+
     },[props.displayMap, props.defaultDisplayTitleKeySearch, props.defaultDisplayTitleList]);
 
 
@@ -93,7 +101,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                     }
                 });
                 setDisplayList(resultList);
-                setSelectedKey(new SearchListKey({...selectedKey, displayTitle: 'Search Results'}));
+                // setSelectedKey(new SearchListKey({...selectedKey, displayTitle: 'Search Results'}));
             }).catch((error) => processAJAXError(error));
     }
 
@@ -127,20 +135,25 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
         else setDisplayList(getList(Array.from(props.displayMap.keys()).find((value) => (value.searchType === getSearchType()))?.displayTitle));
     }
 
-    const getSearchType = ():SearchListSearchTypesEnum|undefined => selectedKey?.searchType || undefined;
+    const getSearchType = ():SearchListSearchTypesEnum|undefined => selectedKey.searchType || undefined;
+
+    const getSearchTypeTitleList = ():string[] => 
+        Array.from(props.displayMap.keys() || [])
+            .filter(key => Array.from(props.displayMap.get(key) || []).length > 0 
+                    || SHOW_TITLE_OPTIONS.includes(key.displayTitle))
+            .map(key => key.displayTitle);
 
     return (
         <div key={props.key} id='search-side-component' >
             {props.headerChildren}
 
             <div id='search-header'>
-                <select id='search-header-menu' className='title' onChange={({ target: { value } }) => onOptionSelection(value)} defaultValue='default'>
-                    <option value='default' disabled hidden>{selectedKey.displayTitle}</option>
-                    {Array.from(props.displayMap.keys() || []).filter(key => Array.from(props.displayMap.get(key) || []).length > 0 || SHOW_TITLE_OPTIONS.includes(key.displayTitle)).map((displayKey, index) =>
-                        <option key={index} value={displayKey.displayTitle} >{displayKey.displayTitle}</option>
-                    )}             
+                <select id='search-header-menu' className='title' onChange={({ target: { value } }) => onOptionSelection(value)} value={selectedKeyTitle} >
+                    {getSearchTypeTitleList().map((displayTitle, index) =>
+                        <option key={index} value={displayTitle} >{displayTitle}</option>
+                    )}
                 </select>
-                {(getSearchType() !== undefined)
+                {(getKey(selectedKeyTitle).searchType !== undefined)
                 && <div id='search-header-search'>
                         <input id='search-header-field' value={searchTerm} onChange={onSearchInput} onKeyDown={(e)=>{if(e.key === 'Enter') searchExecute()}} type='text' placeholder={`${getSearchType()?.charAt(0)}${getSearchType()?.replaceAll('_', ' ').toLowerCase()?.slice(1) || 'ERROR'} Search`}/>
                         <select id='search-header-filter' className='title' onChange={({ target: { value } }) => setSearchFilter(value)} defaultValue='ALL'>
@@ -276,8 +289,8 @@ export const PrayerRequestItem = ({...props}:{key:any, prayerRequest:PrayerReque
             <div className='profile-detail-box'>
                 <img className='icon' src={props.prayerRequest.requestorProfile.image || PROFILE_DEFAULT} alt={props.prayerRequest.requestorProfile.displayName} />
                 <p >{props.prayerRequest.requestorProfile.displayName}</p>
-                <img className='icon' src={PRAYER_ICON} alt='prayer-count'/>
-                <label className='count' >{props.prayerRequest.prayerCount}</label>
+                {(props.prayerRequest.prayerCount > 0) && <img className='icon' src={PRAYER_ICON} alt='prayer-count'/>}
+                {(props.prayerRequest.prayerCount > 0) && <label className='count' >{props.prayerRequest.prayerCount}</label>}
             </div>}
         <label className='title name' >{props.prayerRequest.topic}</label>
         {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.prayerRequest.prayerRequestID}</label>}
@@ -304,8 +317,8 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
                 <img className='icon' src={props.prayerRequestComment.commenterProfile.image || PROFILE_DEFAULT} alt={props.prayerRequestComment.commenterProfile.displayName} />
                 <p >{props.prayerRequestComment.commenterProfile.displayName}</p>
                 {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.prayerRequestComment.prayerRequestID}| #{props.prayerRequestComment.commentID}</label>}
-                <img className='icon' src={LIKE_ICON} alt='like-count'/>
-                <label className='count' >{props.prayerRequestComment.likeCount}</label>
+                {(props.prayerRequestComment.likeCount > 0) && <img className='icon' src={LIKE_ICON} alt='like-count'/>}
+                {(props.prayerRequestComment.likeCount > 0) && <label className='count' >{props.prayerRequestComment.likeCount}</label>}
             </div>}
             <p className='comment'>{props.prayerRequestComment.message}</p>
         {(props.alternativeButtonText || props.primaryButtonText) && 

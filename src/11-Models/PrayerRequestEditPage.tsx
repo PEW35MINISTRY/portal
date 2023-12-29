@@ -33,16 +33,14 @@ const PrayerRequestEditPage = () => {
     const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.prayerRequestList) || [];
     const userContactList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.contactList) || [];
     const userProfileAccessList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
-
-    const queryMap = useQuery();
-    const { id = -1 } = useParams();
+    const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
     const [requestorProfile, setRequestorProfile] = useState<ProfileListItem>(); //Prayer Request Author
 
     const [editingPrayerRequestID, setEditingPrayerRequestID] = useState<number>(-1);
-    const [searchUserID, setSearchUserID] = useState<number>(-1);
+    const [searchUserID, setSearchUserID] = useState<number>(userID);
     const [showNewComment, setShowNewComment] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
 
@@ -59,16 +57,15 @@ const PrayerRequestEditPage = () => {
     const [addCircleRecipientIDList, setAddCircleRecipientIDList] = useState<number[]>([]);
     const [removeCircleRecipientIDList, setRemoveCircleRecipientIDList] = useState<number[]>([]);
 
-
-    //Triggers | (delays fetchProfile until after Redux auto login)
+    //Sync userID and SearchID on initial load
     useEffect(() => {
-        setDefaultDisplayTitleList(commentList.length > 0 ? ['Comments'] : ['Prayer Requests']);
-    },[commentList.length, editingPrayerRequestID]);
-    
-    useEffect(() => {
-        setSearchUserID(userID);
+        if(userID > 0) {
+            setSearchUserID(userID);
+            setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
+        }
     },[userID]);
 
+    /* Set Privilege Edit Fields Available */
     useLayoutEffect (() => {
         if(userRole === RoleEnum.ADMIN)
             setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
@@ -77,62 +74,78 @@ const PrayerRequestEditPage = () => {
         else
             setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
 
+    }, [userRole, editingPrayerRequestID]);
+
+    /* Search for Prayer Request by user/requestor */
+    useLayoutEffect (() => {
         if(searchUserID <= 0)
             return;
         
-        let prayerRequestList:PrayerRequestListItem[] = [];
-
         //Get list of owned prayer requests
-        if(searchUserID === userID) {
-            prayerRequestList = userPrayerRequestList || [];
+        if(searchUserID === userID)
+            setOwnedPrayerRequestList(userPrayerRequestList);
 
-            setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
-
-        } else { //Must Fetch by user, since can't search prayer requests
+        else  //Must Fetch by user, since can't search prayer requests
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${searchUserID}/prayer-request-list`, { headers: { jwt: jwt }})
                 .then(response => {
-                    prayerRequestList = Array.from(response.data) || [];
-                })
-                .catch((error) => processAJAXError(error));
+                    const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
+                    setOwnedPrayerRequestList(resultList);
+                    if(resultList.length === 0) notify('No Prayer Requests Found', ToastStyle.INFO);
 
-                //Preserve Existing (selected) requestor user
-                setRequestorProfile(current => ({...(current || { userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image }), userID: searchUserID}));
-        }
+                }).catch((error) => processAJAXError(error));
+        
+    }, [searchUserID]);
 
-        //setOwnedPrayerRequestList
-        if(prayerRequestList.length > 0)
-            setOwnedPrayerRequestList(Array.from(prayerRequestList as PrayerRequestListItem[]));
-        else 
-            setOwnedPrayerRequestList([]);
+    useLayoutEffect (() => { //setEditingPrayerRequestID
+        if(parseInt((id || '-1') as string) > 0) //URL navigate
+            setEditingPrayerRequestID(parseInt(id as string)); //triggers fetchPrayerRequest, if editingPrayerRequestID changes value
 
-        //setEditingPrayerRequestID
-        if(isNaN(id as any) || prayerRequestList.length === 0) { //new
+        else if(isNaN(id as any) || ownedPrayerRequestList.length === 0) { //new
+            setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
             setEditingPrayerRequestID(-1);
             setInputMap(new Map());
             setCommentList([]);
 
-        } else //edit
-            setEditingPrayerRequestID(prayerRequestList[0].prayerRequestID); //triggers fetchPrayerRequest
+        } else //default on navigation
+            setEditingPrayerRequestID(ownedPrayerRequestList[0].prayerRequestID);
 
-        },[searchUserID, id, userPrayerRequestList.length]);
+    }, [id, ownedPrayerRequestList]);
             
+
+        /* Sync state change to URL action */
+        useEffect(() => {
+            if(showDeleteConfirmation) 
+                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`);
+            else if(showNewComment) 
+                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/comment`);
+            else 
+                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`);
+
+        }, [showDeleteConfirmation, showNewComment]);
+
 
     /*******************************************
      *   RETRIEVE Prayer Request BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
-        if(editingPrayerRequestID > 0) navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
-        if(editingPrayerRequestID > 0) fetchPrayerRequest(editingPrayerRequestID); }, [editingPrayerRequestID]);
+        if(editingPrayerRequestID > 0) navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
+        if(editingPrayerRequestID > 0 && jwt.length > 0) fetchPrayerRequest(editingPrayerRequestID); 
+    }, [editingPrayerRequestID, jwt]);
 
     const fetchPrayerRequest = (fetchPrayerRequestID:string|number) => 
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${fetchPrayerRequestID}`,{headers: { jwt: jwt }})
             .then(response => {
                 const fields:PrayerRequestResponseBody = response.data;
                 const valueMap:Map<string, any> = new Map([['prayerRequestID', fields.prayerRequestID]]);
+                //Clear Lists, not returned if empty
+                setCommentList([]);
+                setUserRecipientList([]);
+                setCircleRecipientList([]);
 
-                [...Object.entries(fields)].forEach(([field, value]) => {
+                [...Object.entries(fields)].forEach(([field, value]) => { //TODO these list are not returned if empty and state must be reset to []
                     if(field === 'commentList') {
                         setCommentList([...value]);
+                        setDefaultDisplayTitleList(([...value].length > 0) ? ['Comments'] : ['Prayer Requests']);
 
                     } else if(field === 'userRecipientList') {
                         setUserRecipientList([...value]);
@@ -143,18 +156,28 @@ const PrayerRequestEditPage = () => {
                     } else if(field === 'requestorProfile') {
                         setRequestorProfile(value);
 
+                    } else if(field === 'requestorID') {
+                        setSearchUserID(value);
+                        valueMap.set('requestorID', value);
+
                     } else if(EDIT_FIELDS.some(f => f.field === field))
                         valueMap.set(field, value);
                     else    
-                        console.log(`EditCircle-skipping field: ${field}`, value);
+                        console.log(`EditPrayerRequest-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));
                 setAddUserRecipientIDList([]);
                 setRemoveUserRecipientIDList([]);
                 setAddCircleRecipientIDList([]);
                 setRemoveCircleRecipientIDList([]);
+
+                /* Update State based on sub route */
+                if(action === 'delete') 
+                    setShowDeleteConfirmation(true);
+                else if(action === 'comment')
+                    setShowNewComment(true);
             })
-            .catch((error) => processAJAXError(error, () => navigate('/portal/edit/circle/-1')));
+            .catch((error) => processAJAXError(error, () => navigate('/portal/edit/prayer-request/-1')));
 
     /*******************************************
      *  SAVE PRAYER REQUEST CHANGES TO SEVER
@@ -226,7 +249,7 @@ const PrayerRequestEditPage = () => {
     
     
     /*******************************************
-     *         DELETE CIRCLE
+     *         DELETE PRAYER REQUEST
      * *****************************************/
     const makeDeleteRequest = async() => 
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${editingPrayerRequestID}`, { headers: { jwt: jwt }} )
@@ -255,6 +278,7 @@ const PrayerRequestEditPage = () => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
                 setShowNewComment(false);
                 setDefaultDisplayTitleList(['Comments']);
+                setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
             })
             .catch((error) => { processAJAXError(error); });
     }
@@ -363,12 +387,12 @@ const PrayerRequestEditPage = () => {
                         [
                             new SearchListKey({displayTitle:'Comments'}),
                             [...commentList].map((comment) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST_COMMENT, displayItem: comment, 
-                                primaryButtonText: 'Like', onPrimaryButtonCallback: (id:number) => 
+                                primaryButtonText: (comment.commentID > 0) ? 'Like' : undefined, onPrimaryButtonCallback: (id:number) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment/${id}/like`, {}, { headers: { jwt: jwt }} )
                                         .then(response => notify('Comment Liked', ToastStyle.SUCCESS, () => setCommentList(current => [...current].map(comment => 
                                             (comment.commentID === id) ? ({...comment, likeCount: comment.likeCount + 1}) : comment))))
                                         .catch((error) => processAJAXError(error)),  
-                                alternativeButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
+                                alternativeButtonText: (comment.commentID > 0) ? 'Delete' : undefined, onAlternativeButtonCallback: (id:number) => 
                                     axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment/${id}`, { headers: { jwt: jwt }} )
                                         .then(response => notify('Comment Deleted', ToastStyle.SUCCESS, () => {
                                             setCommentList(current => current.filter(comment => comment.commentID !== id));
@@ -377,10 +401,10 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0) ? SearchListSearchTypesEnum.USER : undefined,
+                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0 || userRole === RoleEnum.ADMIN) ? SearchListSearchTypesEnum.USER : undefined,
                                 onSearchClick: (id:number, item:DisplayItemType)=> {
                                     setSearchUserID(id);
-                                    setRequestorProfile(item as ProfileListItem);
+                                    // setRequestorProfile(item as ProfileListItem);
                                 },
                                 searchPrimaryButtonText: (editingPrayerRequestID <= 0) ? undefined : 'Share', onSearchPrimaryButtonCallback: (id:number) => shareUser(id)}),
                             userFilterUnique([...userRecipientList, ...userContactList, ...userProfileAccessList]).map((user) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: user, 
@@ -410,9 +434,13 @@ const PrayerRequestEditPage = () => {
             {(showDeleteConfirmation) &&
                 <div key={'PrayerRequestEdit-confirmDelete-'+editingPrayerRequestID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
 
-                    <div className='form-page-block center-absolute-inside'>
+                    <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('topic')}</h1>
+                            <span>
+                                <h1 className='name'>{getInputField('topic')}</h1>
+                                {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingPrayerRequestID}</label>}
+                            </span>
                             { requestorProfile &&
                                 <span className='right-align'>
                                     <img className='leader-profile-image' src={requestorProfile?.image || PROFILE_DEFAULT} alt={requestorProfile.displayName} />
@@ -423,8 +451,8 @@ const PrayerRequestEditPage = () => {
                         <p className='id' >{getInputField('description')}</p>
                         <label >{`-> ${(getInputField('isResolved') as boolean) ? 'Answered' : 'Waiting'}`}</label>
                         <label >{`-> ${(getInputField('isOnGoing') as boolean) ? 'Long Term' : 'Temporary'}`}</label>
-                        {Array.from((getInputField('tagList') as string[]) || []).map((tag) =>
-                            <label >{`-> ${makeDisplayText(tag)}`}</label>
+                        {Array.from((getInputField('tagList') as string[]) || []).map((tag, index) =>
+                            <label key={'tag'+index}>{`-> ${makeDisplayText(tag)}`}</label>
                         )}
                         <hr/>
                         <h2>Delete Prayer Request?</h2>
@@ -440,8 +468,6 @@ const PrayerRequestEditPage = () => {
                 </div>}
         </div>
     );
-
-    return <div>Prayer Request Page Coming Soon</div>
 }
 
 export default PrayerRequestEditPage;
@@ -461,15 +487,10 @@ const PrayerRequestCommentPage = ({...props}:{key:any, onSaveCallback:(commentIn
 
     const setInputField = (field:string, value:any):void => setCommentInputMap(map => new Map(map.set(field, value)));
 
-    const onCancel = () => (event:React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        event.stopPropagation();
-        if(props.onCancelCallback) props.onCancelCallback();
-    }
-
     return (
-        <div key={props.key} id='prayer-request-comment-page' className='center-absolute-wrapper' onClick={onCancel}>
+        <div key={props.key} id='prayer-request-comment-page' className='center-absolute-wrapper' onClick={props.onCancelCallback}>
 
-            <div className='form-page-block center-absolute-inside'>
+            <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                 <h2>Create Prayer Request Comment</h2>
 
                 <FormInput

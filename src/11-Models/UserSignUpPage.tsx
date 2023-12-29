@@ -43,11 +43,8 @@ const SignUpPage = () => {
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody:ProfileEditRequestBody = {} as ProfileEditRequestBody;
         finalMap.forEach((value, field) => {
-            if(field === 'userRoleTokenList') { //@ts-ignore
-                requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
-                                        .map(([role, token]) => ({role: role, token: token || ''}));
-            } else //@ts-ignore
-                requestBody[field] = value;
+            //@ts-ignore
+            requestBody[field] = value;
         });
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/signup`, requestBody)
@@ -77,7 +74,7 @@ const SignUpPage = () => {
     return (
         <div id='sign-up-page' className='center-absolute-wrapper' >
 
-            <div className='form-page-block center-absolute-inside'>
+            <div id='popup-wrapper' className='form-page-block center-absolute-inside'>
                 <div id='logo-box' >
                     <img src={LOGO} alt='log-title'/>
                     <h1>Encouraging Prayer</h1>
@@ -94,6 +91,14 @@ const SignUpPage = () => {
                     onAlternativeText='Already have an account?'
                     onAlternativeCallback={()=>navigate('/login')}
                 />
+            </div>
+
+            {/* Swoop Background */}
+            <div id='shape-rectangle'></div>
+            <div id='shape-curve'>
+                <svg viewBox='0 0 500 150' preserveAspectRatio='none'>
+                    <path d='M-2.49,14.31 C274.02,-18.24 292.64,224.51 507.09,115.96 L500.00,0.00 L0.00,0.00 Z'></path>
+                </svg>
             </div>
         </div>
     );

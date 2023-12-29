@@ -25,7 +25,7 @@ const UserEditPage = () => {
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
-    const { id = -1 } = useParams();
+    const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
@@ -42,7 +42,21 @@ const UserEditPage = () => {
 
 
     //Triggers | (delays fetchProfile until after Redux auto login)
-    useLayoutEffect(() => { if(id as number > 0) setEditingUserID(parseInt(id.toString()));}, [id]);
+    useLayoutEffect(() => { 
+        if(id as number > 0) 
+            setEditingUserID(parseInt(id.toString()));
+    }, [id]);
+
+
+    /* Sync state change to URL action */
+    useEffect(() => {
+        if(showDeleteConfirmation) 
+            navigate(`/portal/edit/profile/${editingUserID}/delete`);
+        else 
+            navigate(`/portal/edit/profile/${editingUserID}`);
+
+    }, [showDeleteConfirmation]);
+
 
     //componentDidMount
     useLayoutEffect(() => {
@@ -58,7 +72,7 @@ const UserEditPage = () => {
      *     RETRIEVE PROFILE BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
-        navigate(`/portal/edit/profile/${editingUserID}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
+        navigate(`/portal/edit/profile/${editingUserID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
         if(editingUserID > 0 && userID > 0) fetchProfile(editingUserID); }, [userID, editingUserID]);
 
 
@@ -67,21 +81,27 @@ const UserEditPage = () => {
         .then(response => {
             const fields:ProfileResponse = response.data;
             const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
+            //Clear Lists, not returned if empty
+            setPartnerProfileList([]);
+            setMemberCircleList([]);
+            setPrayerRequestList([]);
+            setImage(undefined);
 
             [...Object.entries(fields)].forEach(([field, value]) => {
                 if(field === 'userRoleList' && EDIT_FIELDS.some(f => f.field === 'userRoleTokenList')) {
                     valueMap.set('userRoleTokenList', new Map(Array.from(value).map((role) => ([role, '']))));
                 } else if(field === 'partnerList') {
-                    setPartnerProfileList(value);
+                    setPartnerProfileList([...value]);
 
                 } else if(field === 'circleList') {
-                    setMemberCircleList(value);
+                    setMemberCircleList([...value]);
 
                 } else if(field === 'prayerRequestList') {
-                    setPrayerRequestList(value);
+                    setPrayerRequestList([...value]);
 
                 } else if(field === 'image') {
                     setImage(value);
+                    valueMap.set('image', value);
 
                 } else if(EDIT_FIELDS.some(f => f.field === field))
                     valueMap.set(field, value);
@@ -89,6 +109,10 @@ const UserEditPage = () => {
                     console.log(`EditProfile-skipping field: ${field}`, value);
             });
             setInputMap(new Map(valueMap));
+
+            /* Update State based on sub route */
+            if(action === 'delete') 
+                setShowDeleteConfirmation(true);
         })
         .catch((error) => processAJAXError(error, () => setEditingUserID(userID)));
 
@@ -239,7 +263,7 @@ const UserEditPage = () => {
             {(showDeleteConfirmation) &&
                 <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
 
-                    <div className='form-page-block center-absolute-inside'>
+                    <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('firstName')} {getInputField('lastName')}</h1>
                             <span>

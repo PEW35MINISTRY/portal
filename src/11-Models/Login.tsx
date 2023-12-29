@@ -20,29 +20,6 @@ const Login = () => {
     const dispatch = useAppDispatch();
     const [inputMap, setInputMap] = useState<Map<string, string>>(new Map());
 
-    
-    /*******************************************
-     *          Dynamic Curvy Background
-     * *****************************************/
-    const popupWrapperRef = useRef<null | HTMLDivElement>(null);
-    const [shapeTop, setShapeTop] = useState<number>(0);
-    const [shapeHeight, setShapeHeight] = useState<number>(0);
-
-    // useEffect(() => {
-    //     setTimeout(()=> {
-    //     if (popupWrapperRef.current) {
-    //         let top = missionRef.current.offsetTop + missionRef.current.offsetHeight + 40;
-    //         let height = topHeaderRef.current.offsetHeight - top + 50;
-            
-    //         if(demoRef.current.offsetTop > missionRef.current.offsetTop) {
-    //             top = demoRef.current.offsetTop + demoRef.current.offsetHeight - 20;
-    //             height = 50;
-    //         }
-
-    //         setShapeTop(top);
-    //         setShapeHeight(height);
-    //     }}, 300);
-    // }, [topHeaderRef.current, missionRef.current, demoRef.current]);
 
     /************************************************** //TODO Remove for Production
      *  [TEMPORARY] Credentials fetched for Debugging
@@ -102,7 +79,7 @@ const Login = () => {
      * *******************/
     return (
         <div id='login-page' className='center-absolute-wrapper'>
-            <div ref={popupWrapperRef} id='popup-wrapper' className='form-page-block center-absolute-inside' >
+            <div id='popup-wrapper' className='form-page-block center-absolute-inside' >
                 <div id='logo-box' >
                     <img src={LOGO} alt='log-title'/>
                     <h1>Encouraging Prayer</h1>
@@ -136,9 +113,9 @@ const Login = () => {
                 
             </div>
 
-            <div id='shape-rectangle' style={{  }}></div>
-
-            <div style={{ }} id='shape-curve'>
+            {/* Swoop Background */}
+            <div id='shape-rectangle'></div>
+            <div id='shape-curve'>
                 <svg viewBox='0 0 500 150' preserveAspectRatio='none'>
                     <path d='M-2.49,14.31 C274.02,-18.24 292.64,224.51 507.09,115.96 L500.00,0.00 L0.00,0.00 Z'></path>
                 </svg>
