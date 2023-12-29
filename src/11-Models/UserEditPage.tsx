@@ -8,10 +8,11 @@ import InputField, { makeDisplayList } from '../0-Assets/field-sync/input-config
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
-import { removeCircle, removePrayerRequest, resetAccount, updateProfile } from '../100-App/redux-store';
+import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import ImageUpload from '../2-Widgets/ImageUpload';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -33,6 +34,7 @@ const UserEditPage = () => {
 
     const [editingUserID, setEditingUserID] = useState<number>(-1);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
+    const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
 
     //SearchList Cache unique for editingUserID
     const [partnerProfileList, setPartnerProfileList] = useState<ProfileListItem[]>([]);
@@ -52,10 +54,12 @@ const UserEditPage = () => {
     useEffect(() => {
         if(showDeleteConfirmation) 
             navigate(`/portal/edit/profile/${editingUserID}/delete`);
+        else if(showImageUpload) 
+            navigate(`/portal/edit/profile/${editingUserID}/image`);
         else 
             navigate(`/portal/edit/profile/${editingUserID}`);
 
-    }, [showDeleteConfirmation]);
+    }, [showDeleteConfirmation, showImageUpload]);
 
 
     //componentDidMount
@@ -113,8 +117,10 @@ const UserEditPage = () => {
             /* Update State based on sub route */
             if(action === 'delete') 
                 setShowDeleteConfirmation(true);
+            else if(action === 'image') 
+                setShowImageUpload(true);
         })
-        .catch((error) => processAJAXError(error, () => setEditingUserID(userID)));
+        .catch((error) => processAJAXError(error, () => navigate(`/portal/edit/profile/${userID}`)));
 
 
     /*******************************************
@@ -199,6 +205,9 @@ const UserEditPage = () => {
                             </span>
                         </div>
                         <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
+                        <div className='form-header-horizontal'>
+                            <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Image</button>
+                        </div>
                         <h2>{`Edit Profile`}</h2>
                     </div>}
             />
@@ -287,6 +296,28 @@ const UserEditPage = () => {
                     </div>
                 </div>}
 
+                {(showImageUpload) &&
+                    <ImageUpload
+                        key={'profile-image-'+editingUserID}
+                        title='Upload Profile Image'
+                        imageStyle='profile-image'
+                        currentImage={ image }
+                        defaultImage={ PROFILE_DEFAULT }
+                        onCancel={()=>setShowImageUpload(false)}
+                        onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image`, { headers: { jwt: jwt }} )
+                            .then(response => {
+                                setShowImageUpload(false);
+                                setImage(undefined);
+                                notify(`Profile Image Deleted`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(undefined)))})
+                            .catch((error) => processAJAXError(error))}
+                        onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
+                            .then(response => {
+                                setShowImageUpload(false);
+                                setImage(response.data);
+                                notify(`Profile Image Uploaded`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(response.data)))})
+                            .catch((error) => processAJAXError(error))}
+                    />
+                }
         </div>
     );
 }

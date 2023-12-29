@@ -35,6 +35,7 @@ const accountSlice = createSlice({
     resetAccount: () => initialAccountState,
     updateJWT: (state, action:PayloadAction<string>) => state = {...state, jwt: action.payload},
     updateProfile: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: action.payload},
+    updateProfileImage: (state, action:PayloadAction<string|undefined>) => state = {...state, userProfile: {...state.userProfile, image: action.payload}},
     addCircle: (state, action:PayloadAction<CircleListItem>) => state = {...state, userProfile: {...state.userProfile, circleList: [action.payload, ...(state.userProfile.circleList || []) as CircleListItem[]]}},
     removeCircle: (state, action:PayloadAction<number>) => state = {...state, userProfile: {...state.userProfile, circleList: [...(state.userProfile.circleList || []) as CircleListItem[]].filter(circle => circle.circleID !== action.payload)}},
     addPartner: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: {...state.userProfile, partnerList: [action.payload, ...(state.userProfile.partnerList || []) as ProfileListItem[]]}},
@@ -46,7 +47,7 @@ const accountSlice = createSlice({
 });
 
 //Export Dispatch Actions
-export const { setAccount, resetAccount, updateJWT, updateProfile, addCircle, removeCircle, addPartner, removePartner, addPrayerRequest, removePrayerRequest, addContact } = accountSlice.actions;
+export const { setAccount, resetAccount, updateJWT, updateProfile, updateProfileImage, addCircle, removeCircle, addPartner, removePartner, addPrayerRequest, removePrayerRequest, addContact } = accountSlice.actions;
 
 /**********************************************************
  * REDUX MIDDLEWARE: for non-static/async state operations
