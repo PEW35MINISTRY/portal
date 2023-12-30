@@ -13,6 +13,7 @@ import { addCircle, removeCircle, removePrayerRequest } from '../100-App/redux-s
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import ImageUpload from '../2-Widgets/ImageUpload';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -40,6 +41,7 @@ const CircleEditPage = () => {
     const [editingCircleID, setEditingCircleID] = useState<number>(-2);
     const [showAnnouncement, setShowAnnouncement] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
+    const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
 
     //SearchList Cache
     const [memberProfileList, setMemberProfileList] = useState<ProfileListItem[]>([]);
@@ -78,10 +80,12 @@ const CircleEditPage = () => {
             navigate(`/portal/edit/circle/${editingCircleID}/delete`);
         else if(showAnnouncement) 
             navigate(`/portal/edit/circle/${editingCircleID}/announcement`);
+        else if(showImageUpload) 
+            navigate(`/portal/edit/circle/${editingCircleID}/image`);
         else 
             navigate(`/portal/edit/circle/${editingCircleID}`);
 
-    }, [showDeleteConfirmation]);
+    }, [showDeleteConfirmation, showImageUpload]);
             
 
     /*******************************************
@@ -142,6 +146,8 @@ const CircleEditPage = () => {
                 setShowDeleteConfirmation(true);
             else if(action === 'announcement') 
                 setShowAnnouncement(true);
+            else if(action === 'image') 
+                setShowImageUpload(true);
         })
         .catch((error) => processAJAXError(error, () => navigate('/portal/edit/circle/-1')));
 
@@ -279,6 +285,7 @@ const CircleEditPage = () => {
                     </div> 
                     <img className='form-header-image circle-image' src={image || CIRCLE_DEFAULT} alt='Circle-Image' />
                     <div className='form-header-horizontal'>
+                        {(editingCircleID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Image</button>}
                         {(editingCircleID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowAnnouncement(true)}>New Announcement</button>}
                     </div>
                     <h2 className='sub-header'>{getDisplayNew() ? 'Create Details' : `Edit Details`}</h2>
@@ -435,8 +442,31 @@ const CircleEditPage = () => {
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
                         <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
                     </div>
-                </div>}
-
+                </div>
+                }
+                
+                {(showImageUpload) &&
+                    <ImageUpload
+                        key={'circle-image-'+editingCircleID}
+                        title='Upload Circle Image'
+                        imageStyle='circle-image'
+                        currentImage={ image }
+                        defaultImage={ PROFILE_DEFAULT }
+                        onCancel={()=>setShowImageUpload(false)}
+                        onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/image`, { headers: { jwt: jwt }} )
+                            .then(response => {
+                                setShowImageUpload(false);
+                                setImage(undefined);
+                                notify(`Circle Image Deleted`, ToastStyle.SUCCESS)})
+                            .catch((error) => processAJAXError(error))}
+                        onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
+                            .then(response => {
+                                setShowImageUpload(false);
+                                setImage(response.data);
+                                notify(`Circle Image Uploaded`, ToastStyle.SUCCESS)})
+                            .catch((error) => processAJAXError(error))}
+                    />
+                }
         </div>
     );
 }

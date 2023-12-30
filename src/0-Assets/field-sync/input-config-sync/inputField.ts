@@ -46,7 +46,7 @@ export default class InputField {
     selectOptionList: string[];
     displayOptionList: string[];
 
-    constructor({title, field, value, type=InputType.TEXT, required=false, unique=false, hide=false, validationRegex=new RegExp(/.+/), validationMessage='Invalid Input', selectOptionList=[]} :
+    constructor({title, field, value, type=InputType.TEXT, required=false, unique=false, hide=false, validationRegex=new RegExp(/^.+$/), validationMessage='Invalid Input', selectOptionList=[]} :
         {title:string, field:string, value?:string | undefined, type?: InputType, required?:boolean, unique?:boolean, hide?:boolean, validationRegex?: RegExp, validationMessage?: string, selectOptionList?: string[]}) {
         this.title = title;
         this.field = field;
