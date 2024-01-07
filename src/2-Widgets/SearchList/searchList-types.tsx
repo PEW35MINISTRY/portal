@@ -1,4 +1,5 @@
 import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
+import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem } from '../../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
 import { CircleStatusEnum } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
@@ -9,7 +10,7 @@ import { CircleStatusEnum } from '../../0-Assets/field-sync/input-config-sync/ci
  * ******************/
 
 /* Supported List Item Types in SearchList */
-export type DisplayItemType = LabelListItem | ProfileListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem;
+export type DisplayItemType = LabelListItem | ProfileListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
 
 export type LabelListItem = string;
 
@@ -19,11 +20,13 @@ export const extractItemID = (displayItem:DisplayItemType, displayType:ListItemT
     : (displayType === ListItemTypesEnum.CIRCLE_ANNOUNCEMENT) ? (displayItem as CircleAnnouncementListItem).announcementID
     : (displayType === ListItemTypesEnum.CIRCLE_EVENT) ? (displayItem as CircleEventListItem).eventID
     : (displayType === ListItemTypesEnum.PRAYER_REQUEST) ? (displayItem as PrayerRequestListItem).prayerRequestID
+    : (displayType === ListItemTypesEnum.CONTENT_ARCHIVE) ? (displayItem as ContentListItem).contentID
     : -1;
 
 export enum SearchListSearchTypesEnum { //Must match ListItemTypesEnum
     USER = 'USER',
-    CIRCLE = 'CIRCLE'
+    CIRCLE = 'CIRCLE',
+    CONTENT_ARCHIVE = 'CONTENT_ARCHIVE'
 }
 
 export enum ListItemTypesEnum {
@@ -34,10 +37,11 @@ export enum ListItemTypesEnum {
     CIRCLE_EVENT = 'CIRCLE_EVENT',
     PRAYER_REQUEST = 'PRAYER_REQUEST',
     PRAYER_REQUEST_COMMENT = 'PRAYER_REQUEST_COMMENT',
+    CONTENT_ARCHIVE = 'CONTENT_ARCHIVE',
 }
 
 //Won't hide empty list to allow searching | Universal list, SearchListKey must still be specified
-export const SHOW_TITLE_OPTIONS:string[] = ['Profiles', 'Circles', 'Members', 'Events'];
+export const SHOW_TITLE_OPTIONS:string[] = ['Profiles', 'Circles', 'Members', 'Events', 'Content'];
 
 export class SearchListKey { 
     displayTitle:string;

@@ -108,6 +108,19 @@
                     text-align: left;
                 }
             }
+
+            .custom-string-list-box {
+                display: flex;
+                flex-wrap: wrap;
+                margin-bottom: auto;
+
+                label {
+                    color: white;
+                    background-color: $red;
+                    padding: 0.15rem 0.5rem;
+                    margin: 0.15rem 0.25rem;
+                }
+            }
     
        
             .validation {

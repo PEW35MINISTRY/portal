@@ -18,6 +18,8 @@ import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/announcement-icon-blue.png'
 import PRAYER_ICON from '../../0-Assets/prayer-request-icon-blue.png';
 import LIKE_ICON from '../../0-Assets/like-icon-blue.png';
 import CIRCLE_EVENT_DEFAULT from '../../0-Assets/event-icon-blue.png';
+import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
+import { ContentSearchFilterEnum } from '../../0-Assets/field-sync/input-config-sync/content-field-config';
 
 
 const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
@@ -137,6 +139,12 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
     const getSearchType = ():SearchListSearchTypesEnum|undefined => selectedKey.searchType || undefined;
 
+    const getSearchFilterList = ():string[] => Object.values(
+          (selectedKey.searchType) === SearchListSearchTypesEnum.USER ? UserSearchFilterEnum 
+        : (selectedKey.searchType) === SearchListSearchTypesEnum.CIRCLE ? CircleSearchFilterEnum
+        : (selectedKey.searchType) === SearchListSearchTypesEnum.CONTENT_ARCHIVE ? ContentSearchFilterEnum
+        : []);
+
     const getSearchTypeTitleList = ():string[] => 
         Array.from(props.displayMap.keys() || [])
             .filter(key => Array.from(props.displayMap.get(key) || []).length > 0 
@@ -155,9 +163,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                 </select>
                 {(getKey(selectedKeyTitle).searchType !== undefined)
                 && <div id='search-header-search'>
-                        <input id='search-header-field' value={searchTerm} onChange={onSearchInput} onKeyDown={(e)=>{if(e.key === 'Enter') searchExecute()}} type='text' placeholder={`${getSearchType()?.charAt(0)}${getSearchType()?.replaceAll('_', ' ').toLowerCase()?.slice(1) || 'ERROR'} Search`}/>
+                        <input id='search-header-field' value={searchTerm} onChange={onSearchInput} onKeyDown={(e)=>{if(e.key === 'Enter') searchExecute()}} type='text' placeholder={`${getSearchType()?.charAt(0)}${getSearchType()?.replaceAll('_', ' ').toLowerCase()?.slice(1) || 'ERROR'} search`}/>
                         <select id='search-header-filter' className='title' onChange={({ target: { value } }) => setSearchFilter(value)} defaultValue='ALL'>
-                            {Object.values(getSearchType() === SearchListSearchTypesEnum.USER ? UserSearchFilterEnum : CircleSearchFilterEnum).map((value, index) =>
+                            {getSearchFilterList().map((value, index) =>
                                 <option key={index} value={value} >{value?.charAt(0) || ''}{value?.toLowerCase()?.replaceAll('_', ' & ')?.substring(1,4) || ''}</option>
                             )}             
                         </select>
@@ -186,6 +194,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                         
                     : item.displayType === ListItemTypesEnum.PRAYER_REQUEST_COMMENT ? 
                         <PrayerRequestCommentItem key={`${props.key}+${index}`} {...item} prayerRequestComment={item.displayItem as PrayerRequestCommentListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
+
+                    : item.displayType === ListItemTypesEnum.CONTENT_ARCHIVE ? 
+                        <ContentArchiveItem key={`${props.key}+${index}`} {...item} content={item.displayItem as ContentListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
 
                     : <div key={`${props.key}+${index}`}>ERROR</div>                    
                 )}
@@ -325,6 +336,27 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
             <div className='search-item-button-row' >
                     {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.prayerRequestComment.commentID, props.prayerRequestComment);}} >{props.alternativeButtonText}</button>}
                     {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.prayerRequestComment.commentID, props.prayerRequestComment);}} >{props.primaryButtonText}</button>}
+            </div>}
+    </div>);
+}
+
+export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem, onClick?:(id:number, item:ContentListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ContentListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ContentListItem)=>void}) => {
+    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    return (
+    <div key={props.key} className='search-content-archive-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >       
+        <img src={CIRCLE_DEFAULT} alt={props.content.url}/>
+        {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.content.contentID}</label>}
+        <div className='tag-detail-box'>
+            <p key={'type'}>{props.content.type}</p>
+            <p key={'source'}>{props.content.source}</p>
+            {[...props.content.keywordList].map((tag, index) => 
+                <p key={'tag'+index}>{tag}</p>
+            )}
+        </div>
+        {(props.alternativeButtonText || props.primaryButtonText) && 
+            <div className='search-item-button-row' >
+                    {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.content.contentID, props.content);}} >{props.alternativeButtonText}</button>}
+                    {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.content.contentID, props.content);}} >{props.primaryButtonText}</button>}
             </div>}
     </div>);
 }

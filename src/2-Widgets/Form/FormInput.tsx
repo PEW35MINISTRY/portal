@@ -60,6 +60,10 @@ const FormInput = ({...props}:{key:any, validateUniqueFields?:boolean, FIELDS:In
         } else if(currentValue === undefined){
             return true;
 
+        /* CUSTOM_STRING_LIST */
+        } else if(field.type === InputType.CUSTOM_STRING_LIST) {
+            return !Array.isArray(currentValue) || currentValue.some((v:string) => !(new RegExp(field.validationRegex).test(v)));
+
         /* Validate general validationRegex from config */
         } else if(!(new RegExp(field.validationRegex).test(currentValue))){
             return false;
@@ -228,6 +232,10 @@ const FormInput = ({...props}:{key:any, validateUniqueFields?:boolean, FIELDS:In
                                     )}
                                 </select>
 
+                            : (f.type === InputType.NUMBER_SLIDER) 
+                                ? <input name={f.field} type={'range'} onChange={onInput} value={props.getInputField(f.field)?.toString() || ''} onBlur={onUniqueField}/>
+
+
                             : (f.type === InputType.MULTI_SELECTION_LIST) 
                                 ? <select name={f.field} onChange={onInput} value={(props.getInputField(f.field) == undefined) ? 'defaultValue' : 'combinedValue'}>
                                     <option value={'defaultValue'} disabled hidden>Select:</option>
@@ -236,6 +244,13 @@ const FormInput = ({...props}:{key:any, validateUniqueFields?:boolean, FIELDS:In
                                         <option key={`${f.field}-${item}`} value={`${item}`}>{f.displayOptionList[i]}</option>
                                     )}
                                 </select>
+
+                            : (f.type === InputType.CUSTOM_STRING_LIST) 
+                                ? <div className='custom-string-list-box'>
+                                    {makeDisplayList(Array.from(props.getInputField(f.field) || [])).map((item, i)=>
+                                        <label key={`${f.field}-${item}`} >{item}</label>
+                                    )}
+                                </div>
 
                             : <p className='validation' ></p>
                         }

@@ -1,0 +1,46 @@
+@import '../index.scss';
+
+#contact-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 5vh 10vw;
+    overflow-y: auto;
+
+    .logo-image {
+        max-height: 20vh;
+    }
+
+    .profile-box {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin: 1.0rem auto;
+
+        .profile-image {
+            max-height: 5.0rem;
+            margin-right: 2.0rem;
+        }
+    }
+
+    p {
+        padding: 1.0rem;
+        border: 2px solid $blue;
+    }
+
+    h3, h4 {
+        color: $red;
+    }
+
+    ul {
+        margin: 0 0 1.0rem 3.0rem;
+    }
+
+    hr {
+        width: 100%;
+        border: none;
+        border-bottom: 1px solid $blue;
+    }
+}

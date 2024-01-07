@@ -97,7 +97,8 @@
         .search-circle-announcement-item, 
         .search-circle-event-item, 
         .search-prayer-request-item,
-        .search-prayer-request-comment-item {
+        .search-prayer-request-comment-item,
+        .search-content-archive-item {
             display: flex;
             flex-direction: column;
             padding: 0.65rem 0.5rem;
@@ -229,7 +230,8 @@
         }
 
         .search-circle-item,
-        .search-circle-event-item {
+        .search-circle-event-item,
+        .search-content-archive-item {
             flex-direction: column;
 
             img {
