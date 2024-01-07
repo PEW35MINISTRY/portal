@@ -173,7 +173,7 @@ const UserEditPage = () => {
     /***************************
      *   Edit Field Handlers
      * *************************/
-    const getInputField = (field:string):any|undefined => inputMap.get(field);
+    const getInputField = (field:string):any|undefined => inputMap.get(field) || EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
