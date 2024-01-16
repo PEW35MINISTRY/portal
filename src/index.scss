@@ -118,7 +118,8 @@ label,
 }
 
 h5,
-h6 {
+h6,
+.text {
   font-family: 'Roboto';
   font-weight: 300;
   font-size: 1.0rem;
@@ -139,7 +140,7 @@ input, select, textarea {
 
 }
 
-input,textarea {
+input, textarea {
     border: none;
     border-bottom: 1px solid $blue;
     border-radius: 0;

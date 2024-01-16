@@ -43,7 +43,7 @@ const SupportPage = () => {
             <img className='logo-image' src={LOGO} alt='Logo-Image' />
 
             <div className='profile-box'>
-                <img className='profile-image' src={supportProfile?.image || PROFILE_DEFAULT} alt='Profile-Image' />
+                <img className='profile-image' src={supportProfile?.image || PROFILE_DEFAULT} alt='Profile-Image' onError={(e)=>e.currentTarget.src = PROFILE_DEFAULT} />
                 <h2 >{supportProfile?.firstName || 'SUPPORT'}</h2>
                 <label className='title id-left'>{supportProfile?.displayName}</label>
             </div>

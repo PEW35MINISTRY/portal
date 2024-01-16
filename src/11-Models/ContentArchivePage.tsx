@@ -2,7 +2,7 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import InputField from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { InputRangeField, checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
 import { makeDisplayText } from '../1-Utilities/utilities';
@@ -21,7 +21,6 @@ import CIRCLE_DEFAULT from '../0-Assets/circle-default.png';
 
 const ContentArchivePage = () => {
     const navigate = useNavigate();
-    const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
@@ -112,8 +111,9 @@ const ContentArchivePage = () => {
                         setSearchUserID(value);
                         valueMap.set('recorderID', value);
 
-                    } else if(EDIT_FIELDS.some(f => f.field === field))
+                    } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
+                        
                     else    
                         console.log(`EditContentArchiveRequest-skipping field: ${field}`, value);
                 });
@@ -134,6 +134,7 @@ const ContentArchivePage = () => {
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody:ContentResponseBody = {} as ContentResponseBody;
         finalMap.forEach((value, field) => {
+            if(value === '') value = null; //Valid for clearing fields in database
             //@ts-ignore
             requestBody[field] = value;
         });
@@ -191,10 +192,11 @@ const ContentArchivePage = () => {
      *   RENDER DISPLAY 
      * *******************/
     return (
-        <div id='edit-content-archive'  className='form-page'>
+        <div id='edit-content-archive'  className='form-page form-page-stretch'>
 
             <FormInput
                 key={editingContentID}
+                getIDField={()=>({modelIDField: 'contentID', modelID: editingContentID})}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 FIELDS={EDIT_FIELDS}

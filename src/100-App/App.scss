@@ -319,6 +319,7 @@
         margin: 0;
         height: $page-height;
         width: 100%;
+        overflow-y: auto;
 
         #page-not-found {
             display: flex;

@@ -62,7 +62,7 @@ const AppContent = () => {
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
 
     const MENU_CONFIG_LIST:MenuPageListing[] = [
-      {label: '* HELP * SUPPORT *', route: `/portal/contact`, activeIcon: LOGO, inactiveIcon: LOGO},
+      {label: '* HELP * SUPPORT *', route: `/portal/support`, activeIcon: LOGO, inactiveIcon: LOGO},
       {label: 'Content Archive', route: '/portal/edit/content-archive/-1', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, addRoute: '/portal/edit/content-archive/new', exclusiveRoleList: [RoleEnum.CONTENT_APPROVER, RoleEnum.ADMIN]},
       {label: 'Profile', route: `/portal/edit/profile/${userID}`, activeIcon: PROFILE_ICON_ACTIVE, inactiveIcon: PROFILE_ICON},
       {label: 'Circle', route: '/portal/edit/circle/-1', activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},

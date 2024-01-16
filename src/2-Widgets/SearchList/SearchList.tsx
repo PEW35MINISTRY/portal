@@ -79,8 +79,11 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const searchExecute = async(value:string = searchTerm) => { //copy over primary/alternative button settings (optimize buttons)
         const params = new URLSearchParams([['search', value], ['filter', searchFilter], ['status', selectedKey.searchCircleStatus || ''], ['ignoreCache', ignoreCache ? 'true' : 'false']]);
 
-        await axios.get(`${process.env.REACT_APP_DOMAIN}/api/${getSearchType() === SearchListSearchTypesEnum.CIRCLE ? 'circle-list' : 'user-list'}`, 
-                { headers: { jwt: jwt }, params} )
+        await axios.get(`${process.env.REACT_APP_DOMAIN}/`+
+                (getSearchType() === SearchListSearchTypesEnum.USER) ? 'api/user-list'
+                : (getSearchType() === SearchListSearchTypesEnum.CIRCLE) ? 'api/circle-list'
+                : (getSearchType() === SearchListSearchTypesEnum.CONTENT_ARCHIVE) ? 'api/content-approver/content-list'
+                : 'search-type', { headers: { jwt: jwt }, params} )
             .then(response => {
                 const cacheMap:Map<string, SearchListValue> = searchButtonCache || assembleSearchButtonCache();
                 const resultList:SearchListValue[] = [];  
@@ -349,8 +352,9 @@ export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem,
         <div className='tag-detail-box'>
             <p key={'type'}>{props.content.type}</p>
             <p key={'source'}>{props.content.source}</p>
-            {[...props.content.keywordList].map((tag, index) => 
-                <p key={'tag'+index}>{tag}</p>
+            {(props.content.keywordList) &&
+                [...props.content.keywordList].map((tag, index) => 
+                    <p key={'tag'+index}>{tag}</p>
             )}
         </div>
         {(props.alternativeButtonText || props.primaryButtonText) && 

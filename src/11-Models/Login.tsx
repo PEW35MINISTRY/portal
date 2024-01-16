@@ -101,6 +101,7 @@ const Login = () => {
 
                 <FormInput
                     key={'Login'}
+                    getIDField={()=>({modelIDField: 'userID', modelID: -1})}
                     validateUniqueFields={false}
                     getInputField={getInputField}
                     setInputField={setInputField}

@@ -121,6 +121,10 @@
                     margin: 0.15rem 0.25rem;
                 }
             }
+
+            .custom-field {
+                grid-column: 2;
+            }
     
        
             .validation {
@@ -166,29 +170,99 @@
                     }
                 }
 
-                #token-entry {
+                
+            }
+
+            .slider-track {
+                position: relative;
+                margin: auto 0.5rem;
+                padding: 0;
+                height: 1px;
+                border-bottom: 1px solid $blue;
+
+                .slider-thumb {
+                    
+                    border: 1px solid $blue;
+                    border-radius: 50%;
+                    background-color: white;
+                    padding: 0.2rem;
+                    margin: auto;
+
+                    .slider-thumb-label {
+                        @extend .text;
+                        display: block;
+                        text-align: center;
+                        margin: auto;
+                        font-size: 0.7rem;
+                        min-width: 0.7rem; //round for one or two digits
+                    }
+                }
+            }
+
+            .multi-range-slider {
+                padding: 0;
+                margin: auto 0;
+                border: 0;
+                box-shadow: none;
+                background-color: red;
+            }
+
+            .max-min-slider {
+                padding: 0;
+                margin: 0;
+                border: 0;
+                box-shadow: none;
+                background-color: red;
+            }
+
+            #custom-string-list {
+
+                .list-left-align-box {
+                    width: 100%;
                     display: flex;
                     flex-direction: row;
+                    flex-wrap: wrap;
+                    align-items: flex-start;
+                    justify-content: left;
+
+                    .list-value {
+                        @extend .text;
+                        border: 1px solid $blue;
+                        padding: 0.05rem 0.25rem;
+                        margin: 0.15rem;
+
+                        &:hover {
+                            border-color: $red;
+                            color: $red;
+                            cursor: pointer;
+                        }
+                    }
+                }
+
+            }
+
+            .custom-input-box {
+                display: flex;
+                flex-direction: row;
+
+                @media only screen and (max-width: 768px) {
+                    flex-direction: column;
+                }
+
+                input {
+                    grid-column: 1;
+                    width: 100%;
+                }
+
+                button {
+                    grid-column: 2;
+                    margin: auto;
+                    margin-left: 1.0rem;
+                    font-size: 1.0rem;
+                    padding: 0.2rem 1.0rem;
 
                     @media only screen and (max-width: 768px) {
-                        flex-direction: column;
-                    }
-
-                    input {
-                        grid-column: 1;
-                        width: 100%;
-                    }
-
-                    button {
-                        grid-column: 2;
                         margin: auto;
-                        margin-left: 1.0rem;
-                        font-size: 1.0rem;
-                        padding: 0.2rem 1.0rem;
-
-                        @media only screen and (max-width: 768px) {
-                            margin: auto;
-                        }
                     }
                 }
             }
