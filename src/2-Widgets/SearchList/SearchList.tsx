@@ -8,6 +8,9 @@ import { RoleEnum, UserSearchFilterEnum } from '../../0-Assets/field-sync/input-
 import formatRelativeDate from '../../1-Utilities/dateFormat';
 import { processAJAXError, useAppSelector } from '../../1-Utilities/hooks';
 import { DisplayItemType, LabelListItem, ListItemTypesEnum, SHOW_TITLE_OPTIONS, SearchListKey, SearchListSearchTypesEnum, SearchListValue, extractItemID } from './searchList-types';
+import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
+import { ContentSearchFilterEnum } from '../../0-Assets/field-sync/input-config-sync/content-field-config';
+import { ContentArchivePreview } from '../../11-Models/ContentArchivePage';
 
 import './searchList.scss';
 
@@ -18,8 +21,6 @@ import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/announcement-icon-blue.png'
 import PRAYER_ICON from '../../0-Assets/prayer-request-icon-blue.png';
 import LIKE_ICON from '../../0-Assets/like-icon-blue.png';
 import CIRCLE_EVENT_DEFAULT from '../../0-Assets/event-icon-blue.png';
-import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
-import { ContentSearchFilterEnum } from '../../0-Assets/field-sync/input-config-sync/content-field-config';
 
 
 const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
@@ -347,11 +348,16 @@ export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem,
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     return (
     <div key={props.key} className='search-content-archive-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >       
-        <img src={CIRCLE_DEFAULT} alt={props.content.url}/>
+        <ContentArchivePreview
+            url={props.content.url}
+            source={props.content.source}
+            maxWidth={300}
+            height={150}
+        />
         {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.content.contentID}</label>}
         <div className='tag-detail-box'>
-            <p key={'type'}>{props.content.type}</p>
-            <p key={'source'}>{props.content.source}</p>
+            <p key={'type'} className='detail-label-primary'>{props.content.type}</p>
+            <p key={'source'} className='detail-label-alternative'>{props.content.source}</p>
             {(props.content.keywordList) &&
                 [...props.content.keywordList].map((tag, index) => 
                     <p key={'tag'+index}>{tag}</p>

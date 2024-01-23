@@ -1,10 +1,10 @@
 import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import InputField, { InputRangeField, checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
+import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
+import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
-import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
+import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { makeDisplayText } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -13,10 +13,13 @@ import { EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/fiel
 import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 
-import '../2-Widgets/Form/form.scss';
+import './contentArchive.scss';
 
 //Assets
-import CIRCLE_DEFAULT from '../0-Assets/circle-default.png';
+import MEDIA_DEFAULT from '../0-Assets/media-blue.png';
+import GOT_QUESTIONS from '../0-Assets/got-questions.png';
+import BIBLE_PROJECT from '../0-Assets/bible-project.png';
+import THROUGH_THE_WORD from '../0-Assets/through-the-word.png';
 
 
 const ContentArchivePage = () => {
@@ -28,9 +31,12 @@ const ContentArchivePage = () => {
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
+    const [previewURL, setPreviewURL] = useState<string|undefined>(undefined);
 
     const [editingContentID, setEditingContentID] = useState<number>(-1);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
+    const previewRef = useRef<HTMLDivElement>(null);
+    const [previewWidth, setPreviewWidth] = useState<number>(200);
 
     //SearchList Cache
     const [searchUserID, setSearchUserID] = useState<number>(userID);
@@ -111,6 +117,10 @@ const ContentArchivePage = () => {
                         setSearchUserID(value);
                         valueMap.set('recorderID', value);
 
+                    } else if(field === 'url') {
+                        setPreviewURL(value);
+                        valueMap.set(field, value);
+
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                         
@@ -188,9 +198,22 @@ const ContentArchivePage = () => {
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
    
-    /*********************
-     *   RENDER DISPLAY 
-     * *******************/
+    /*************************
+     * Update Social Preview *
+     *************************/
+    useEffect(() => {
+        if(previewRef.current) setPreviewWidth(Math.min(previewRef.current.offsetWidth, 400));
+    }, [previewRef.current?.offsetWidth]);
+
+    const onUpdatePreview = (event:React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        event.preventDefault();
+        setPreviewURL(undefined);
+        setTimeout(()=>setPreviewURL(getInputField('url')), 1500);
+    }
+
+    /******************
+     * RENDER DISPLAY *
+     ******************/
     return (
         <div id='edit-content-archive'  className='form-page form-page-stretch'>
 
@@ -209,7 +232,13 @@ const ContentArchivePage = () => {
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{'Content Archive'}</h1>
                         </div>
-                        <img className='form-header-image circle-image' src={CIRCLE_DEFAULT} alt='Content-Preview' />
+                        <ContentArchivePreview
+                            url={previewURL || ''}
+                            source={getInputField('source')}
+                            maxWidth={400}
+                            height={undefined}
+                        />
+                        <button className='alternative-button update-button' onClick={onUpdatePreview}>Update Preview</button>
                     </div>}
             />
 
@@ -238,9 +267,13 @@ const ContentArchivePage = () => {
                             <span>
                                 {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingContentID}</label>}
                             </span>
-                        </div>
-                        
-                        <img className='form-header-image circle-image' src={getInputField('image') || CIRCLE_DEFAULT} alt='Circle-Image' />
+                        </div>                        
+                        <ContentArchivePreview
+                            url={previewURL || ''}
+                            source={getInputField('source')}
+                            maxWidth={400}
+                            height={undefined}
+                        />
                         <h2>Delete Content?</h2>
                         {getInputField('description') && <p className='id' >{getInputField('description')}</p>}
                         <label >{`-> ${getInputField('type')}`}</label>
@@ -258,3 +291,56 @@ const ContentArchivePage = () => {
 }
 
 export default ContentArchivePage;
+
+
+
+/**********************************
+ * Embedded Social Post Component *
+ **********************************/
+export const ContentArchivePreview = (props:{url:string, source:string, maxWidth:number, height:number|undefined}) => {
+    const previewRef = useRef<HTMLDivElement>(null);
+    const [previewWidth, setPreviewWidth] = useState<number>(200);
+
+    useEffect(() => {
+        if(previewRef.current) setPreviewWidth(Math.min(previewRef.current.offsetWidth * 0.9, props.maxWidth));
+    }, [previewRef.current?.offsetWidth]);
+
+    return (
+        <div ref={previewRef} id='content-wrapper' style={props.height ? {height: props.height} : {}} onClick={(e)=>{e.preventDefault(); e.stopPropagation();}} >
+            <div id='content-inner' >
+                {(props.url && props.source === 'FACEBOOK') ?
+                    <FacebookEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'FACEBOOK') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.url && props.source === 'INSTAGRAM') ?
+                    <InstagramEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'INSTAGRAM') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.url && props.source === 'PINTEREST') ?
+                    <PinterestEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'PINTEREST') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.url && props.source === 'TIKTOK') ?
+                    <TikTokEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'TIKTOK') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.url && props.source === 'X_TWITTER') ?
+                    <TwitterEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'X_TWITTER') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.url && props.source === 'YOUTUBE') ?
+                    <YouTubeEmbed url={props.url} width={previewWidth} />
+                : (props.source === 'YOUTUBE') ?
+                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                : (props.source === 'GOT_QUESTIONS') ?
+                    <img className='form-header-image content-image' src={GOT_QUESTIONS} alt='Got Questions' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                : (props.source === 'BIBLE_PROJECT') ?
+                    <img className='form-header-image content-image' src={BIBLE_PROJECT} alt='Bible Project' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                : (props.source === 'THROUGH_THE_WORD') ?
+                    <img className='form-header-image content-image' src={THROUGH_THE_WORD} alt='Through the Word' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                : 
+                    <img className='form-header-image content-image' src={MEDIA_DEFAULT} alt='Content Preview' style={props.height ? {maxHeight: props.height * 0.95} : {}} /> }
+            </div>
+        </div>
+    );
+}

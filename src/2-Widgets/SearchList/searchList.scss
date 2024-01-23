@@ -126,6 +126,10 @@
                 flex-direction: row;
                 align-items: baseline;
                 flex-wrap: wrap;
+
+                .detail-label-tag {
+                    color: $blue;
+                }
             }
 
             .circle-announcement-detail-box {
@@ -199,6 +203,20 @@
                 &.comment {
                     margin-left: 0;
                     padding-left: 0;
+                }
+
+                &.detail-label-primary {
+                    color: $red;
+                    border-left-color: transparent;
+                    border-top: 1px solid $red;
+                    border-bottom: 1px solid $red;
+                }
+
+                &.detail-label-alternative {
+                    color: $blue;
+                    border-left-color: transparent;
+                    border-top: 1px solid $blue;
+                    border-bottom: 1px solid $blue;
                 }
             }
 
