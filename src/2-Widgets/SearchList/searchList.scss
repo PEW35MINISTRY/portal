@@ -97,7 +97,8 @@
         .search-circle-announcement-item, 
         .search-circle-event-item, 
         .search-prayer-request-item,
-        .search-prayer-request-comment-item {
+        .search-prayer-request-comment-item,
+        .search-content-archive-item {
             display: flex;
             flex-direction: column;
             padding: 0.65rem 0.5rem;
@@ -125,6 +126,10 @@
                 flex-direction: row;
                 align-items: baseline;
                 flex-wrap: wrap;
+
+                .detail-label-tag {
+                    color: $blue;
+                }
             }
 
             .circle-announcement-detail-box {
@@ -199,6 +204,20 @@
                     margin-left: 0;
                     padding-left: 0;
                 }
+
+                &.detail-label-primary {
+                    color: $red;
+                    border-left-color: transparent;
+                    border-top: 1px solid $red;
+                    border-bottom: 1px solid $red;
+                }
+
+                &.detail-label-alternative {
+                    color: $blue;
+                    border-left-color: transparent;
+                    border-top: 1px solid $blue;
+                    border-bottom: 1px solid $blue;
+                }
             }
 
             .id {
@@ -229,7 +248,8 @@
         }
 
         .search-circle-item,
-        .search-circle-event-item {
+        .search-circle-event-item,
+        .search-content-archive-item {
             flex-direction: column;
 
             img {

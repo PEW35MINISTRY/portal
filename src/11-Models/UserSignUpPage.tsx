@@ -82,6 +82,7 @@ const SignUpPage = () => {
 
                 <FormInput
                     key={'SIGN-UP'}
+                    getIDField={()=>({modelIDField: 'userID', modelID: -1})}
                     validateUniqueFields={true}
                     getInputField={getInputField}
                     setInputField={setInputField}

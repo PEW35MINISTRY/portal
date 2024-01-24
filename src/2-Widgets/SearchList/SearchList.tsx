@@ -8,6 +8,9 @@ import { RoleEnum, UserSearchFilterEnum } from '../../0-Assets/field-sync/input-
 import formatRelativeDate from '../../1-Utilities/dateFormat';
 import { processAJAXError, useAppSelector } from '../../1-Utilities/hooks';
 import { DisplayItemType, LabelListItem, ListItemTypesEnum, SHOW_TITLE_OPTIONS, SearchListKey, SearchListSearchTypesEnum, SearchListValue, extractItemID } from './searchList-types';
+import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
+import { ContentSearchFilterEnum } from '../../0-Assets/field-sync/input-config-sync/content-field-config';
+import { ContentArchivePreview } from '../../11-Models/ContentArchivePage';
 
 import './searchList.scss';
 
@@ -77,8 +80,11 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const searchExecute = async(value:string = searchTerm) => { //copy over primary/alternative button settings (optimize buttons)
         const params = new URLSearchParams([['search', value], ['filter', searchFilter], ['status', selectedKey.searchCircleStatus || ''], ['ignoreCache', ignoreCache ? 'true' : 'false']]);
 
-        await axios.get(`${process.env.REACT_APP_DOMAIN}/api/${getSearchType() === SearchListSearchTypesEnum.CIRCLE ? 'circle-list' : 'user-list'}`, 
-                { headers: { jwt: jwt }, params} )
+        await axios.get(`${process.env.REACT_APP_DOMAIN}/`+
+                (getSearchType() === SearchListSearchTypesEnum.USER) ? 'api/user-list'
+                : (getSearchType() === SearchListSearchTypesEnum.CIRCLE) ? 'api/circle-list'
+                : (getSearchType() === SearchListSearchTypesEnum.CONTENT_ARCHIVE) ? 'api/content-approver/content-list'
+                : 'search-type', { headers: { jwt: jwt }, params} )
             .then(response => {
                 const cacheMap:Map<string, SearchListValue> = searchButtonCache || assembleSearchButtonCache();
                 const resultList:SearchListValue[] = [];  
@@ -137,6 +143,12 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
     const getSearchType = ():SearchListSearchTypesEnum|undefined => selectedKey.searchType || undefined;
 
+    const getSearchFilterList = ():string[] => Object.values(
+          (selectedKey.searchType) === SearchListSearchTypesEnum.USER ? UserSearchFilterEnum 
+        : (selectedKey.searchType) === SearchListSearchTypesEnum.CIRCLE ? CircleSearchFilterEnum
+        : (selectedKey.searchType) === SearchListSearchTypesEnum.CONTENT_ARCHIVE ? ContentSearchFilterEnum
+        : []);
+
     const getSearchTypeTitleList = ():string[] => 
         Array.from(props.displayMap.keys() || [])
             .filter(key => Array.from(props.displayMap.get(key) || []).length > 0 
@@ -155,9 +167,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                 </select>
                 {(getKey(selectedKeyTitle).searchType !== undefined)
                 && <div id='search-header-search'>
-                        <input id='search-header-field' value={searchTerm} onChange={onSearchInput} onKeyDown={(e)=>{if(e.key === 'Enter') searchExecute()}} type='text' placeholder={`${getSearchType()?.charAt(0)}${getSearchType()?.replaceAll('_', ' ').toLowerCase()?.slice(1) || 'ERROR'} Search`}/>
+                        <input id='search-header-field' value={searchTerm} onChange={onSearchInput} onKeyDown={(e)=>{if(e.key === 'Enter') searchExecute()}} type='text' placeholder={`${getSearchType()?.charAt(0)}${getSearchType()?.replaceAll('_', ' ').toLowerCase()?.slice(1) || 'ERROR'} search`}/>
                         <select id='search-header-filter' className='title' onChange={({ target: { value } }) => setSearchFilter(value)} defaultValue='ALL'>
-                            {Object.values(getSearchType() === SearchListSearchTypesEnum.USER ? UserSearchFilterEnum : CircleSearchFilterEnum).map((value, index) =>
+                            {getSearchFilterList().map((value, index) =>
                                 <option key={index} value={value} >{value?.charAt(0) || ''}{value?.toLowerCase()?.replaceAll('_', ' & ')?.substring(1,4) || ''}</option>
                             )}             
                         </select>
@@ -186,6 +198,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                         
                     : item.displayType === ListItemTypesEnum.PRAYER_REQUEST_COMMENT ? 
                         <PrayerRequestCommentItem key={`${props.key}+${index}`} {...item} prayerRequestComment={item.displayItem as PrayerRequestCommentListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
+
+                    : item.displayType === ListItemTypesEnum.CONTENT_ARCHIVE ? 
+                        <ContentArchiveItem key={`${props.key}+${index}`} {...item} content={item.displayItem as ContentListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
 
                     : <div key={`${props.key}+${index}`}>ERROR</div>                    
                 )}
@@ -325,6 +340,33 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
             <div className='search-item-button-row' >
                     {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.prayerRequestComment.commentID, props.prayerRequestComment);}} >{props.alternativeButtonText}</button>}
                     {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.prayerRequestComment.commentID, props.prayerRequestComment);}} >{props.primaryButtonText}</button>}
+            </div>}
+    </div>);
+}
+
+export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem, onClick?:(id:number, item:ContentListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ContentListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ContentListItem)=>void}) => {
+    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    return (
+    <div key={props.key} className='search-content-archive-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >       
+        <ContentArchivePreview
+            url={props.content.url}
+            source={props.content.source}
+            maxWidth={300}
+            height={150}
+        />
+        {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.content.contentID}</label>}
+        <div className='tag-detail-box'>
+            <p key={'type'} className='detail-label-primary'>{props.content.type}</p>
+            <p key={'source'} className='detail-label-alternative'>{props.content.source}</p>
+            {(props.content.keywordList) &&
+                [...props.content.keywordList].map((tag, index) => 
+                    <p key={'tag'+index}>{tag}</p>
+            )}
+        </div>
+        {(props.alternativeButtonText || props.primaryButtonText) && 
+            <div className='search-item-button-row' >
+                    {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.content.contentID, props.content);}} >{props.alternativeButtonText}</button>}
+                    {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.content.contentID, props.content);}} >{props.primaryButtonText}</button>}
             </div>}
     </div>);
 }

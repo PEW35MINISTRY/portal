@@ -5,7 +5,7 @@ import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem,
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CIRCLE_ANNOUNCEMENT_FIELDS, CIRCLE_FIELDS, CIRCLE_FIELDS_ADMIN, CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
-import InputField from '../0-Assets/field-sync/input-config-sync/inputField.js';
+import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
@@ -134,7 +134,7 @@ const CircleEditPage = () => {
                     setImage(value);
                     valueMap.set('image', value);
 
-                } else if(EDIT_FIELDS.some(f => f.field === field))
+                } else if(checkFieldName(EDIT_FIELDS, field))
                     valueMap.set(field, value);
                 else    
                     console.log(`EditCircle-skipping field: ${field}`, value);
@@ -160,6 +160,7 @@ const CircleEditPage = () => {
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody:CircleEditRequestBody = {} as CircleEditRequestBody;
         finalMap.forEach((value, field) => {
+            if(value === '') value = null; //Valid for clearing fields in database
             //@ts-ignore
             requestBody[field] = value;
         });
@@ -261,6 +262,7 @@ const CircleEditPage = () => {
 
             <FormInput
                 key={editingCircleID}
+                getIDField={()=>({modelIDField: 'circleID', modelID: editingCircleID})}
                 validateUniqueFields={true}
                 getInputField={getInputField}
                 setInputField={setInputField}
@@ -501,6 +503,7 @@ const CircleAnnouncementPage = ({...props}:{key:any, onSaveCallback:(announcemen
 
                 <FormInput
                     key={'CIRCLE-ANNOUNCEMENT'+props.key}
+                    getIDField={()=>({modelIDField: 'announcementID', modelID: -1})}
                     getInputField={getInputField}
                     setInputField={setInputField}
                     FIELDS={CIRCLE_ANNOUNCEMENT_FIELDS}

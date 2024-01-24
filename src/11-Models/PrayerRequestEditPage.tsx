@@ -5,7 +5,7 @@ import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-type
 import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatchRequestBody, PrayerRequestResponseBody } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
-import InputField from '../0-Assets/field-sync/input-config-sync/inputField.js';
+import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
@@ -160,7 +160,7 @@ const PrayerRequestEditPage = () => {
                         setSearchUserID(value);
                         valueMap.set('requestorID', value);
 
-                    } else if(EDIT_FIELDS.some(f => f.field === field))
+                    } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                     else    
                         console.log(`EditPrayerRequest-skipping field: ${field}`, value);
@@ -188,6 +188,7 @@ const PrayerRequestEditPage = () => {
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody:PrayerRequestPatchRequestBody = {} as PrayerRequestPatchRequestBody;
         finalMap.forEach((value, field) => {
+            if(value === '') value = null; //Valid for clearing fields in database
             //@ts-ignore
             requestBody[field] = value;
         });
@@ -332,6 +333,7 @@ const PrayerRequestEditPage = () => {
 
             <FormInput
                 key={editingPrayerRequestID}
+                getIDField={()=>({modelIDField: 'prayerRequestID', modelID: editingPrayerRequestID})}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 FIELDS={EDIT_FIELDS}
@@ -495,6 +497,7 @@ const PrayerRequestCommentPage = ({...props}:{key:any, onSaveCallback:(commentIn
 
                 <FormInput
                     key={'PRAYER-REQUEST-COMMENT'+props.key}
+                    getIDField={()=>({modelIDField: 'commentID', modelID: -1})}
                     getInputField={getInputField}
                     setInputField={setInputField}
                     FIELDS={PRAYER_REQUEST_COMMENT_FIELDS}

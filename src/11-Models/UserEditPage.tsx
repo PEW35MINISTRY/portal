@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileEditRequestBody, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import InputField, { makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
@@ -107,7 +107,7 @@ const UserEditPage = () => {
                     setImage(value);
                     valueMap.set('image', value);
 
-                } else if(EDIT_FIELDS.some(f => f.field === field))
+                } else if(checkFieldName(EDIT_FIELDS, field))
                     valueMap.set(field, value);
                 else    
                     console.log(`EditProfile-skipping field: ${field}`, value);
@@ -135,8 +135,11 @@ const UserEditPage = () => {
             if(field === 'userRoleTokenList') { //@ts-ignore
                 requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
                                         .map(([role, token]) => ({role: role, token: token || ''}));
-            } else //@ts-ignore
+            } else {
+                if(value === '') value = null; //Valid for clearing fields in database
+                //@ts-ignore
                 requestBody[field] = value;
+            }
         });
 
         await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, requestBody, 
@@ -173,7 +176,7 @@ const UserEditPage = () => {
     /***************************
      *   Edit Field Handlers
      * *************************/
-    const getInputField = (field:string):any|undefined => inputMap.get(field);
+    const getInputField = (field:string):any|undefined => inputMap.get(field) || EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
@@ -185,6 +188,7 @@ const UserEditPage = () => {
 
             <FormInput
                 key={editingUserID}
+                getIDField={()=>({modelIDField: 'userID', modelID: editingUserID})}
                 validateUniqueFields={true}
                 getInputField={getInputField}
                 setInputField={setInputField}

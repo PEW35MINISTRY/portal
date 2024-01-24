@@ -9,15 +9,21 @@ import './App.scss';
 
 //Components
 import Dashboard from '../10-Dashboard/Dashboard';
+import SupportPage from '../10-Dashboard/SupportPage';
 import CircleEditPage from '../11-Models/CircleEditPage';
 import PrayerRequestEditPage from '../11-Models/PrayerRequestEditPage';
 import UserEditPage from '../11-Models/UserEditPage';
+import ContentArchivePage from '../11-Models/ContentArchivePage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
 import Log from '../12-Features/Log';
 
 //Assets
 import LOGO from '../0-Assets/logo.png';
+import SUPPORT_ICON from '../0-Assets/support-icon-blue.png';
+import SUPPORT_ICON_ACTIVE from '../0-Assets/support-icon-white.png';
+import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
+import CONTENT_ICON_ACTIVE from '../0-Assets/media-icon-white.png';
 import PROFILE_ICON from '../0-Assets/profile-icon-blue.png';
 import PROFILE_ICON_ACTIVE from '../0-Assets/profile-icon-white.png';
 import CIRCLE_ICON from '../0-Assets/circle-icon-blue.png';
@@ -60,12 +66,14 @@ const AppContent = () => {
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
 
     const MENU_CONFIG_LIST:MenuPageListing[] = [
+      {label: '* HELP * SUPPORT *', route: `/portal/support`, activeIcon: SUPPORT_ICON_ACTIVE, inactiveIcon: SUPPORT_ICON},
+      {label: 'Content Archive', route: '/portal/edit/content-archive/-1', activeIcon: CONTENT_ICON_ACTIVE, inactiveIcon: CONTENT_ICON, addRoute: '/portal/edit/content-archive/new', exclusiveRoleList: [RoleEnum.CONTENT_APPROVER, RoleEnum.ADMIN]},
       {label: 'Profile', route: `/portal/edit/profile/${userID}`, activeIcon: PROFILE_ICON_ACTIVE, inactiveIcon: PROFILE_ICON},
       {label: 'Circle', route: '/portal/edit/circle/-1', activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
       {label: 'Prayer Request', route: '/portal/edit/prayer-request/-1', activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Circle Chat', route: '/portal/chat/circle', activeIcon: CIRCLE_CHAT_ICON_ACTIVE, inactiveIcon: CIRCLE_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
-      {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
+      {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.DEVELOPER, RoleEnum.ADMIN]},
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
@@ -142,6 +150,9 @@ const AppContent = () => {
                 <Routes>
                   <Route path='/portal' element={ <Navigate to='/portal/dashboard' /> }/>
                   <Route path='/portal/dashboard/*' element={<Dashboard/>}/>
+                  <Route path='/portal/support/*' element={<SupportPage/>}/>
+                  <Route path='/portal/edit/content-archive/:id/:action' element={<ContentArchivePage/>}/>
+                  <Route path='/portal/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>
                   <Route path='/portal/edit/profile/:id/:action' element={<UserEditPage/>}/>
                   <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>
                   <Route path='/portal/edit/circle/:id/:action' element={<CircleEditPage/>}/>
