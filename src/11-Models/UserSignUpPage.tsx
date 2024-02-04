@@ -43,8 +43,14 @@ const SignUpPage = () => {
         //Assemble Request Body (Simple JavaScript Object)
         const requestBody:ProfileEditRequestBody = {} as ProfileEditRequestBody;
         finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
+            if(field === 'userRoleTokenList') { //@ts-ignore
+                requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
+                                        .map(([role, token]) => ({role: role, token: token || ''}));
+            } else {
+                if(value === '') value = null; //Valid for clearing fields in database
+                //@ts-ignore
+                requestBody[field] = value;
+            }
         });
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/signup`, requestBody)
