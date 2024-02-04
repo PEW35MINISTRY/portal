@@ -36,7 +36,6 @@ const ContentArchivePage = () => {
     const [editingContentID, setEditingContentID] = useState<number>(-1);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
     const previewRef = useRef<HTMLDivElement>(null);
-    const [previewWidth, setPreviewWidth] = useState<number>(200);
 
     //SearchList Cache
     const [searchUserID, setSearchUserID] = useState<number>(userID);
@@ -151,6 +150,7 @@ const ContentArchivePage = () => {
 
         await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, requestBody, { headers: { jwt: jwt }})
             .then(response => notify(`Content Saved`, ToastStyle.SUCCESS, () => {
+
             }))
             .catch((error) => processAJAXError(error));
     }
@@ -170,9 +170,21 @@ const ContentArchivePage = () => {
         });
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, requestBody, {headers: { jwt: jwt }})
-            .then(response =>
+            .then((response:{data:ContentResponseBody}) =>
                 notify(`Content Archive Created`, ToastStyle.SUCCESS, () => {
-                    setEditingContentID(response.data.contentID);
+                    setOwnedContentList((currentList) => [{
+                        contentID: response.data.contentID, 
+                        url: response.data.url, 
+                        type: response.data.type,
+                        source: response.data.source,
+                        keywordList: [...response.data.keywordList],
+                        description: response.data.description,
+                    }, ...currentList]);
+
+                    //Reset for new entry
+                    setInputMap(new Map());
+                    setEditingContentID(-1);
+                    setPreviewURL(undefined);
                 }))
             .catch((error) => { processAJAXError(error); });
     }
@@ -201,10 +213,6 @@ const ContentArchivePage = () => {
     /*************************
      * Update Social Preview *
      *************************/
-    useEffect(() => {
-        if(previewRef.current) setPreviewWidth(Math.min(previewRef.current.offsetWidth, 400));
-    }, [previewRef.current?.offsetWidth]);
-
     const onUpdatePreview = (event:React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         event.preventDefault();
         setPreviewURL(undefined);
@@ -311,27 +319,27 @@ export const ContentArchivePreview = (props:{url:string, source:string, maxWidth
                 {(props.url && props.source === 'FACEBOOK') ?
                     <FacebookEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'FACEBOOK') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>Visit Facebook in the browser.  On the post you'd like to embed, select ⋯ › Embed › Advanced settings › Get Code, then use the cite link in the generated blockquote.</p>
                 : (props.url && props.source === 'INSTAGRAM') ?
                     <InstagramEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'INSTAGRAM') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>Visit Instagram in the browser.  Open a post in a browser window and copy the URL from the address bar. The URL should be in the format: https://www.instagram.com/p/abc123xyzAB/.</p>
                 : (props.url && props.source === 'PINTEREST') ?
                     <PinterestEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'PINTEREST') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>Visit a Pinterest post in the browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
                 : (props.url && props.source === 'TIKTOK') ?
                     <TikTokEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'TIKTOK') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>Visit TikTok in the browser. Copy the URL from the address bar. URL format: https://www.tiktok.com/@username/video/1234567890123456789. Short links are not supported.</p>
                 : (props.url && props.source === 'X_TWITTER') ?
                     <TwitterEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'X_TWITTER') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>Open X in the browser.  Copy the URL from the address bar. https://twitter.com/username/status/1234567890123456789. Short links are not supported.</p>
                 : (props.url && props.source === 'YOUTUBE') ?
                     <YouTubeEmbed url={props.url} width={previewWidth} />
                 : (props.source === 'YOUTUBE') ?
-                    <p>Visit a Pinterest post in your browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                    <p>May use browser or share within the App.  Video links must be URL format: https://www.youtube.com/watch?v=VIDEO_ID.  Shorts format: https://youtube.com/shorts/VIDEO_ID.</p>
                 : (props.source === 'GOT_QUESTIONS') ?
                     <img className='form-header-image content-image' src={GOT_QUESTIONS} alt='Got Questions' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
                 : (props.source === 'BIBLE_PROJECT') ?
