@@ -11,7 +11,8 @@ import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/content-field-config';
 import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
-import { ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 
 import './contentArchive.scss';
 
@@ -256,7 +257,7 @@ const ContentArchivePage = () => {
                 defaultDisplayTitleList={['Content']}
                 displayMap={new Map([
                         [
-                            new SearchListKey({displayTitle:'Content', searchType:SearchListSearchTypesEnum.CONTENT_ARCHIVE,
+                            new SearchListKey({displayTitle:'Content', searchType: SearchType.CONTENT_ARCHIVE,
                                 onSearchClick: (id:number)=> setEditingContentID(id)
                             }),
                             [...ownedContentList].map((content) => new SearchListValue({displayType: ListItemTypesEnum.CONTENT_ARCHIVE, displayItem: content, 

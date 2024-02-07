@@ -11,7 +11,8 @@ import { ToastStyle } from '../100-App/app-types';
 import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
-import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import ImageUpload from '../2-Widgets/ImageUpload';
 
 import '../2-Widgets/Form/form.scss';
@@ -222,13 +223,13 @@ const UserEditPage = () => {
                 defaultDisplayTitleList={['Partners', 'Circles', 'Prayer Request']}
                 displayMap={new Map([
                         [
-                            new SearchListKey({displayTitle:'Profiles', searchType:SearchListSearchTypesEnum.USER}),
+                            new SearchListKey({displayTitle:'Profiles', searchType: SearchType.USER}),
                             [...userAccessProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
                                 onClick: (id:number)=>setEditingUserID(id),
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Partners', searchType:SearchListSearchTypesEnum.USER,
+                            new SearchListKey({displayTitle:'Partners', searchType: SearchType.USER,
                                 searchPrimaryButtonText: 'Join Partnership', onSearchPrimaryButtonCallback: (id:number) => console.log('To Implement: Setup Partnership', editingUserID, id),
                                 }),
 
@@ -238,7 +239,7 @@ const UserEditPage = () => {
                             }))
                         ], 
                         [ //Assumed Circle appearing in search, editingUserID is not a member
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE,
+                            new SearchListKey({displayTitle:'Circles', searchType: SearchType.CIRCLE,
                                 onSearchClick: (id:number)=>navigate(`/portal/edit/circle/${id}`),
                                 searchPrimaryButtonText: (userRole === RoleEnum.ADMIN) ? `Join Circle` : 'Request to Join', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
