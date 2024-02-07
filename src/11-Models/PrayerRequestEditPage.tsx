@@ -72,7 +72,7 @@ const PrayerRequestEditPage = () => {
         else if(editingPrayerRequestID === -1)
             setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
         else
-            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS.filter(f=> (['userIDList', 'circleListID'].includes(f.field))));
+            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
 
     }, [userRole, editingPrayerRequestID]);
 
