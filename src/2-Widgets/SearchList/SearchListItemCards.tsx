@@ -33,7 +33,7 @@ export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     return (
         <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
-            <div className='profile-detail-box'>
+            <div className='detail-box profile-detail-box'>
                 <img src={props.user.image || PROFILE_DEFAULT} alt={props.user.displayName} />
                 <label className='title name'>{props.user.firstName}<p>{props.user.displayName}</p></label>
                 {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.user.userID}</label>}
@@ -107,7 +107,7 @@ export const PrayerRequestItem = ({...props}:{key:any, prayerRequest:PrayerReque
     return (
     <div key={props.key} className='search-item search-prayer-request-item' onClick={()=>props.onClick && props.onClick(props.prayerRequest.prayerRequestID, props.prayerRequest)}>
         {props.prayerRequest.requestorProfile && 
-            <div className='detail-box'>
+            <div className='detail-box profile-detail-box'>
                 <img className='icon' src={props.prayerRequest.requestorProfile.image || PROFILE_DEFAULT} alt={props.prayerRequest.requestorProfile.displayName} />
                 <p >{props.prayerRequest.requestorProfile.displayName}</p>
                 {(props.prayerRequest.prayerCount > 0) && <img className='icon' src={PRAYER_ICON} alt='prayer-count'/>}

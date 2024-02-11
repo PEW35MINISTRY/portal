@@ -4,7 +4,7 @@ import { CircleAnnouncementItem, CircleEventItem, CircleItem, ContentArchiveItem
 import { CircleAnnouncementListItem, CircleEventListItem, CircleListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem } from '../../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
-import SearchDetail, { ListItemTypesEnum, DisplayItemType, extractItemID, LabelListItem, SearchType, SearchTypeInfo, SEARCH_MIN_CHARS } from '../../0-Assets/field-sync/input-config-sync/search-config';
+import SearchDetail, { ListItemTypesEnum, DisplayItemType, LabelListItem, SearchType, SearchTypeInfo, SEARCH_MIN_CHARS } from '../../0-Assets/field-sync/input-config-sync/search-config';
 import { processAJAXError, useAppSelector } from '../../1-Utilities/hooks';
 import { SHOW_TITLE_OPTIONS, SearchListKey, SearchListValue} from './searchList-types';
 import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
@@ -20,6 +20,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const [displayList, setDisplayList] = useState<SearchListValue[]>([]);
     const [selectedKey, setSelectedKey] = useState<SearchListKey>(new SearchListKey({displayTitle: 'Default'}));
     const [selectedKeyTitle, setSelectedKeyTitle] = useState<string>('Default'); //Sync state for <select><option> component
+    const [selectedDetail, setSelectedDetail] = useState<SearchTypeInfo<DisplayItemType>>(SearchDetail[SearchType.NONE]);
     const [searchButtonCache, setSearchButtonCache] = useState<Map<string, SearchListValue>|undefined>(undefined); //Quick pairing for accurate button options
     const [searchRefine, setSearchRefine] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -27,9 +28,10 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const getKey = (keyTitle:string = selectedKey.displayTitle):SearchListKey => Array.from(props.displayMap.keys()).find((k) => k.displayTitle === keyTitle) || new SearchListKey({displayTitle: 'Default'});
     const getList = (keyTitle:string = selectedKey.displayTitle):SearchListValue[] => props.displayMap.get(getKey(keyTitle)) || [];
 
-    /* Sync Selected Key Title | Sync state for <select><option> component */
+    /* Sync state for <select><option> component */
     useEffect(() => {
         setSelectedKeyTitle(selectedKey.displayTitle);
+        setSelectedDetail(SearchDetail[selectedKey.searchType]);
     }, [selectedKey]);
 
     /*****************
@@ -69,31 +71,28 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
      * *******************************************************************************/
     const searchExecute = async(value:string = searchTerm) => { //copy over primary/alternative button settings (optimize buttons)
         if(selectedKey.searchType === undefined || selectedKey.searchType === SearchType.NONE) {
-            console.warn('SearchList.searchExecute was called incorrectly', searchTerm, selectedKey);
             return;
         }
 
-        const searchMethod:SearchTypeInfo = SearchDetail[selectedKey.searchType];
-
         const params = new URLSearchParams([['search', value]]);
-        if(searchMethod.searchRefineList.length > 0 && searchRefine !== undefined) params.set('filter', searchRefine);
-        if(searchMethod.searchFilterList.length > 0 && selectedKey.searchRefine !== undefined) params.set('filter', selectedKey.searchRefine);
-        if(searchMethod.cacheAvailable) params.set('ignoreCache', ignoreCache ? 'true' : 'false');
+        if(selectedDetail.searchRefineList.length > 0 && searchRefine !== undefined) params.set('refine', searchRefine);
+        if(selectedDetail.searchFilterList.length > 0 && selectedKey.searchFilter !== undefined) params.set('filter', selectedKey.searchFilter);
+        if(selectedDetail.cacheAvailable) params.set('ignoreCache', ignoreCache ? 'true' : 'false');
 
-        await axios.get(`${process.env.REACT_APP_DOMAIN}/`+ searchMethod.route, { headers: { jwt: jwt }, params} )
-            .then(response => {
+        await axios.get(`${process.env.REACT_APP_DOMAIN}`+ selectedDetail.route, { headers: { jwt: jwt }, params} )
+            .then((response:{data:DisplayItemType[]}) => {
                 const cacheMap:Map<string, SearchListValue> = searchButtonCache || assembleSearchButtonCache();
                 const resultList:SearchListValue[] = [];  
-                const displayType:ListItemTypesEnum = searchMethod.itemType;
+                const displayType:ListItemTypesEnum = selectedDetail.itemType;
 
                 Array.from(response.data).forEach((displayItem) => {
-                    const itemID:number = extractItemID(displayItem as DisplayItemType, displayType);
+                    const itemID:number = selectedDetail.getID(displayItem);
                     const matchingCacheItem:SearchListValue|undefined = cacheMap.get(`${selectedKey.searchType}-${itemID}`);
 
                     if(matchingCacheItem !== undefined) {
                         resultList.push(matchingCacheItem);
                     } else {
-                        resultList.push(new SearchListValue({displayType, displayItem: displayItem as DisplayItemType, 
+                        resultList.push(new SearchListValue({displayType, displayItem: displayItem, 
                             onClick: selectedKey.onSearchClick,
                             primaryButtonText: selectedKey.searchPrimaryButtonText,
                             onPrimaryButtonCallback: selectedKey.onSearchPrimaryButtonCallback,
@@ -112,9 +111,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const assembleSearchButtonCache = ():Map<string, SearchListValue> => { 
         const cacheMap = new Map();
         Array.from(props.displayMap.values()).reverse().flatMap(list => list).forEach((item:SearchListValue) => {
-            const itemID:number = extractItemID(item.displayItem, item.displayType);
+            const itemID:number = selectedDetail.getID(item.displayItem);
             if(itemID > 0)
-                cacheMap.set(`${item.displayType}-${extractItemID(item.displayItem, item.displayType)}`, item);
+                cacheMap.set(`${item.displayType}-${selectedDetail.getID(item.displayItem)}`, item);
         });
         setSearchButtonCache(cacheMap);
         return cacheMap;
@@ -134,7 +133,6 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
         const value:string = event.currentTarget.value || '';
         setSearchTerm(value);
         if(value.length >= SEARCH_MIN_CHARS) searchExecute(value);
-        else setSelectedKeyTitle(SearchDetail[selectedKey.searchType].displayTitle);
     }
 
     const getSearchTypeTitleList = ():string[] => 

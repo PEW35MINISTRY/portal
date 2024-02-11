@@ -11,18 +11,18 @@ export const SHOW_TITLE_OPTIONS:string[] = ['Profiles', 'Circles', 'Members', 'E
 export class SearchListKey { 
     displayTitle:string;
     searchType:SearchType;
-    searchRefine?:string; //Matches SearchTypeInfo.searchRefineList
+    searchFilter?:string; //Matches SearchTypeInfo.searchFilterList
     onSearchClick?:(id:number, item:DisplayItemType)=>void;
     searchPrimaryButtonText?:string;
     onSearchPrimaryButtonCallback?:(id:number, item:DisplayItemType)=>void;
     searchAlternativeButtonText?:string;
     onSearchAlternativeButtonCallback?:(id:number, item:DisplayItemType)=>void;
 
-    constructor({...props}:{displayTitle:string, searchType?:SearchType, searchRefine?:string, onSearchClick?:(id:number, item:DisplayItemType)=>void, 
+    constructor({...props}:{displayTitle:string, searchType?:SearchType, searchFilter?:string, onSearchClick?:(id:number, item:DisplayItemType)=>void, 
         searchPrimaryButtonText?:string, onSearchPrimaryButtonCallback?:(id:number, item:DisplayItemType)=>void, searchAlternativeButtonText?:string, onSearchAlternativeButtonCallback?:(id:number, item:DisplayItemType)=>void}) {
         this.displayTitle = props.displayTitle;
         this.searchType = props.searchType || SearchType.NONE;
-        this.searchRefine = props.searchRefine;
+        this.searchFilter = props.searchFilter;
         this.onSearchClick = props.onSearchClick;
         this.searchPrimaryButtonText = props.searchPrimaryButtonText;
         this.onSearchPrimaryButtonCallback = props.onSearchPrimaryButtonCallback;

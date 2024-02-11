@@ -136,6 +136,16 @@
             border: none;
             white-space: nowrap;
         }
+
+        .profile-detail-box {
+            align-items: center;
+    
+            p {
+                color: $blue;
+                font-size: 0.9em;
+                margin-right: auto;
+            }
+        }
     }
 
     //Exceptions
@@ -154,18 +164,6 @@
             text-decoration: underline;
             letter-spacing: 0.03em;
             cursor: zoom-in;
-        }
-    }
-
-    .search-item.search-prayer-request-item {
-        .profile-detail-box {
-            align-items: center;
-
-            p {
-                color: $blue;
-                font-size: 0.9em;
-                margin-right: auto;
-            }
         }
     }
 }

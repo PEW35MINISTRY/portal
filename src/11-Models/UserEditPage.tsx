@@ -223,7 +223,9 @@ const UserEditPage = () => {
                 defaultDisplayTitleList={['Partners', 'Circles', 'Prayer Request']}
                 displayMap={new Map([
                         [
-                            new SearchListKey({displayTitle:'Profiles', searchType: SearchType.USER}),
+                            new SearchListKey({displayTitle:'Profiles', searchType: SearchType.USER,
+                                onSearchClick: (id:number)=>setEditingUserID(id)
+                            }),
                             [...userAccessProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
                                 onClick: (id:number)=>setEditingUserID(id),
                             }))

@@ -4,8 +4,10 @@ import { Socket, io } from 'socket.io-client';
 import { CircleListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
 import { processAJAXError, useAppDispatch, useAppSelector } from '../../1-Utilities/hooks';
 import { Contact, SocketMessage } from '../Chat-Direct-Demo/chat-types';
+import { SearchType } from '../../0-Assets/field-sync/input-config-sync/search-config';
 
 import '../Chat-Direct-Demo/chat.scss';
+import { CircleStatusEnum } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
 
 const CircleChat = () => {
     const dispatch = useAppDispatch();
@@ -52,9 +54,8 @@ const CircleChat = () => {
         setChatSocket(socket);
 
     /* Fetch Circles */
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/circle-list/?status=LEADER`, 
-            { headers: { 'jwt': jwt }
-        }).then(response => {
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/search-list/${SearchType.CIRCLE}?filter=${CircleStatusEnum.MEMBER}`,  { headers: { 'jwt': jwt }})
+          .then(response => {
             setCircleList(response.data);
             setCircleID(response.data[0].id);
             console.log('Circles List ', response.data);

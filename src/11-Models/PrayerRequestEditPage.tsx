@@ -417,7 +417,7 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchRefine: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchFilter: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
                                 searchPrimaryButtonText: 'Share', onSearchPrimaryButtonCallback: (id:number) => shareCircle(id)}),
                             (circleFilterUnique([...circleRecipientList, ...userCircleList])).map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
                                 primaryButtonText: (isCircleRecipientPending(circle.circleID)) ? undefined : isCircleRecipient(circle.circleID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isCircleRecipient(id) ? removeCircle(id) : shareCircle(id),                         

@@ -12,7 +12,7 @@ import SearchList from '../2-Widgets/SearchList/SearchList';
 import { EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/content-field-config';
 import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
-import { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
+import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 
 import './contentArchive.scss';
 
@@ -58,17 +58,16 @@ const ContentArchivePage = () => {
 
     }, [userRole, editingContentID]);
 
-    /* Search for Prayer Request by user/requestor */
+    /* Search for Content by ID */
     useLayoutEffect (() => {
         if(searchUserID <= 0)
             return;
-        
-        //Must Fetch by user, since can't search prayer requests
-        axios.get(`${process.env.REACT_APP_DOMAIN}/api/content-archive/content-list`, { headers: { jwt: jwt }})
-            .then(response => {
-                const resultList:ContentListItem[] = Array.from(response.data || []);
-                setOwnedContentList(resultList);
-                if(resultList.length === 0) notify('No Prayer Requests Found', ToastStyle.INFO);
+       
+        //Server prioritized owned content, default search also includes latest
+        axios.get(`${process.env.REACT_APP_DOMAIN}${SearchDetail[SearchType.CONTENT_ARCHIVE].route}`, { headers: { jwt: jwt }})
+            .then((response:{data:ContentListItem[]}) => {
+                if(response.data.length === 0) notify('No Content Found', ToastStyle.INFO);
+                setOwnedContentList(Array.from(response.data || []));
 
             }).catch((error) => processAJAXError(error));
         
@@ -99,7 +98,7 @@ const ContentArchivePage = () => {
 
 
     /*******************************************
-     *   RETRIEVE Prayer Request BEING EDITED
+     *   RETRIEVE CONTENT ARCHIVE BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
         if(editingContentID > 0) navigate(`/portal/edit/content-archive/${editingContentID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
@@ -197,7 +196,7 @@ const ContentArchivePage = () => {
     const makeDeleteRequest = async() => 
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, { headers: { jwt: jwt }} )
             .then(response => {
-                notify(`Deleted Prayer Request`, ToastStyle.SUCCESS, () => {
+                notify(`Deleted Content`, ToastStyle.SUCCESS, () => {
                     setShowDeleteConfirmation(false);
                     navigate('/portal/edit/content-archive/-1');
                 });
@@ -268,7 +267,7 @@ const ContentArchivePage = () => {
             />
 
             {(showDeleteConfirmation) &&
-                <div key={'PrayerRequestEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
+                <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>

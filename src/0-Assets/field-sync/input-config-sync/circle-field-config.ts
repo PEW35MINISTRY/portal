@@ -26,6 +26,7 @@ export enum CircleStatusEnum {
 export enum CircleSearchRefineEnum {
     ALL = 'ALL',                     //default search all fields
     ID = 'ID',                       //circleID exact match
+    MEMBER_ID = 'MEMBER_ID',         //Any relation or leader
     NAME = 'NAME',
     DESCRIPTION = 'DESCRIPTION',
     NAME_DESCRIPTION = 'NAME_DESCRIPTION',
