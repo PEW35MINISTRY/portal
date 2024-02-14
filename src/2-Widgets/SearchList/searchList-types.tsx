@@ -1,63 +1,28 @@
-import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
-import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
-import { PrayerRequestCommentListItem, PrayerRequestListItem } from '../../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
-import { CircleStatusEnum } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
+import { DisplayItemType, ListItemTypesEnum, SearchType } from '../../0-Assets/field-sync/input-config-sync/search-config';
 
 
 /********************
  * SEARCH LIST TYPES
  * ******************/
 
-/* Supported List Item Types in SearchList */
-export type DisplayItemType = LabelListItem | ProfileListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
-
-export type LabelListItem = string;
-
-export const extractItemID = (displayItem:DisplayItemType, displayType:ListItemTypesEnum|undefined):number =>
-    (displayType === ListItemTypesEnum.USER) ? (displayItem as ProfileListItem).userID
-    : (displayType === ListItemTypesEnum.CIRCLE) ? (displayItem as CircleListItem).circleID
-    : (displayType === ListItemTypesEnum.CIRCLE_ANNOUNCEMENT) ? (displayItem as CircleAnnouncementListItem).announcementID
-    : (displayType === ListItemTypesEnum.CIRCLE_EVENT) ? (displayItem as CircleEventListItem).eventID
-    : (displayType === ListItemTypesEnum.PRAYER_REQUEST) ? (displayItem as PrayerRequestListItem).prayerRequestID
-    : (displayType === ListItemTypesEnum.CONTENT_ARCHIVE) ? (displayItem as ContentListItem).contentID
-    : -1;
-
-export enum SearchListSearchTypesEnum { //Must match ListItemTypesEnum
-    USER = 'USER',
-    CIRCLE = 'CIRCLE',
-    CONTENT_ARCHIVE = 'CONTENT_ARCHIVE'
-}
-
-export enum ListItemTypesEnum {
-    LABEL = 'LABEL',
-    USER = 'USER',
-    CIRCLE = 'CIRCLE',
-    CIRCLE_ANNOUNCEMENT = 'CIRCLE_ANNOUNCEMENT',
-    CIRCLE_EVENT = 'CIRCLE_EVENT',
-    PRAYER_REQUEST = 'PRAYER_REQUEST',
-    PRAYER_REQUEST_COMMENT = 'PRAYER_REQUEST_COMMENT',
-    CONTENT_ARCHIVE = 'CONTENT_ARCHIVE',
-}
-
 //Won't hide empty list to allow searching | Universal list, SearchListKey must still be specified
 export const SHOW_TITLE_OPTIONS:string[] = ['Profiles', 'Circles', 'Members', 'Events', 'Content'];
 
 export class SearchListKey { 
     displayTitle:string;
-    searchType:SearchListSearchTypesEnum|undefined;
-    searchCircleStatus:CircleStatusEnum|undefined;
+    searchType:SearchType;
+    searchFilter?:string; //Matches SearchTypeInfo.searchFilterList
     onSearchClick?:(id:number, item:DisplayItemType)=>void;
     searchPrimaryButtonText?:string;
     onSearchPrimaryButtonCallback?:(id:number, item:DisplayItemType)=>void;
     searchAlternativeButtonText?:string;
     onSearchAlternativeButtonCallback?:(id:number, item:DisplayItemType)=>void;
 
-    constructor({...props}:{displayTitle:string, searchType?:SearchListSearchTypesEnum, searchCircleStatus?:CircleStatusEnum, onSearchClick?:(id:number, item:DisplayItemType)=>void, 
+    constructor({...props}:{displayTitle:string, searchType?:SearchType, searchFilter?:string, onSearchClick?:(id:number, item:DisplayItemType)=>void, 
         searchPrimaryButtonText?:string, onSearchPrimaryButtonCallback?:(id:number, item:DisplayItemType)=>void, searchAlternativeButtonText?:string, onSearchAlternativeButtonCallback?:(id:number, item:DisplayItemType)=>void}) {
         this.displayTitle = props.displayTitle;
-        this.searchType = props.searchType || undefined;
-        this.searchCircleStatus = props.searchCircleStatus;
+        this.searchType = props.searchType || SearchType.NONE;
+        this.searchFilter = props.searchFilter;
         this.onSearchClick = props.onSearchClick;
         this.searchPrimaryButtonText = props.searchPrimaryButtonText;
         this.onSearchPrimaryButtonCallback = props.onSearchPrimaryButtonCallback;

@@ -14,7 +14,8 @@ import { ToastStyle } from '../100-App/app-types';
 import { addPrayerRequest, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
-import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
+import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -403,7 +404,7 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0 || userRole === RoleEnum.ADMIN) ? SearchListSearchTypesEnum.USER : undefined,
+                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0 || userRole === RoleEnum.ADMIN) ? SearchType.USER : SearchType.NONE,
                                 onSearchClick: (id:number, item:DisplayItemType)=> {
                                     setSearchUserID(id);
                                     // setRequestorProfile(item as ProfileListItem);
@@ -416,7 +417,7 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE, searchCircleStatus: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchFilter: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
                                 searchPrimaryButtonText: 'Share', onSearchPrimaryButtonCallback: (id:number) => shareCircle(id)}),
                             (circleFilterUnique([...circleRecipientList, ...userCircleList])).map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
                                 primaryButtonText: (isCircleRecipientPending(circle.circleID)) ? undefined : isCircleRecipient(circle.circleID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isCircleRecipient(id) ? removeCircle(id) : shareCircle(id),                         

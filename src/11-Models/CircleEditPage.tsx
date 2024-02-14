@@ -9,10 +9,11 @@ import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
-import { addCircle, removeCircle, removePrayerRequest } from '../100-App/redux-store';
+import { addCircle, removeCircle } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
-import { DisplayItemType, ListItemTypesEnum, SearchListKey, SearchListSearchTypesEnum, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import ImageUpload from '../2-Widgets/ImageUpload';
 
 import '../2-Widgets/Form/form.scss';
@@ -300,7 +301,7 @@ const CircleEditPage = () => {
                 defaultDisplayTitleList={['Pending Requests', 'Announcements', 'Events']}
                 displayMap={new Map([
                         [ 
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchListSearchTypesEnum.CIRCLE,
+                            new SearchListKey({displayTitle:'Circles', searchType: SearchType.CIRCLE,
                                 onSearchClick: (id:number)=> (userRole === RoleEnum.ADMIN) ? setEditingCircleID(id) : {}
                                 }),
 
@@ -309,7 +310,7 @@ const CircleEditPage = () => {
                                 }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Pending Requests', searchType:SearchListSearchTypesEnum.USER,
+                            new SearchListKey({displayTitle:'Pending Requests', searchType: SearchType.USER,
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
@@ -359,7 +360,7 @@ const CircleEditPage = () => {
                                 }))
                         ],
                         [
-                            new SearchListKey({displayTitle:'Pending Invites', searchType:SearchListSearchTypesEnum.USER,
+                            new SearchListKey({displayTitle:'Pending Invites', searchType: SearchType.USER,
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
@@ -378,7 +379,7 @@ const CircleEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Members', searchType:SearchListSearchTypesEnum.USER,
+                            new SearchListKey({displayTitle:'Members', searchType: SearchType.USER,
                                 onSearchClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
