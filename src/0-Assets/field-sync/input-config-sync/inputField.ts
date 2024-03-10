@@ -103,7 +103,7 @@ export class InputSelectionField extends InputField {
 export class InputRangeField extends InputField {
     minValue: number | Date;
     maxValue: number | Date;
-    maxField?: string; //If supplied, implies 'field' is minField and using RANGE_SLIDER
+    maxField?: string; //If supplied, implies 'field' is minField and using MAX_MIN_SLIDER
 
     constructor({title, field, customField, value, type, required, unique, hide, validationRegex, validationMessage,
             minValue, maxValue, maxField } :
