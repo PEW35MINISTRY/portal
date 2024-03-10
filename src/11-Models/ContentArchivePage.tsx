@@ -5,7 +5,7 @@ import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbe
 import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
-import { makeDisplayText } from '../1-Utilities/utilities';
+import { assembleRequestBody, makeDisplayText } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -36,7 +36,6 @@ const ContentArchivePage = () => {
 
     const [editingContentID, setEditingContentID] = useState<number>(-1);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
-    const previewRef = useRef<HTMLDivElement>(null);
 
     //SearchList Cache
     const [searchUserID, setSearchUserID] = useState<number>(userID);
@@ -138,39 +137,19 @@ const ContentArchivePage = () => {
      *  SAVE CONTENT ARCHIVE CHANGES TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:ContentResponseBody = {} as ContentResponseBody;
-        finalMap.forEach((value, field) => {
-            if(value === '') value = null; //Valid for clearing fields in database
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, requestBody, { headers: { jwt: jwt }})
-            .then(response => notify(`Content Saved`, ToastStyle.SUCCESS, () => {
-
-            }))
+    const makeEditRequest = async(resultMap:Map<string,any> = inputMap) => 
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
+            .then((response:{ data:ContentResponseBody} ) => notify(`Content Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
-    }
 
     
     /*******************************************
      *  SAVE NEW CONTENT ARCHIVE TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makePostRequest = async(result?:Map<string, string>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:ContentResponseBody = {} as ContentResponseBody;
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, requestBody, {headers: { jwt: jwt }})
-            .then((response:{data:ContentResponseBody}) =>
+    const makePostRequest = async(resultMap:Map<string, string> = inputMap) =>
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(resultMap), {headers: { jwt: jwt }})
+            .then((response:{ data:ContentResponseBody} ) =>
                 notify(`Content Archive Created`, ToastStyle.SUCCESS, () => {
                     setOwnedContentList((currentList) => [{
                         contentID: response.data.contentID, 
@@ -187,7 +166,6 @@ const ContentArchivePage = () => {
                     setPreviewURL(undefined);
                 }))
             .catch((error) => { processAJAXError(error); });
-    }
     
     
     /*******************************************

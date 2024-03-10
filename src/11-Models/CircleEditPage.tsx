@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem, CircleListItem, CircleResponse } from '../0-Assets/field-sync/api-type-sync/circle-types';
+import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem, CircleLeaderResponse, CircleListItem, CircleResponse } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CIRCLE_ANNOUNCEMENT_FIELDS, CIRCLE_FIELDS, CIRCLE_FIELDS_ADMIN, CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
@@ -9,6 +9,7 @@ import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
+import { assembleRequestBody } from '../1-Utilities/utilities';
 import { addCircle, removeCircle } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -156,39 +157,22 @@ const CircleEditPage = () => {
      *      SAVE CIRCLE CHANGES TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:CircleEditRequestBody = {} as CircleEditRequestBody;
-        finalMap.forEach((value, field) => {
-            if(value === '') value = null; //Valid for clearing fields in database
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, requestBody, { headers: { jwt: jwt }})
+    const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
             .then(response => notify(`${response.data.name} Circle Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
-    }
 
 
     /*******************************************
      *       SAVE NEW CIRCLE TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makePostRequest = async(result?:Map<string, string>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:CircleEditRequestBody = {} as CircleEditRequestBody;
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
+    const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:CircleEditRequestBody = assembleRequestBody(resultMap) as CircleEditRequestBody;
         requestBody['leaderID'] = leaderProfile?.userID || userID;
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle`, requestBody, {headers: { jwt: jwt }})
-            .then(response =>
+            .then((response:{ data:CircleLeaderResponse }) =>
                 notify(`Circle Created`, ToastStyle.SUCCESS, () => {
                     setEditingCircleID(response.data.circleID);
                     navigate(`/portal/edit/circle/${response.data.circleID}/image`);
@@ -219,16 +203,8 @@ const CircleEditPage = () => {
     /*******************************************
      *     SAVE NEW CIRCLE ANNOUNCEMENT
      * *****************************************/
-    const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) => {
-        const finalMap:Map<string,any> = announcementInputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody = {};
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, requestBody, {headers: { jwt: jwt }})
+    const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) =>
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Announcement Sent', ToastStyle.SUCCESS, () => {
                     setShowAnnouncement(false);
@@ -238,8 +214,6 @@ const CircleEditPage = () => {
                 });
             })
             .catch((error) => { processAJAXError(error); });
-    }
-
 
 
 

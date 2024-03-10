@@ -9,7 +9,7 @@ import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
-import { circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
+import { assembleRequestBody, circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import { addPrayerRequest, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -184,15 +184,8 @@ const PrayerRequestEditPage = () => {
      *  SAVE PRAYER REQUEST CHANGES TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:PrayerRequestPatchRequestBody = {} as PrayerRequestPatchRequestBody;
-        finalMap.forEach((value, field) => {
-            if(value === '') value = null; //Valid for clearing fields in database
-            //@ts-ignore
-            requestBody[field] = value;
-        });
+    const makeEditRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(removeUserRecipientIDList.length > 0) requestBody['removeUserRecipientIDList'] = removeUserRecipientIDList;
@@ -200,7 +193,7 @@ const PrayerRequestEditPage = () => {
         if(removeCircleRecipientIDList.length > 0) requestBody['removeCircleRecipientIDList'] = removeCircleRecipientIDList;
 
         await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${editingPrayerRequestID}`, requestBody, { headers: { jwt: jwt }})
-            .then(response => notify(`Prayer Request Saved`, ToastStyle.SUCCESS, () => {
+            .then((response:{ data:PrayerRequestResponseBody }) => notify(`Prayer Request Saved`, ToastStyle.SUCCESS, () => {
                 setAddUserRecipientIDList([]);
                 setRemoveUserRecipientIDList([]);
                 setAddCircleRecipientIDList([]);
@@ -215,14 +208,8 @@ const PrayerRequestEditPage = () => {
      *  SAVE NEW PRAYER REQUEST TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makePostRequest = async(result?:Map<string, string>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:PrayerRequestPatchRequestBody = {} as PrayerRequestPatchRequestBody;
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
+    const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(addCircleRecipientIDList.length > 0) requestBody['addCircleRecipientIDList'] = addCircleRecipientIDList;
@@ -233,7 +220,7 @@ const PrayerRequestEditPage = () => {
         }
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request`, requestBody, {headers: { jwt: jwt }})
-            .then(response =>
+            .then((response:{ data:PrayerRequestResponseBody }) =>
                 notify(`Prayer Request Created`, ToastStyle.SUCCESS, () => {
                     setEditingPrayerRequestID(response.data.prayerRequestID);
                     setDefaultDisplayTitleList(['Prayer Requests']);
@@ -266,16 +253,8 @@ const PrayerRequestEditPage = () => {
     /*******************************************
      *     SAVE NEW PRAYER REQUEST COMMENT
      * *****************************************/
-    const makePrayerCommentRequest = async(announcementInputMap:Map<string, any>) => {
-        const finalMap:Map<string,any> = announcementInputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody = {};
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, requestBody, {headers: { jwt: jwt }})
+    const makePrayerCommentRequest = async(announcementInputMap:Map<string, any>) =>
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
                 setShowNewComment(false);
@@ -283,8 +262,8 @@ const PrayerRequestEditPage = () => {
                 setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
             })
             .catch((error) => { processAJAXError(error); });
-    }
 
+            
     /***********************************
      *   Handle Recipient Change Lists
      * *********************************/

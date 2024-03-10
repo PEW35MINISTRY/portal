@@ -7,6 +7,7 @@ import { ProfileEditRequestBody, ProfileListItem, ProfileResponse } from '../0-A
 import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
+import { assembleRequestBody } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -128,22 +129,8 @@ const UserEditPage = () => {
      *         SAVE CHANGES TO SEVER
      * FormProfile already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:ProfileEditRequestBody = {} as ProfileEditRequestBody;
-        finalMap.forEach((value, field) => {
-            if(field === 'userRoleTokenList') { //@ts-ignore
-                requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
-                                        .map(([role, token]) => ({role: role, token: token || ''}));
-            } else {
-                if(value === '') value = null; //Valid for clearing fields in database
-                //@ts-ignore
-                requestBody[field] = value;
-            }
-        });
-
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, requestBody, 
+    const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, assembleRequestBody(resultMap), 
             { headers: { jwt: jwt }})
             .then(response => {
                 //Save to Redux for current session
@@ -152,13 +139,12 @@ const UserEditPage = () => {
 
                 notify(`${response.data.firstName} Profile Saved`, ToastStyle.SUCCESS);
             }).catch((error) => processAJAXError(error));
-    }
 
     /*******************************************
      *         DELETE Editing Profile
      * *****************************************/
     const makeDeleteRequest = async() => 
-        axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, 
+        await axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, 
                 { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted user ${editingUserID}`, ToastStyle.SUCCESS, () => {
