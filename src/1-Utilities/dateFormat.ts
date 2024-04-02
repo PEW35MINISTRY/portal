@@ -22,14 +22,16 @@ export const formatNumberOrdinal = (n:number):string =>
   
   
   //Relative Date Rules
-const formatRelativeDate = (startDate?:Date|string, endDate?:Date, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean}):string => {
+const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean}):string => {
     options = {shortForm:true, includeHours:true, markPassed:false, ...options}; //Apply defaults & inputted overrides
     const today = new Date();
     today.setHours(0);
     let text = '';
-  
+
     //Handle Date type validations
-    if(startDate === undefined || typeof startDate !== 'object' || (typeof startDate === 'string' && (startDate as string).length === 0) || (endDate !== undefined && typeof endDate !== 'object')) return '';
+    if(startDate === undefined || !((startDate instanceof Date) || (typeof startDate === 'string' && (startDate as string).length > 0))
+      || (endDate !== undefined && !((endDate instanceof Date) || (typeof endDate === 'string' && (endDate as string).length > 0))))
+          return '';
   
     if(typeof startDate === 'string') startDate = new Date(startDate);
     if(endDate !== undefined && typeof endDate === 'string') endDate = new Date(endDate);  
@@ -41,20 +43,20 @@ const formatRelativeDate = (startDate?:Date|string, endDate?:Date, options?:{sho
     if(today > startDate && endDate != undefined && today < endDate) text += 'Now';
   
     //Day of the week 
-    if(startDate > today  && startDate < getFutureDate(today, 1) && (!isPassed || !options.includeHours)) text += 'Today';
+    if(startDate > getFutureDate(today, -1) && startDate < getFutureDate(today, 1) && (!isPassed || !options.includeHours)) text += 'Today';
 
-    else if(startDate > getFutureDate(today, -1)) text += options.shortForm ? 'Ytd' : 'Yesterday';
+    else if(startDate > getFutureDate(today, -2) && startDate < getFutureDate(today, -1)) text += options.shortForm ? 'Ytd' : 'Yesterday';
 
-    else if(startDate < getFutureDate(today, 2)) text += options.shortForm ? 'Tom' : 'Tomorrow';
+    else if(startDate > getFutureDate(today, 1) && startDate < getFutureDate(today, 2)) text += options.shortForm ? 'Tom' : 'Tomorrow';
 
-    else if(startDate < getFutureDate(today, 7)) text += options.shortForm ? DAY_OF_WEEK_SHORT[startDate.getDay()] : DAY_OF_WEEK_LONG[startDate.getDay()];
+    else if(startDate > getFutureDate(today, -7) && startDate < getFutureDate(today, 7)) text += options.shortForm ? DAY_OF_WEEK_SHORT[startDate.getDay()] : DAY_OF_WEEK_LONG[startDate.getDay()];
 
     else if(startDate.getMonth() === today.getMonth()) text += formatNumberOrdinal(startDate.getDate());
 
-    else text += options.shortForm ? MONTH_SHORT[startDate.getMonth()] : MONTH_LONG[startDate.getMonth()] + formatNumberOrdinal(startDate.getDate());
+    else text += options.shortForm ? MONTH_SHORT[startDate.getMonth()] : MONTH_LONG[startDate.getMonth()] + ' ' + formatNumberOrdinal(startDate.getDate());
 
     text += ' ';
-  
+    
     //Hours
     if(options.includeHours && !isPassed) {
         if(startDate.getHours() === 0) text += options.shortForm ? 'Mid' : 'Midnight';
