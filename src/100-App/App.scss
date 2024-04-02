@@ -13,6 +13,7 @@
 
 
     #app-navigation {
+        z-index: 10;
         display: flex;
         flex-direction: column;
         background-color: $gray-dark;
@@ -29,17 +30,21 @@
             overflow-y: auto;
         }
 
-        $leading-column-width: 60px;
+        $leading-column-width: 45px;
         $trailing-column-width: 2.0rem;
 
-        .page {
+        .page, .sub-page {
             display: grid;
             grid-template-columns: $leading-column-width auto $trailing-column-width;
 
             text-decoration: none;
             margin: 0;
-            padding: 0.3rem;
+            padding: 0.15rem;
             border-radius: 0;
+
+            &.sub-page {
+                padding: 0 0.15rem;
+            }
 
             img {
                 grid-column: 1;
@@ -56,12 +61,23 @@
                 grid-column: 2;
                 font-family: 'EB Garamond';
                 font-weight: 500;
-                font-size: 1.5rem;
+                font-size: 1rem;
                 text-decoration: none;
                 white-space: nowrap;
                 color:whitesmoke;
-                margin: 0;
-                margin-left: 0.5rem;
+                margin: auto 0;
+                margin-left: 0.25rem;
+
+                .sub-page & {
+                    font-size: 1.0rem;
+                }
+            }
+
+            &.sub-page label, &.sub-page p {
+                border-left: 2px solid $blue;
+                border-radius: 0;
+                padding: 0.15rem 0.75rem;
+                font-size: 1.0rem;
             }
 
             .add-button-wrapper {
@@ -69,15 +85,16 @@
                 display: inline-block;
                 text-decoration: none;
                 justify-self: center;
-                margin: auto 1.0rem auto 0 ;
+                margin: auto 1.0rem;
 
                 .add-button {
                     display: inline-block;
                     min-width: $trailing-column-width;
 
                     p {
+                        font-size: 0.9rem;
                         margin: auto;
-                        padding: 0.15rem;
+                        padding: 0.1rem;
                         text-align: center;
                         color: $blue;
                     }
@@ -144,12 +161,17 @@
 
         }
 
+        $title-line-height: 1.5rem;
         #logo-box {
+            align-items: start;
+            min-height: calc($title-line-height * 2); //Match h1
+
             padding-bottom: 0.5rem;
             border-bottom: 2px solid $t-white;
 
             img {
-                height: $leading-column-width;
+                width: $leading-column-width;
+                height: auto;
             }
 
             h1 {
@@ -158,8 +180,10 @@
                 justify-self: start;
                 align-self: center;
                 text-decoration: none;
-                font-size: 1.75rem;
-                white-space: nowrap;
+                text-align: left;
+                font-size: $title-line-height;
+                line-height: $title-line-height;
+                white-space: wrap;
                 margin: 0;
                 margin-left: 0.5rem;
             }
