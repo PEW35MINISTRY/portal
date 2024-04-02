@@ -2,18 +2,19 @@ import axios from 'axios';
 import React, { ReactElement, forwardRef, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CredentialProfile } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import { LOGIN_PROFILE_FIELDS } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { LOGIN_PROFILE_FIELDS, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
 import { AccountState, setAccount } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
+import { assembleRequestBody } from '../1-Utilities/utilities';
+import { LoginResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types';
 
 import '../2-Widgets/Form/form.scss';
 import './user.scss';
 
 //Assets
 import LOGO from '../0-Assets/logo.png';
-import { assembleRequestBody } from '../1-Utilities/utilities';
 
 
 const Login = () => {
@@ -49,10 +50,11 @@ const Login = () => {
      * *****************************************/
     const makeLoginRequest = async(resultMap:Map<string,string> = inputMap) =>
         await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, assembleRequestBody(resultMap))
-            .then(response => {
+            .then((response:{ data:LoginResponseBody }) => {
                 const account:AccountState = {
                     jwt: response.data.jwt,
                     userID: response.data.userID,
+                    userRole: RoleEnum[response.data.userRole],
                     userProfile: response.data.userProfile,
                 };
                 //Save to Redux for current session

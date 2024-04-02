@@ -17,7 +17,7 @@ import { PrayerRequestListItem } from './prayer-request-types.js'
 export type CredentialProfile = { 
     userID: number,
     displayName: string,
-    userRole: string,
+    userRole: RoleEnum,
     email: string,
     passwordHash: string,
 }

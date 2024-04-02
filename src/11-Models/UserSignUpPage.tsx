@@ -39,6 +39,7 @@ const SignUpPage = () => {
                 const account:AccountState = {
                     jwt: response.data.jwt,
                     userID: response.data.userID,
+                    userRole: response.data.userRole,
                     userProfile: response.data.userProfile,
                 };
                 //Save to Redux for current session
