@@ -3,9 +3,10 @@ import axios from 'axios';
 import { JwtResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types.js';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types.js';
+import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { AXIOSError, ToastStyle } from './app-types';
 import { notify } from '../1-Utilities/hooks';
+import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 
 
 /**************************************
@@ -15,12 +16,14 @@ import { notify } from '../1-Utilities/hooks';
 
 export type AccountState = {
   userID: number,
+  userRole:RoleEnum,
   jwt: string, 
   userProfile: ProfileResponse,
 }
 
 const initialAccountState:AccountState = {
   userID: -1,
+  userRole: RoleEnum.STUDENT,
   jwt: '',
   userProfile: {} as ProfileResponse
 }; 
@@ -62,22 +65,19 @@ export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; ty
         throw 'No Cached Credentials';
 
       const user = JSON.parse(window.localStorage.getItem('user') || '');
-      const userID = user.userID;
       const jwt = user.jwt;
       const userProfile = user.userProfile;
 
-      if(!userID || !jwt || !userProfile) 
+      if(!jwt || !userProfile) 
         throw 'Invalid Cached Credentials';
 
       //Re-authenticate JWT
       await axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
         headers: {
-          ['user-id']: userID,
           jwt: jwt
         }
-      }).then(response => { 
-        const body:JwtResponseBody = response.data;
-        dispatch(setAccount({userID: userID, jwt: body.jwt, userProfile: userProfile}));
+      }).then((response:{ data: JwtResponseBody }) => { 
+        dispatch(setAccount({userID: response.data.userID, userRole: response.data.userRole, jwt: response.data.jwt, userProfile: userProfile}));
         notify(`Welcome ${userProfile?.firstName}`, ToastStyle.INFO);
         
       }).catch((response:AXIOSError) => {

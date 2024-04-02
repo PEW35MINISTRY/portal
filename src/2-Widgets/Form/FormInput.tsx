@@ -348,7 +348,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
                     <option key={`role-selection-${item}`} value={item}>{props.field.displayOptionList[i]}</option>
                 )}
             </select>
-            {(roleSelected !== 'defaultValue' && roleSelected !== RoleEnum.STUDENT) &&
+            {(roleSelected !== 'defaultValue') &&
                 <section className='custom-input-box'>
                     <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'STUDENT') ? 'hidden' : 'visible'}}/>
                     <button type='button' onClick={onAdd} >ADD</button>
