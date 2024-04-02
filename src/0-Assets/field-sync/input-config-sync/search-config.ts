@@ -2,7 +2,7 @@
 import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../api-type-sync/circle-types';
 import { ContentListItem } from '../api-type-sync/content-types';
 import { PrayerRequestListItem, PrayerRequestCommentListItem } from '../api-type-sync/prayer-request-types';
-import { ProfileListItem } from '../api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem } from '../api-type-sync/profile-types';
 import { CircleSearchRefineEnum, CircleStatusEnum } from './circle-field-config';
 import { ContentSearchRefineEnum } from './content-field-config';
 import { RoleEnum, UserSearchRefineEnum } from './profile-field-config';
@@ -19,7 +19,7 @@ import { RoleEnum, UserSearchRefineEnum } from './profile-field-config';
 
 export type LabelListItem = string;
 
-export type DisplayItemType = LabelListItem | ProfileListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
+export type DisplayItemType = LabelListItem | ProfileListItem | PartnerListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
 
 /* Used for Mapping UI Components */
 export enum ListItemTypesEnum {

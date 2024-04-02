@@ -66,3 +66,34 @@
         margin: auto;
     }
 }
+
+#partnership-contract {
+
+    .center-absolute-inside {
+        display: flex;
+        flex-direction: column;
+        justify-content: start;    
+
+        .partner-detail-box {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            margin: 1.0rem auto;
+    
+            .form-header-image {
+                max-height: 10vh;                
+            }  
+
+            h3 {
+                margin-left: 2.0rem;
+             }    
+        }   
+        
+        .contract {
+            margin: 1.5rem;
+            text-align: center;
+            line-height: 1.5;
+        }
+    }    
+}

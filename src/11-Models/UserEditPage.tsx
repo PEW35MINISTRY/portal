@@ -3,18 +3,19 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileEditRequestBody, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
-import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
-import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
+import { addCircle, addCircleRequest, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import ImageUpload from '../2-Widgets/ImageUpload';
+import { PartnershipContract, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -29,6 +30,13 @@ const UserEditPage = () => {
     const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
+    const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
+    const userCircleInviteList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleInviteList) || [];
+    const userCircleRequestList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleRequestList) || [];
+    const userPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerList) || [];
+    const userPartnerPendingUserList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingUserList) || [];
+    const userPartnerPendingPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingPartnerList) || [];
+    const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.prayerRequestList) || [];
     const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
@@ -38,12 +46,33 @@ const UserEditPage = () => {
     const [editingUserID, setEditingUserID] = useState<number>(-1);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
     const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
+    const [newPartner, setNewPartner] = useState<PartnerListItem|undefined>(undefined); //undefined hides new partnership popup
 
     //SearchList Cache unique for editingUserID
-    const [partnerProfileList, setPartnerProfileList] = useState<ProfileListItem[]>([]);
+    const DEFAULT_DISPLAY_TITLE_LIST:string[] = ['Pending Partner Acceptance', 'New Circles', 'Partners', 'Circles', 'Prayer Request'];
+    const [defaultDisplayTitleList, setDefaultDisplayTitleList] = useState<string[]>(DEFAULT_DISPLAY_TITLE_LIST);
     const [memberCircleList, setMemberCircleList] = useState<CircleListItem[]>([]);
+    const [circleInviteList, setCircleInviteList] = useState<CircleListItem[]>([]);
+    const [circleRequestList, setCircleRequestList] = useState<CircleListItem[]>([]);
+    const [partnerList, setPartnerList] = useState<PartnerListItem[]>([]);
+    const [partnerPendingUserList, setPartnerPendingUserList] = useState<PartnerListItem[]>([]);
+    const [partnerPendingPartnerList, setPartnerPendingPartnerList] = useState<PartnerListItem[]>([]);
+    const [availablePartnerList, setAvailablePartnerList] = useState<ProfileListItem[]>([]);
     const [prayerRequestList, setPrayerRequestList] = useState<PrayerRequestListItem[]>([]);
 
+
+    /* Sync Redux State */
+    useEffect(() => {
+        if(userID === editingUserID) {
+            setMemberCircleList(userCircleList);
+            setCircleInviteList(userCircleInviteList);
+            setCircleRequestList(userCircleRequestList);
+            setPartnerList(userPartnerList);
+            setPartnerPendingUserList(userPartnerPendingUserList);
+            setPartnerPendingPartnerList(userPartnerPendingPartnerList)
+            setPrayerRequestList(userPrayerRequestList);
+        }
+    }, [ userCircleList, userCircleInviteList, userCircleRequestList, userPartnerList, userPartnerPendingUserList, userPartnerPendingPartnerList, userPrayerRequestList ]);
 
 
     //Triggers | (delays fetchProfile until after Redux auto login)
@@ -89,17 +118,36 @@ const UserEditPage = () => {
             const fields:ProfileResponse = response.data;
             const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
             //Clear Lists, not returned if empty
-            setPartnerProfileList([]);
             setMemberCircleList([]);
+            setCircleInviteList([]);
+            setCircleRequestList([]);
+            setPartnerList([]);
+            setPartnerPendingUserList([]);
+            setPartnerPendingPartnerList([]);
             setPrayerRequestList([]);
             setImage(undefined);
 
             [...Object.entries(fields)].forEach(([field, value]) => {
-                if(field === 'userRoleList' && EDIT_FIELDS.some(f => f.field === 'userRoleTokenList')) {
+                if(field === 'userRoleList') {
                     valueMap.set('userRoleTokenList', new Map(Array.from(value).map((role) => ([role, '']))));
 
                 } else if(field === 'circleList') {
                     setMemberCircleList([...value]);
+
+                } else if(field === 'circleInviteList') {
+                    setCircleInviteList([...value]);
+
+                } else if(field === 'circleRequestList') {
+                    setCircleRequestList([...value]);
+
+                } else if(field === 'partnerList') {
+                    setPartnerList([...value]);
+
+                } else if(field === 'partnerPendingUserList') {
+                    setPartnerPendingUserList([...value]);
+
+                } else if(field === 'partnerPendingPartnerList') {
+                    setPartnerPendingPartnerList([...value]);
 
                 } else if(field === 'prayerRequestList') {
                     setPrayerRequestList([...value]);
@@ -181,12 +229,34 @@ const UserEditPage = () => {
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
 
+    /****************
+     * PARTNERSHIPS *
+     ****************/
+    const fetchAvailablePartners = (fetchUserID:string|number = editingUserID) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/client/${fetchUserID}/available`, { headers: { jwt: jwt }})
+        .then((response:{ data:ProfileListItem[] }) => {
+            setAvailablePartnerList([...response.data]);
+            setDefaultDisplayTitleList(['Available Partners']);
+            notify(`${response.data.length} Available Partners`, ToastStyle.INFO);
+        })
+        .catch((error) => processAJAXError(error));
+
+
+    const fetchNewRandomPartner = (fetchUserID:string|number = editingUserID) => axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}/new-partner`, { }, { headers: { jwt: jwt }})
+        .then((response:{ data:PartnerListItem }) => {
+            setNewPartner(response.data);
+            notify('New Partner Found', ToastStyle.SUCCESS);
+        })
+        .catch((error) => processAJAXError(error));
+
+
     /*****************************
      * REDIRECT LINKED UTILITIES *
      *****************************/
     const redirectToProfile = (redirectUserID:number, displayType?:string):void => {
         if(userHasAnyRole([RoleEnum.ADMIN]) || userAccessProfileList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)) 
             setEditingUserID(redirectUserID);
+        else if(partnerList.map((profile:PartnerListItem) => profile.userID).includes(redirectUserID))
+            notify('TODO - Partner profile popup');
         else
             notify('TODO - Public profile popup');
     }
@@ -230,13 +300,15 @@ const UserEditPage = () => {
                             <label className='title id-left'>{getInputField('displayName')}</label>
                             <span>
                                 {(memberCircleList.length > 0) && <label className='title id-left'>{memberCircleList.length} Circles</label>}
-                                {(partnerProfileList.length > 0) && <label className='title id-left'>{partnerProfileList.length} Partners</label>}
+                                {(partnerList.length > 0) && <label className='title id-left'>{partnerList.length} Partners</label>}
                                 {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingUserID}</label>}
                             </span>
                         </div>
                         <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
                         <div className='form-header-horizontal'>
                             <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Image</button>
+                            {(editingUserHasAnyRole([RoleEnum.STUDENT])) &&
+                                <button type='button' className='alternative-button form-header-button' onClick={() => userHasAnyRole([RoleEnum.ADMIN]) ? fetchAvailablePartners() : fetchNewRandomPartner()}>New Partner</button>}
                         </div>
                         <h2>{`Edit Profile`}</h2>
                     </div>}
@@ -245,7 +317,7 @@ const UserEditPage = () => {
             <SearchList
                 key={'UserEdit-'+editingUserID}
                 defaultDisplayTitleKeySearch='Profiles'
-                defaultDisplayTitleList={['Partners', 'Circles', 'Prayer Request']}
+                defaultDisplayTitleList={defaultDisplayTitleList}
                 displayMap={new Map([
                         [
                             new SearchListKey({displayTitle:'Profiles', searchType: SearchType.USER,
@@ -253,6 +325,61 @@ const UserEditPage = () => {
                             }),
                             [...userAccessProfileList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
                                 onClick: (id:number) => redirectToProfile(id),
+                            }))
+                        ], 
+                        [ /* Active Partners */
+                            new SearchListKey({ displayTitle:'Partners' }),
+
+                            [...partnerList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number) =>  redirectToProfile(id),
+                                primaryButtonText: 'Leave Partnership', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/partner/${id}/leave`, { headers: { jwt: jwt }} )
+                                            .then(response => notify(`Left Partnership with ${profile.displayName}`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(removePartner(id))))
+                                            .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [ /* Pending editingUser Contract Acceptance */
+                            new SearchListKey({ displayTitle:'Pending Partners' }),
+
+                            [...partnerPendingUserList].map((partner:PartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: partner, 
+                                onClick: (id:number) => redirectToProfile(id),
+                                primaryButtonText: userHasAnyRole([RoleEnum.ADMIN]) ? 'Assign Partnership' : 'View Contract', 
+                                onPrimaryButtonCallback: (id:number) => setNewPartner(partner),
+
+                                alternativeButtonText: 'Decline Partnership', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/partner-pending/${id}/decline`, { headers: { jwt: jwt }} )
+                                            .then(response => notify(`Declined Partnership with ${partner.displayName}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(removePartnerPendingUser(id)) : setPartnerPendingUserList(list => list.filter(partner => partner.userID !== id))))
+                                            .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [ /* Pending other partner Contract Acceptance */
+                            new SearchListKey({ displayTitle:'Pending Partner Acceptance' }),
+
+                            [...partnerPendingPartnerList].map((partner:PartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: partner, 
+                                onClick: (id:number) => redirectToProfile(id),
+                                primaryButtonText: userHasAnyRole([RoleEnum.ADMIN]) ? 'Assign Partnership' : '', 
+                                onPrimaryButtonCallback: (id:number) => setNewPartner(partner),
+
+                                alternativeButtonText: 'Decline Partnership', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/partner-pending/${id}/decline`, { headers: { jwt: jwt }} )
+                                            .then(response => notify(`Declined Partnership with ${partner.displayName}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(removePartnerPendingPartner(id)) : setPartnerPendingPartnerList(list => list.filter(partner => partner.userID !== id))))
+                                            .catch((error) => processAJAXError(error))
+                            }))
+                        ], 
+                        [ /* Only ADMIN can Choose or Search Partners */
+                            new SearchListKey({displayTitle:'Available Partners', searchType: userHasAnyRole([RoleEnum.ADMIN]) ? SearchType.USER : SearchType.NONE, 
+                                onSearchClick: (id:number) => redirectToProfile(id),
+                                searchPrimaryButtonText: 'Assign Partnership', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => setNewPartner(item as PartnerListItem),
+                            }),
+
+                            [...availablePartnerList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number) => redirectToProfile(id),
+                                primaryButtonText: userHasAnyRole([RoleEnum.ADMIN]) ? 'Assign Partnership' : '', 
+                                onPrimaryButtonCallback: (id:number) => setNewPartner({...profile, status: PartnerStatusEnum.PENDING_CONTRACT_BOTH}),
                             }))
                         ], 
                         [ /* MEMBER & LEADER CIRCLES | Admin Search */
@@ -275,6 +402,58 @@ const UserEditPage = () => {
                                         .catch((error) => processAJAXError(error))
                                     }))
                         ], 
+                        [ /* Pending User Acceptance | Student Search */
+                            new SearchListKey({displayTitle:'New Circles', searchType: userHasAnyRole([RoleEnum.STUDENT]) ? SearchType.CIRCLE : SearchType.NONE,
+                                onSearchClick: (id:number) => redirectToCircle(id),
+                                searchPrimaryButtonText: 'Request to Join', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/circle/${id}/request}`, {}, { headers: { jwt: jwt }} )
+                                        .then((response:{ data:CircleListItem }) => notify(`Request Sent to Join ${(item as CircleListItem).name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(addCircleRequest(item as CircleListItem)) : setCircleRequestList(list => [item as CircleListItem, ...list])))
+                                        .catch((error) => processAJAXError(error)),
+                                }),
+
+                            [...circleInviteList].map((circle:CircleListItem) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
+                                onClick: (id:number) => redirectToCircle(id),
+                                primaryButtonText: userHasAnyRole([RoleEnum.STUDENT]) ? 'Accept' : '', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/circle/${id}/accept`, { headers: { jwt: jwt }} )
+                                        .then((response:{ data: CircleListItem }) => notify(`Joined Circle ${circle.name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(addCircle(circle)) : setMemberCircleList(list => [circle, ...list])))
+                                        .catch((error) => processAJAXError(error)),
+
+                                alternativeButtonText: 'Decline', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${
+                                            userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? `/api/leader/circle/${id}/client/${editingUserID}/leave` : `/api/circle/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                            .then(response => notify(`Declined Circle ${circle.name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(removeCircleInvite(id)) : setCircleInviteList(list => list.filter(circle => circle.circleID !== id))))
+                                            .catch((error) => processAJAXError(error)),
+                                    }))
+                        ], 
+                        [ /* Pending Leader Acceptance | Leader Accept Invite | Leader Search */
+                            new SearchListKey({displayTitle:'Pending Circles', searchType: userHasAnyRole([RoleEnum.CIRCLE_LEADER]) ? SearchType.CIRCLE : SearchType.NONE,
+                                onSearchClick: (id:number) => redirectToCircle(id),
+                                searchPrimaryButtonText: 'Invite', 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/invite`, {}, { headers: { jwt: jwt }} )
+                                        .then((response:{ data:CircleListItem }) => notify('Invite Sent', ToastStyle.SUCCESS, () => setCircleInviteList(list => [item as CircleListItem, ...list])))
+                                        .catch((error) => processAJAXError(error)),
+                                }),
+
+                            [...circleRequestList].map((circle:CircleListItem) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
+                                onClick: (id:number) => redirectToCircle(id),
+                                primaryButtonText: userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? 'Accept' : '', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/accept`, { headers: { jwt: jwt }} )
+                                        .then((response:{ data: CircleListItem }) => notify(`Joined Circle ${circle.name}`, ToastStyle.SUCCESS, () => setMemberCircleList(list => [circle, ...list])))
+                                        .catch((error) => processAJAXError(error)),
+
+                                alternativeButtonText: 'Decline', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${
+                                            userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? `/api/leader/circle/${id}/client/${editingUserID}/leave` : `/api/circle/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                            .then(response => notify(`Declined Circle ${circle.name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(removeCircleInvite(id)) : setCircleInviteList(list => list.filter(circle => circle.circleID !== id))))
+                                            .catch((error) => processAJAXError(error)),
+                                    }))
+                        ],
                         [
                             new SearchListKey({displayTitle:'Prayer Request'}),
 
@@ -309,13 +488,34 @@ const UserEditPage = () => {
                         )}
                         <hr/>
                         {(memberCircleList.length > 0) && <label >{`+ ${memberCircleList.length} Memberships`}</label>}
-                        {(partnerProfileList.length > 0) && <label >{`+ ${partnerProfileList.length} Partnerships`}</label>}
+                        {(partnerList.length > 0) && <label >{`+ ${partnerList.length} Partnerships`}</label>}
                         {(prayerRequestList.length > 0) && <label >{`+ ${prayerRequestList.length} Prayer Requests`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
                         <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
                     </div>
                 </div>}
+
+                {newPartner && (
+                    <>
+                        {userRole === RoleEnum.ADMIN ? (
+                            <PartnershipStatusADMIN
+                                key={`User-Edit-Partnership-${editingUserID}-${newPartner.userID}-ADMIN`}
+                                user={({userID: editingUserID, image: image, displayName: getInputField('displayName'), firstName: getInputField('firstName')})}
+                                partner={newPartner}
+                                currentStatus={newPartner.status}
+                                onCancel={() => setNewPartner(undefined)}
+                            />
+                        ) : (
+                            <PartnershipContract
+                                key={`User-Edit-Partnership-${editingUserID}-${newPartner.userID}-Contract`}
+                                partner={newPartner}
+                                onAcceptCallback={() => setNewPartner(undefined)}
+                                onDeclineCallback={() => setNewPartner(undefined)}
+                            />
+                        )}
+                    </>
+                )}
 
                 {(showImageUpload) &&
                     <ImageUpload

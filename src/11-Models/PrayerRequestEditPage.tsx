@@ -3,7 +3,7 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatchRequestBody, PrayerRequestResponseBody } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
 import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
@@ -30,6 +30,7 @@ const PrayerRequestEditPage = () => {
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const userProfileAccessList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
+    const userPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerList) || [];
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile);
     const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
@@ -321,6 +322,8 @@ const PrayerRequestEditPage = () => {
     const redirectToProfile = (redirectUserID:number):void => {
         if(userHasAnyRole([RoleEnum.ADMIN]) || userProfileAccessList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)) 
             navigate(`/portal/edit/profile/${redirectUserID}`);
+        else if(userPartnerList.map((partner:PartnerListItem) => partner.userID).includes(redirectUserID))
+            notify('TODO - Partner profile popup');
         else
             notify('TODO - Public profile popup');
     }

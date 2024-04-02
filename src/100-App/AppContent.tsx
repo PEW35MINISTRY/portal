@@ -13,6 +13,7 @@ import SupportPage from '../10-Dashboard/SupportPage';
 import CircleEditPage from '../11-Models/CircleEditPage';
 import PrayerRequestEditPage from '../11-Models/PrayerRequestEditPage';
 import UserEditPage from '../11-Models/UserEditPage';
+import PartnershipPage, { PARTNERSHIP_VIEW } from '../12-Features/PartnershipPage';
 import ContentArchivePage from '../11-Models/ContentArchivePage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
@@ -26,6 +27,8 @@ import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
 import CONTENT_ICON_ACTIVE from '../0-Assets/media-icon-white.png';
 import PROFILE_ICON from '../0-Assets/profile-icon-blue.png';
 import PROFILE_ICON_ACTIVE from '../0-Assets/profile-icon-white.png';
+import PARTNER_ICON from '../0-Assets/partner-icon-blue.png';
+import PARTNER_ICON_ACTIVE from '../0-Assets/partner-icon-white.png';
 import CIRCLE_ICON from '../0-Assets/circle-icon-blue.png';
 import CIRCLE_ICON_ACTIVE from '../0-Assets/circle-icon-white.png';
 import PRAYER_REQUEST_ICON from '../0-Assets/prayer-request-icon-blue.png';
@@ -81,6 +84,10 @@ const AppContent = () => {
       {label: '* HELP * SUPPORT *', route: `/portal/support`, activeIcon: SUPPORT_ICON_ACTIVE, inactiveIcon: SUPPORT_ICON},
       {label: 'Content Archive', route: '/portal/edit/content-archive/-1', activeIcon: CONTENT_ICON_ACTIVE, inactiveIcon: CONTENT_ICON, addRoute: '/portal/edit/content-archive/new', exclusiveRoleList: [RoleEnum.CONTENT_APPROVER, RoleEnum.ADMIN]},
       {label: 'Profile', route: `/portal/edit/profile/${userID}`, activeIcon: PROFILE_ICON_ACTIVE, inactiveIcon: PROFILE_ICON},
+      {label: 'Partnerships', route: `/portal/partnership/recent`, activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, exclusiveRoleList: [RoleEnum.ADMIN],
+        subMenu: [{label: 'Fewer', route: `/portal/partnership/fewer`},
+                  {label: 'Pending', route: `/portal/partnership/pending`}]
+      },
       {label: 'Circle', route: '/portal/edit/circle/-1', activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
       {label: 'Prayer Request', route: '/portal/edit/prayer-request/-1', activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
@@ -151,6 +158,7 @@ const AppContent = () => {
 
             </div>
 
+
             {showProfileMenu && <div id='absolute-wrapper' onClick={()=>setShowProfileMenu(false)}></div> }
 
             {showProfileMenu &&
@@ -191,6 +199,9 @@ const AppContent = () => {
                   <Route path='/portal/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>
                   <Route path='/portal/edit/profile/:id/:action' element={<UserEditPage/>}/>
                   <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>
+                  <Route path='/portal/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.RECENT} />}/>
+                  <Route path='/portal/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER} />}/>
+                  <Route path='/portal/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING} />}/>
                   <Route path='/portal/edit/circle/:id/:action' element={<CircleEditPage/>}/>
                   <Route path='/portal/edit/circle/:id/*' element={<CircleEditPage/>}/>
                   <Route path='/portal/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>

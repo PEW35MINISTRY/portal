@@ -1,6 +1,6 @@
 /************* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *************/
 
-import { GenderEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
+import { GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
 import { CircleListItem } from './circle-types.js'
 import { PrayerRequestListItem } from './prayer-request-types.js'
 
@@ -29,9 +29,20 @@ export interface ProfileListItem {
     image?: string,
 }
 
+export interface PartnerListItem extends ProfileListItem {
+    status: PartnerStatusEnum, //Transformed in reference to requesting userID
+    contractDT?: Date,
+    partnershipDT?: Date,
+}
+
+export interface ProfilePartnerCountListItem extends ProfileListItem {
+    maxPartners: number,
+    partnerCountMap: Map<PartnerStatusEnum, number> | [PartnerStatusEnum, number][]
+}
+
 export interface ProfilePublicResponse {
     userID: number, 
-    userRole: string, 
+    userRole: RoleEnum, 
     firstName: string,
     displayName: string, 
     gender: GenderEnum,
@@ -51,7 +62,11 @@ export interface ProfileResponse extends ProfilePartnerResponse  {
     isActive: boolean,
     notes?: string,
     userRoleList: RoleEnum[],
-    partnerList?: ProfileListItem[],
+    circleInviteList?: CircleListItem[],
+    circleRequestList?: CircleListItem[],
+    partnerList?: PartnerListItem[],
+    partnerPendingUserList?: PartnerListItem[],
+    partnerPendingPartnerList?: PartnerListItem[],
     prayerRequestList?: PrayerRequestListItem[],
     contactList?: ProfileListItem[],
     profileAccessList?: ProfileListItem[], //Leaders
