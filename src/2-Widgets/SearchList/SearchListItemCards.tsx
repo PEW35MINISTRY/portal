@@ -29,10 +29,10 @@ export const LabelItem = ({...props}:{key:any, label:LabelListItem, onClick?:(id
             <label className='title'>{props.label}</label>
         </div>;
 
-export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:(id:number, item:ProfileListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ProfileListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ProfileListItem)=>void}) => {
+export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:(id:number, item:ProfileListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ProfileListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ProfileListItem)=>void, class?:string}) => {
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     return (
-        <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
+        <div key={props.key} className={`search-item ${props.class || ''}`} onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
             <div className='detail-box profile-detail-box'>
                 <img src={props.user.image || PROFILE_DEFAULT} alt={props.user.displayName} />
                 <label className='title name'>{props.user.firstName}<p>{props.user.displayName}</p></label>
