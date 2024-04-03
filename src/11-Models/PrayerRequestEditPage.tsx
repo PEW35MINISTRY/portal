@@ -9,7 +9,7 @@ import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
-import { circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
+import { assembleRequestBody, circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import { addPrayerRequest, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -28,12 +28,13 @@ const PrayerRequestEditPage = () => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
+    const userProfileAccessList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile);
     const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
     const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.prayerRequestList) || [];
     const userContactList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.contactList) || [];
-    const userProfileAccessList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
@@ -58,6 +59,14 @@ const PrayerRequestEditPage = () => {
     const [addCircleRecipientIDList, setAddCircleRecipientIDList] = useState<number[]>([]);
     const [removeCircleRecipientIDList, setRemoveCircleRecipientIDList] = useState<number[]>([]);
 
+
+    /* Checks Logged in User */
+    const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
+        (!userRoleList || userRoleList.length === 0) ? 
+            roleList.includes(RoleEnum.STUDENT)
+        : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
+
+
     //Sync userID and SearchID on initial load
     useEffect(() => {
         if(userID > 0) {
@@ -68,7 +77,7 @@ const PrayerRequestEditPage = () => {
 
     /* Set Privilege Edit Fields Available */
     useLayoutEffect (() => {
-        if(userRole === RoleEnum.ADMIN)
+        if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
         else if(editingPrayerRequestID === -1)
             setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
@@ -184,15 +193,8 @@ const PrayerRequestEditPage = () => {
      *  SAVE PRAYER REQUEST CHANGES TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:PrayerRequestPatchRequestBody = {} as PrayerRequestPatchRequestBody;
-        finalMap.forEach((value, field) => {
-            if(value === '') value = null; //Valid for clearing fields in database
-            //@ts-ignore
-            requestBody[field] = value;
-        });
+    const makeEditRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(removeUserRecipientIDList.length > 0) requestBody['removeUserRecipientIDList'] = removeUserRecipientIDList;
@@ -200,7 +202,7 @@ const PrayerRequestEditPage = () => {
         if(removeCircleRecipientIDList.length > 0) requestBody['removeCircleRecipientIDList'] = removeCircleRecipientIDList;
 
         await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${editingPrayerRequestID}`, requestBody, { headers: { jwt: jwt }})
-            .then(response => notify(`Prayer Request Saved`, ToastStyle.SUCCESS, () => {
+            .then((response:{ data:PrayerRequestResponseBody }) => notify(`Prayer Request Saved`, ToastStyle.SUCCESS, () => {
                 setAddUserRecipientIDList([]);
                 setRemoveUserRecipientIDList([]);
                 setAddCircleRecipientIDList([]);
@@ -215,14 +217,8 @@ const PrayerRequestEditPage = () => {
      *  SAVE NEW PRAYER REQUEST TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makePostRequest = async(result?:Map<string, string>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:PrayerRequestPatchRequestBody = {} as PrayerRequestPatchRequestBody;
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
+    const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(addCircleRecipientIDList.length > 0) requestBody['addCircleRecipientIDList'] = addCircleRecipientIDList;
@@ -233,7 +229,7 @@ const PrayerRequestEditPage = () => {
         }
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request`, requestBody, {headers: { jwt: jwt }})
-            .then(response =>
+            .then((response:{ data:PrayerRequestResponseBody }) =>
                 notify(`Prayer Request Created`, ToastStyle.SUCCESS, () => {
                     setEditingPrayerRequestID(response.data.prayerRequestID);
                     setDefaultDisplayTitleList(['Prayer Requests']);
@@ -266,16 +262,8 @@ const PrayerRequestEditPage = () => {
     /*******************************************
      *     SAVE NEW PRAYER REQUEST COMMENT
      * *****************************************/
-    const makePrayerCommentRequest = async(announcementInputMap:Map<string, any>) => {
-        const finalMap:Map<string,any> = announcementInputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody = {};
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, requestBody, {headers: { jwt: jwt }})
+    const makePrayerCommentRequest = async(announcementInputMap:Map<string, any>) =>
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
                 setShowNewComment(false);
@@ -283,8 +271,8 @@ const PrayerRequestEditPage = () => {
                 setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
             })
             .catch((error) => { processAJAXError(error); });
-    }
 
+            
     /***********************************
      *   Handle Recipient Change Lists
      * *********************************/
@@ -326,6 +314,25 @@ const PrayerRequestEditPage = () => {
    
     useEffect(()=>{if(requestorProfile !== undefined && requestorProfile.userID !== getInputField('requestorID')) setInputField('requestorID', requestorProfile.userID);}, [requestorProfile]);
 
+    
+    /*****************************
+     * REDIRECT LINKED UTILITIES *
+     *****************************/
+    const redirectToProfile = (redirectUserID:number):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN]) || userProfileAccessList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)) 
+            navigate(`/portal/edit/profile/${redirectUserID}`);
+        else
+            notify('TODO - Public profile popup');
+    }
+
+    const redirectToCircle = (redirectCircleID:number):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER])) 
+            navigate(`/portal/edit/circle/${redirectCircleID}`);
+        else
+            notify('TODO - Public circle popup');
+    }
+
+
     /*********************
      *   RENDER DISPLAY 
      * *******************/
@@ -350,7 +357,7 @@ const PrayerRequestEditPage = () => {
                                 {((userRecipientList.length + circleRecipientList.length) > 0) && <label className='title id-left'>{(userRecipientList.length + circleRecipientList.length)} Recipients</label>}
                                 {(commentList.length > 0) && <label className='title id-left'>{commentList.length} Comments</label>}
                                 {((getInputField('prayerCount') as number) > 0) && <label className='title id-left'>{getInputField('prayerCount')} Prayers</label>}
-                                {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingPrayerRequestID}</label>}
+                                {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingPrayerRequestID}</label>}
                             </span>
                             <span className='right-align'>
                                 {requestorProfile && <img className='leader-profile-image' src={requestorProfile.image || PROFILE_DEFAULT} alt={requestorProfile.displayName} />}
@@ -409,7 +416,12 @@ const PrayerRequestEditPage = () => {
                                     setSearchUserID(id);
                                     // setRequestorProfile(item as ProfileListItem);
                                 },
-                                searchPrimaryButtonText: (editingPrayerRequestID <= 0) ? undefined : 'Share', onSearchPrimaryButtonCallback: (id:number) => shareUser(id)}),
+                                searchPrimaryButtonText: (editingPrayerRequestID <= 0) ? undefined : 'Share', 
+                                onSearchPrimaryButtonCallback: (id:number) => shareUser(id),
+                                searchAlternativeButtonText: 'View Profile',
+                                onSearchAlternativeButtonCallback: (id:number) => redirectToProfile(id)
+                            }),
+
                             userFilterUnique([...userRecipientList, ...userContactList, ...userProfileAccessList]).map((user) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: user, 
                                 onClick: (id:number)=>(userProfileAccessList.map(user => user.userID).includes(id) || userRole === RoleEnum.ADMIN) ? setSearchUserID(id) : undefined,
                                 primaryButtonText: (isUserRecipientPending(user.userID)) ? undefined : isUserRecipient(user.userID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isUserRecipient(id) ? removeUser(id) : shareUser(id),                         
@@ -417,8 +429,13 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchFilter: (userRole === RoleEnum.ADMIN) ? undefined : CircleStatusEnum.MEMBER,
-                                searchPrimaryButtonText: 'Share', onSearchPrimaryButtonCallback: (id:number) => shareCircle(id)}),
+                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchFilter: userHasAnyRole([RoleEnum.ADMIN]) ? undefined : CircleStatusEnum.MEMBER,
+                                searchPrimaryButtonText: 'Share', 
+                                onSearchPrimaryButtonCallback: (id:number) => shareCircle(id),
+                                searchAlternativeButtonText: 'View Circle',
+                                onSearchAlternativeButtonCallback: (id:number) => redirectToCircle(id)                            
+                            }),
+
                             (circleFilterUnique([...circleRecipientList, ...userCircleList])).map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
                                 primaryButtonText: (isCircleRecipientPending(circle.circleID)) ? undefined : isCircleRecipient(circle.circleID) ? 'Remove' : 'Share', onPrimaryButtonCallback: (id:number) => isCircleRecipient(id) ? removeCircle(id) : shareCircle(id),                         
                                 alternativeButtonText: isCircleRecipientPending(circle.circleID) ? 'Pending' : undefined,   
@@ -442,13 +459,13 @@ const PrayerRequestEditPage = () => {
                             <h1 className='name'>{getInputField('topic')}</h1>
                             <span>
                                 <h1 className='name'>{getInputField('topic')}</h1>
-                                {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingPrayerRequestID}</label>}
+                                {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingPrayerRequestID}</label>}
                             </span>
                             { requestorProfile &&
                                 <span className='right-align'>
                                     <img className='leader-profile-image' src={requestorProfile?.image || PROFILE_DEFAULT} alt={requestorProfile.displayName} />
                                     <label className='title'>{requestorProfile.displayName}</label>
-                                    {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{requestorProfile.userID}</label>}
+                                    {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{requestorProfile.userID}</label>}
                                 </span>}
                         </div>
                         <p className='id' >{getInputField('description')}</p>

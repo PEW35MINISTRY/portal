@@ -7,6 +7,7 @@ import { ProfileEditRequestBody, ProfileListItem, ProfileResponse } from '../0-A
 import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
+import { assembleRequestBody } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import { removeCircle, removePrayerRequest, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -25,7 +26,8 @@ const UserEditPage = () => {
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
-    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);
+    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const { id = -1, action } = useParams();
 
@@ -65,7 +67,7 @@ const UserEditPage = () => {
 
     //componentDidMount
     useLayoutEffect(() => {
-        if(userRole === RoleEnum.ADMIN)
+        if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS);       
@@ -83,7 +85,7 @@ const UserEditPage = () => {
 
     const fetchProfile = (fetchUserID:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}`,{
         headers: { jwt: jwt }})
-        .then(response => {
+        .then((response:{ data:ProfileResponse }) => {
             const fields:ProfileResponse = response.data;
             const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
             //Clear Lists, not returned if empty
@@ -95,8 +97,6 @@ const UserEditPage = () => {
             [...Object.entries(fields)].forEach(([field, value]) => {
                 if(field === 'userRoleList' && EDIT_FIELDS.some(f => f.field === 'userRoleTokenList')) {
                     valueMap.set('userRoleTokenList', new Map(Array.from(value).map((role) => ([role, '']))));
-                } else if(field === 'partnerList') {
-                    setPartnerProfileList([...value]);
 
                 } else if(field === 'circleList') {
                     setMemberCircleList([...value]);
@@ -124,41 +124,40 @@ const UserEditPage = () => {
         .catch((error) => processAJAXError(error, () => navigate(`/portal/edit/profile/${userID}`)));
 
 
+    /* Checks Currently Editing Profile */
+    const editingUserHasAnyRole = (roleList: RoleEnum[]):boolean =>
+        (!getInputField('userRoleTokenList') || getInputField('userRoleTokenList').length === 0) ? 
+            roleList.includes(RoleEnum.STUDENT)
+        : Array.from((getInputField('userRoleTokenList') as Map<RoleEnum, string>).keys())
+            .some((editingUserRole: RoleEnum) => roleList.includes(editingUserRole));
+
+    /* Checks Logged in User */
+    const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
+        (!userRoleList || userRoleList.length === 0) ? 
+            roleList.includes(RoleEnum.STUDENT)
+        : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
+
+        
     /*******************************************
      *         SAVE CHANGES TO SEVER
      * FormProfile already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:ProfileEditRequestBody = {} as ProfileEditRequestBody;
-        finalMap.forEach((value, field) => {
-            if(field === 'userRoleTokenList') { //@ts-ignore
-                requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
-                                        .map(([role, token]) => ({role: role, token: token || ''}));
-            } else {
-                if(value === '') value = null; //Valid for clearing fields in database
-                //@ts-ignore
-                requestBody[field] = value;
-            }
-        });
-
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, requestBody, 
+    const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, assembleRequestBody(resultMap), 
             { headers: { jwt: jwt }})
-            .then(response => {
+            .then((response:{ data:ProfileResponse }) => {
                 //Save to Redux for current session
                 if(userID === editingUserID)
                     dispatch(updateProfile(response.data));
 
                 notify(`${response.data.firstName} Profile Saved`, ToastStyle.SUCCESS);
             }).catch((error) => processAJAXError(error));
-    }
 
     /*******************************************
      *         DELETE Editing Profile
      * *****************************************/
     const makeDeleteRequest = async() => 
-        axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, 
+        await axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, 
                 { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted user ${editingUserID}`, ToastStyle.SUCCESS, () => {
@@ -180,6 +179,32 @@ const UserEditPage = () => {
     const getInputField = (field:string):any|undefined => inputMap.get(field) || EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
+
+
+    /*****************************
+     * REDIRECT LINKED UTILITIES *
+     *****************************/
+    const redirectToProfile = (redirectUserID:number, displayType?:string):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN]) || userAccessProfileList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)) 
+            setEditingUserID(redirectUserID);
+        else
+            notify('TODO - Public profile popup');
+    }
+
+    const redirectToCircle = (redirectCircleID:number):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER])) 
+            navigate(`/portal/edit/circle/${redirectCircleID}`);
+        else
+            notify('TODO - Public circle popup');
+    }
+
+    const redirectToPrayerRequest = (prayerRequestItem:PrayerRequestListItem):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN]) || prayerRequestItem.requestorProfile.userID === userID) 
+            navigate(`portal/edit/prayer-request/${prayerRequestItem.prayerRequestID}`);
+        else
+            notify('TODO - Preview Prayer Request popup');
+    }
+
 
     /*********************
      *   RENDER DISPLAY 
@@ -206,7 +231,7 @@ const UserEditPage = () => {
                             <span>
                                 {(memberCircleList.length > 0) && <label className='title id-left'>{memberCircleList.length} Circles</label>}
                                 {(partnerProfileList.length > 0) && <label className='title id-left'>{partnerProfileList.length} Partners</label>}
-                                {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingUserID}</label>}
+                                {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingUserID}</label>}
                             </span>
                         </div>
                         <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
@@ -224,52 +249,41 @@ const UserEditPage = () => {
                 displayMap={new Map([
                         [
                             new SearchListKey({displayTitle:'Profiles', searchType: SearchType.USER,
-                                onSearchClick: (id:number)=>setEditingUserID(id)
+                                onSearchClick: (id:number) => redirectToProfile(id),
                             }),
-                            [...userAccessProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
-                                onClick: (id:number)=>setEditingUserID(id),
+                            [...userAccessProfileList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number) => redirectToProfile(id),
                             }))
                         ], 
-                        [
-                            new SearchListKey({displayTitle:'Partners', searchType: SearchType.USER,
-                                searchPrimaryButtonText: 'Join Partnership', onSearchPrimaryButtonCallback: (id:number) => console.log('To Implement: Setup Partnership', editingUserID, id),
+                        [ /* MEMBER & LEADER CIRCLES | Admin Search */
+                            new SearchListKey({displayTitle:'Circles', searchType: userHasAnyRole([RoleEnum.ADMIN]) ? SearchType.CIRCLE : SearchType.NONE,
+                                onSearchClick: (id:number) => redirectToCircle(id),
+                                searchPrimaryButtonText: `Join Circle`, 
+                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/circle/${id}/join/${editingUserID}`, { }, { headers: { jwt: jwt }} )
+                                        .then((response: {data:CircleListItem}) => notify(`Joined Circle ${(item as CircleListItem).name}`, ToastStyle.SUCCESS, () => setMemberCircleList(list => [item as CircleListItem, ...list])))
+                                        .catch((error) => processAJAXError(error)),
                                 }),
 
-                            [...partnerProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
-                                onClick: (id:number)=>setEditingUserID(id),
-                                primaryButtonText: 'Leave Partnership', onPrimaryButtonCallback: (id:number) => console.log('To Implement: Leave Partnership', editingUserID, id),   //TODO Update requestList state partnerList state and redux                         
-                            }))
-                        ], 
-                        [ //Assumed Circle appearing in search, editingUserID is not a member
-                            new SearchListKey({displayTitle:'Circles', searchType: SearchType.CIRCLE,
-                                onSearchClick: (id:number)=>navigate(`/portal/edit/circle/${id}`),
-                                searchPrimaryButtonText: (userRole === RoleEnum.ADMIN) ? `Join Circle` : 'Request to Join', 
-                                onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
-                                    axios.post(`${process.env.REACT_APP_DOMAIN}${
-                                            (userRole === RoleEnum.ADMIN) ? `/api/admin/circle/${id}/join/${editingUserID}`
-                                            : (userRole === RoleEnum.CIRCLE_LEADER) ? `/api/leader/circle/${id}/client/${editingUserID}/invite`
-                                            : `/api/circle/${id}/request`}`, {}, { headers: { jwt: jwt }} )
-                                        .then(response => notify((userRole === RoleEnum.ADMIN) ? `Joined Circle` : (userRole === RoleEnum.CIRCLE_LEADER) ? 'Circle Invite Sent' : 'Circle Request Sent', 
-                                            ToastStyle.SUCCESS))
-                                        .catch((error) => processAJAXError(error))}),
-
-                            [...memberCircleList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: profile, 
-                                onClick: (id:number)=>navigate(`/portal/edit/circle/${id}`),
-                                primaryButtonText: 'Leave Circle', onPrimaryButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
-                                    : `/api/leader/circle/${id}/client/${editingUserID}/leave`}`, { headers: { jwt: jwt }} )
-                                        .then(response => notify(`Left Circle`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(removeCircle(id))))
+                            [...memberCircleList].map((circle:CircleListItem) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
+                                onClick: (id:number) => redirectToCircle(id),
+                                alternativeButtonText: 'Leave Circle', 
+                                onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${
+                                            userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? `/api/leader/circle/${id}/client/${editingUserID}/leave` : `/api/circle/${id}/leave`}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Left Circle ${circle.name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(removeCircle(id)) : setMemberCircleList(list => list.filter(circle => circle.circleID !== id))))
                                         .catch((error) => processAJAXError(error))
                                     }))
                         ], 
                         [
                             new SearchListKey({displayTitle:'Prayer Request'}),
 
-                            [...prayerRequestList].map((prayer) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayer, 
-                                onClick: (id:number)=>navigate(`/portal/edit/prayer-request/${id}`),
-                                alternativeButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}`, { headers: { jwt: jwt }} )
-                                        .then(response => notify(`Deleted Prayer Request`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(removePrayerRequest(id))))
+                            [...prayerRequestList].map((prayerRequest:PrayerRequestListItem) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayerRequest, 
+                                onClick: (id:number) => redirectToPrayerRequest(prayerRequest),
+                                primaryButtonText: 'Pray', 
+                                onPrimaryButtonCallback: (id:number) => 
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, { headers: { jwt: jwt }} )
+                                        .then(response => notify(`Prayed`, ToastStyle.SUCCESS, () => setPrayerRequestList(list => list.map((prayerRequest) => (prayerRequest.prayerRequestID === id) ? {...prayerRequest, prayerCount: prayerRequest.prayerCount + 1} : prayerRequest))))
                                         .catch((error) => processAJAXError(error))
                             }))
                         ], 
@@ -284,7 +298,7 @@ const UserEditPage = () => {
                             <h1 className='name'>{getInputField('firstName')} {getInputField('lastName')}</h1>
                             <span>
                                 <label className='title id-left'>{getInputField('displayName')}</label>
-                                {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingUserID}</label>}
+                                {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingUserID}</label>}
                             </span>
                         </div>
                         <img className='form-header-image profile-image' src={getInputField('image') || PROFILE_DEFAULT} alt='Profile-Image' />

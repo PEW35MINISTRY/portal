@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem, CircleListItem, CircleResponse } from '../0-Assets/field-sync/api-type-sync/circle-types';
+import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem, CircleLeaderResponse, CircleListItem, CircleResponse } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CIRCLE_ANNOUNCEMENT_FIELDS, CIRCLE_FIELDS, CIRCLE_FIELDS_ADMIN, CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
@@ -9,6 +9,7 @@ import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
+import { assembleRequestBody } from '../1-Utilities/utilities';
 import { addCircle, removeCircle } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -29,6 +30,8 @@ const CircleEditPage = () => {
     const jwt:string = useAppSelector((state) => state.account.jwt) || '';
     const userID:number = useAppSelector((state) => state.account.userID) || -1;
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole) || RoleEnum.STUDENT;
+    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
+    const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName) || '';
     const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile) || {};
     const userLeaderCircleList:CircleListItem[] = (useAppSelector((state) => state.account.userProfile.circleList) || []).filter(circle => circle.status === CircleStatusEnum.LEADER);
@@ -53,9 +56,16 @@ const CircleEditPage = () => {
     const [eventList, setEventList] = useState<CircleEventListItem[]>([]);
 
 
+    /* Checks Logged in User */
+    const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
+        (!userRoleList || userRoleList.length === 0) ? 
+            roleList.includes(RoleEnum.STUDENT)
+        : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
+
+
     //Triggers | (delays fetchProfile until after Redux auto login)
     useLayoutEffect(() => {
-        if(userRole === RoleEnum.ADMIN)
+        if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(CIRCLE_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(CIRCLE_FIELDS);
@@ -156,39 +166,22 @@ const CircleEditPage = () => {
      *      SAVE CIRCLE CHANGES TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makeEditRequest = async(result?:Map<string,any>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:CircleEditRequestBody = {} as CircleEditRequestBody;
-        finalMap.forEach((value, field) => {
-            if(value === '') value = null; //Valid for clearing fields in database
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, requestBody, { headers: { jwt: jwt }})
+    const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
             .then(response => notify(`${response.data.name} Circle Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
-    }
 
 
     /*******************************************
      *       SAVE NEW CIRCLE TO SEVER
      * FormInput already handled validations
      * *****************************************/
-    const makePostRequest = async(result?:Map<string, string>) => {
-        const finalMap:Map<string,any> = result || inputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody:CircleEditRequestBody = {} as CircleEditRequestBody;
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
+    const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
+        const requestBody:CircleEditRequestBody = assembleRequestBody(resultMap) as CircleEditRequestBody;
         requestBody['leaderID'] = leaderProfile?.userID || userID;
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle`, requestBody, {headers: { jwt: jwt }})
-            .then(response =>
+            .then((response:{ data:CircleLeaderResponse }) =>
                 notify(`Circle Created`, ToastStyle.SUCCESS, () => {
                     setEditingCircleID(response.data.circleID);
                     navigate(`/portal/edit/circle/${response.data.circleID}/image`);
@@ -219,16 +212,8 @@ const CircleEditPage = () => {
     /*******************************************
      *     SAVE NEW CIRCLE ANNOUNCEMENT
      * *****************************************/
-    const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) => {
-        const finalMap:Map<string,any> = announcementInputMap;
-        //Assemble Request Body (Simple JavaScript Object)
-        const requestBody = {};
-        finalMap.forEach((value, field) => {
-            //@ts-ignore
-            requestBody[field] = value;
-        });
-
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, requestBody, {headers: { jwt: jwt }})
+    const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) =>
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Announcement Sent', ToastStyle.SUCCESS, () => {
                     setShowAnnouncement(false);
@@ -238,8 +223,6 @@ const CircleEditPage = () => {
                 });
             })
             .catch((error) => { processAJAXError(error); });
-    }
-
 
 
 
@@ -251,6 +234,27 @@ const CircleEditPage = () => {
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
     useEffect(()=>{if(leaderProfile !== undefined && leaderProfile.userID !== getInputField('leaderID')) setInputField('leaderID', leaderProfile.userID);}, [leaderProfile]);
+
+
+    /*****************************
+     * REDIRECT LINKED UTILITIES *
+     *****************************/
+    const redirectToProfile = (redirectUserID:number):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN]) 
+            || userAccessProfileList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)
+            || (userHasAnyRole([RoleEnum.CIRCLE_LEADER]) && (userID === leaderProfile?.userID) && memberProfileList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID))) //Circle Leader Access
+            navigate(`/portal/edit/profile/${redirectUserID}`);
+        else
+            notify('TODO - Public profile popup');
+    }
+
+    const redirectToPrayerRequest = (prayerRequestItem:PrayerRequestListItem):void => {
+        if(userHasAnyRole([RoleEnum.ADMIN]) || prayerRequestItem.requestorProfile.userID === userID) 
+            navigate(`portal/edit/prayer-request/${prayerRequestItem.prayerRequestID}`);
+        else
+            notify('TODO - Preview Prayer Request popup');
+    }
+
 
     /*************************************
      *   RENDER DISPLAY 
@@ -278,7 +282,7 @@ const CircleEditPage = () => {
                         <h1 className='name'>{getInputField('name') || 'New Circle'}</h1>
                         <span>
                             {(memberProfileList.length > 0) && <label className='title id-left'>{memberProfileList.length} Members</label>}
-                            {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingCircleID}</label> }
+                            {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingCircleID}</label> }
                         </span>
                         <span className='right-align'>
                             {leaderProfile && <img className='leader-profile-image' src={leaderProfile.image || PROFILE_DEFAULT} alt={leaderProfile.displayName} />}
@@ -302,7 +306,7 @@ const CircleEditPage = () => {
                 displayMap={new Map([
                         [ 
                             new SearchListKey({displayTitle:'Circles', searchType: SearchType.CIRCLE,
-                                onSearchClick: (id:number)=> (userRole === RoleEnum.ADMIN) ? setEditingCircleID(id) : {}
+                                onSearchClick: (id:number)=> userHasAnyRole([RoleEnum.ADMIN]) ? setEditingCircleID(id) : {}
                                 }),
 
                             [...userLeaderCircleList].map((circle) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
@@ -311,6 +315,7 @@ const CircleEditPage = () => {
                         ], 
                         [
                             new SearchListKey({displayTitle:'Pending Requests', searchType: SearchType.USER,
+                                onSearchClick: (id:number) => redirectToProfile(id),
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
@@ -319,14 +324,14 @@ const CircleEditPage = () => {
                             }),
 
                             [...requestProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
-                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                onClick: (id:number) => redirectToProfile(id),
                                 primaryButtonText: 'Accept Request', 
                                 onPrimaryButtonCallback: (id:number) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}${
-                                            (userRole === RoleEnum.ADMIN) ? `/api/admin/circle/${editingCircleID}/join/${id}`
-                                            : (userRole === RoleEnum.CIRCLE_LEADER) ? `/api/leader/circle/${editingCircleID}/client/${id}/accept`
+                                            userHasAnyRole([RoleEnum.ADMIN]) ? `/api/admin/circle/${editingCircleID}/join/${id}`
+                                            : userHasAnyRole([RoleEnum.CIRCLE_LEADER]) ? `/api/leader/circle/${editingCircleID}/client/${id}/accept`
                                             : `/api/circle/${editingCircleID}/request`}`, {}, { headers: { jwt: jwt }} )
-                                        .then(response => notify((userRole === RoleEnum.ADMIN) ? `Joined Circle` : (userRole === RoleEnum.CIRCLE_LEADER) ? 'Circle Request Accepted' : 'Circle Request Sent', ToastStyle.SUCCESS, () => {
+                                        .then(response => notify(userHasAnyRole([RoleEnum.ADMIN]) ? `Joined Circle` : userHasAnyRole([RoleEnum.CIRCLE_LEADER]) ? 'Circle Request Accepted' : 'Circle Request Sent', ToastStyle.SUCCESS, () => {
                                                 const profile:ProfileListItem|undefined = requestProfileList.find(user => user.userID === id);
                                                 setRequestProfileList(current => current.filter(user => user.userID !== id));
                                                 if(profile !== undefined) setMemberProfileList(current => [profile, ...current]);                                            
@@ -361,6 +366,7 @@ const CircleEditPage = () => {
                         ],
                         [
                             new SearchListKey({displayTitle:'Pending Invites', searchType: SearchType.USER,
+                                onSearchClick: (id:number) => redirectToProfile(id),    
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
@@ -369,7 +375,7 @@ const CircleEditPage = () => {
                             }),
 
                             [...inviteProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
-                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                onClick: (id:number) => redirectToProfile(id),
                                 alternativeButtonText: 'Decline Invite', 
                                 onAlternativeButtonCallback: (id:number) => 
                                 axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
@@ -380,7 +386,7 @@ const CircleEditPage = () => {
                         ], 
                         [
                             new SearchListKey({displayTitle:'Members', searchType: SearchType.USER,
-                                onSearchClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                onSearchClick: (id:number) => redirectToProfile(id),
                                 searchPrimaryButtonText: 'Invite', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/client/${id}/invite`, {}, { headers: { jwt: jwt }} )
@@ -389,7 +395,7 @@ const CircleEditPage = () => {
                             }),
 
                             [...memberProfileList].map((profile) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
-                                onClick: (id:number)=>navigate(`/portal/edit/profile/${id}`),
+                                onClick: (id:number) => redirectToProfile(id),
                                 alternativeButtonText: 'Remove', 
                                 onAlternativeButtonCallback: (id:number) => 
                                     axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
@@ -402,6 +408,7 @@ const CircleEditPage = () => {
                             new SearchListKey({displayTitle:'Prayer Requests'}),
 
                             [...prayerRequestList].map((prayer) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayer, 
+                                onClick: (id:number, item:DisplayItemType) => redirectToPrayerRequest(item as PrayerRequestListItem),
                                 primaryButtonText: 'Pray', 
                                 onPrimaryButtonCallback: (id:number) => 
                                     axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}/like`, {}, { headers: { jwt: jwt }} )
@@ -427,12 +434,12 @@ const CircleEditPage = () => {
                                 <div className='form-header-detail-box'>
                                     <span>
                                         <h1 className='name'>{getInputField('name')}</h1>
-                                        {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingCircleID}</label>}
+                                        {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingCircleID}</label>}
                                     </span>
                                     <span className='right-align'>
                                         <img className='leader-profile-image' src={leaderProfile.image || PROFILE_DEFAULT} alt={leaderProfile.displayName} />
                                         <label className='title'>{leaderProfile?.displayName}</label>
-                                        {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{leaderProfile.userID}</label>}
+                                        {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{leaderProfile.userID}</label>}
                                     </span>
                                 </div> }
                         <img className='form-header-image circle-image' src={getInputField('image') || CIRCLE_DEFAULT} alt='Circle-Image' />

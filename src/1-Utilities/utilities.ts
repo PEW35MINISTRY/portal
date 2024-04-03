@@ -21,3 +21,21 @@ export const circleFilterUnique = (list:CircleListItem[]):CircleListItem[] =>
 
 //Converts underscores to spaces and capitalizes each word
 export const makeDisplayText = (text:string = ''):string => text.toLowerCase().split('_'||' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+
+
+/* Transform inputMap to Simple JavaScript Object */
+export const assembleRequestBody = (inputMap:Map<string,any>):Object => {
+    //Assemble Request Body (Simple JavaScript Object)
+    const requestBody = {};
+    inputMap.forEach((value, field) => {
+        if(field === 'userRoleTokenList') { //@ts-ignore
+            requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
+                                    .map(([role, token]) => ({role: role, token: token || ''}));
+        } else {
+            if(value === '') value = null; //Valid for clearing fields in database
+            //@ts-ignore
+            requestBody[field] = value;
+        }
+    });
+    return requestBody;
+}

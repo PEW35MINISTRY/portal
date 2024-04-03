@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
@@ -44,14 +44,22 @@ import LOGOUT_ICON_ACTIVE from '../0-Assets/logout-icon-white.png';
 
 type MenuPageListing = {
   label:string,
-  route?:string,
+  route:string,
   onClick?:Function,
   activeIcon:string,
   inactiveIcon:string,
   addRoute?:string,
+  subMenu?:SubMenuListing[],
   exclusiveRoleList?:RoleEnum[] //Roles to show only; undefined allows all
 }
 
+type SubMenuListing = {
+  label:string,
+  route?:string,
+  onClick?:Function,
+  addRoute?:string,
+  exclusiveRoleList?:RoleEnum[] //Inherits from MenuPageListing
+}
 
 const AppContent = () => {
     const dispatch = useAppDispatch();
@@ -64,6 +72,10 @@ const AppContent = () => {
     const menuRef = useRef<null | HTMLDivElement>(null);
     const [showMenu, setShowMenu] = useState<boolean>(true);
     const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
+    const [visitedRouteSet, setVisitedRouteSet] = useState<Set<string>>(new Set()); // Tracking subMenu
+
+    const addVisitedPage = (page: MenuPageListing) => setVisitedRouteSet(currentSet => new Set([...currentSet, page.route]));
+
 
     const MENU_CONFIG_LIST:MenuPageListing[] = [
       {label: '* HELP * SUPPORT *', route: `/portal/support`, activeIcon: SUPPORT_ICON_ACTIVE, inactiveIcon: SUPPORT_ICON},
@@ -77,7 +89,7 @@ const AppContent = () => {
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
-      {label: 'Preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
+      {label: 'Preferences', route: '/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
       {label: 'Logout', route: '/login', onClick: ()=>store.dispatch((logoutAccount) as AppDispatch), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
 
@@ -96,22 +108,46 @@ const AppContent = () => {
 
             <div id='app-menu'>
 
-              {MENU_CONFIG_LIST.map((page, index) => 
-                    <NavLink key={'menu-'+index} to={page.route || ''} onClick={()=> page.onClick && page.onClick()}
-                        className={({ isActive }) => (isActive ? 'active' : '') + ' page' + ((page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}>
-                      {({ isActive }) => (
-                        <>
-                          <img className={isActive ? 'active-icon' : 'active-icon hide'} src={page.activeIcon} />
-                          <img className={isActive ? 'inactive-icon hide' : 'inactive-icon'} src={page.inactiveIcon} />
-                          <label className={showMenu ? '' : 'hide'} >{page.label}</label>
-                          {page.addRoute && showMenu &&
-                            <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(page.addRoute || 'menu/add/'+index);}} >
-                              <span className='add-button' ><p>+</p></span>
-                            </section>}
-                        </>
-                      )}
-                    </NavLink>
-                )}
+              {MENU_CONFIG_LIST.map((page, index) =>
+                <React.Fragment key={'menu-'+index} >
+                  <NavLink key={'main-menu-'+index} to={page.route || ''} onClick={()=> { addVisitedPage(page); if(page.onClick) page.onClick(); }}
+                    className={({ isActive }) => (isActive ? 'active' : '') + ' page' + ((page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}>
+                    {({ isActive }) => (
+                      <>
+                        <img className={isActive ? 'active-icon' : 'active-icon hide'} src={page.activeIcon} />
+                        <img className={isActive ? 'inactive-icon hide' : 'inactive-icon'} src={page.inactiveIcon} />
+                        <label className={showMenu ? '' : 'hide'} style={(!page.addRoute) ? { gridColumn: '2 / span 3'} : undefined}>{page.label}</label>
+                        {page.addRoute && showMenu &&
+                          <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(page.addRoute || 'menu/add/' + index);}} >
+                            <span className='add-button' ><p>+</p></span>
+                          </section>}
+                      </>
+                    )}
+                  </NavLink>
+
+                  {page.subMenu && visitedRouteSet.has(page.route) && showMenu && (
+                    <div key={'sub-menu-wrapper' + index}>
+                      {page.subMenu.map((subPage, subIndex) => (
+                        <NavLink 
+                          key={'sub-menu-' + index + '-' + subIndex} 
+                          to={subPage.route || ''} 
+                          onClick={() => { addVisitedPage(page); if(subPage.onClick) subPage.onClick(); }}
+                          className={({ isActive }) => 
+                            (isActive ? 'active' : '') + ' sub-page' + 
+                            ((subPage.exclusiveRoleList === undefined || subPage.exclusiveRoleList.includes(userRole as RoleEnum)) &&
+                             (page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}
+                        >
+                          <label className={showMenu ? '' : 'hide'} >{subPage.label}</label>
+                          {subPage.addRoute && showMenu &&
+                          <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(subPage.addRoute || 'menu/add/' + index);}} >
+                            <span className='add-button' ><p>+</p></span>
+                          </section>}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </React.Fragment>
+              )}
 
             </div>
 

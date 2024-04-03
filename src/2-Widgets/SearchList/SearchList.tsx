@@ -40,8 +40,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     useLayoutEffect(() => {        
         //Assemble defaultList of SearchListValue from all categories referenced in props.defaultDisplayTitleList
         const defaultList:SearchListValue[] = [];       
-        Array.from(props.displayMap.entries()).filter(([key, itemList]) => 
-            (props.defaultDisplayTitleList === undefined || Array.from(props.defaultDisplayTitleList).includes(key.displayTitle)))
+        Array.from(props.displayMap.entries())
+            .filter(([key, itemList]) => (props.defaultDisplayTitleList === undefined || Array.from(props.defaultDisplayTitleList).includes(key.displayTitle)))
+            .sort(([keyA], [keyB]) => (props.defaultDisplayTitleList?.indexOf(keyA.displayTitle) || 0) - (props.defaultDisplayTitleList?.indexOf(keyB.displayTitle) || 0))
             .forEach(([key, itemList]) => {
                 if(itemList.length > 0) {
                     defaultList.push(new SearchListValue({displayType: ListItemTypesEnum.LABEL, displayItem: key.displayTitle, onClick: (id:number, item:DisplayItemType)=>onOptionSelection(key.displayTitle)}))
@@ -58,7 +59,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
         //Default to First display Title (Even for multi display of multiple categories)
         } else if(props.defaultDisplayTitleList !== undefined && props.defaultDisplayTitleList.length > 0) {
-            setSelectedKey(getKey(props.defaultDisplayTitleList[0]));
+            setSelectedKey(getKey(props.defaultDisplayTitleKeySearch || props.defaultDisplayTitleList[0]));
         }
         setDisplayList(defaultList);
 
