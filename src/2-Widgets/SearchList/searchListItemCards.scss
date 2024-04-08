@@ -158,6 +158,22 @@
             margin-right: auto;
         }
     }
+
+    .additional-detail-box {
+        display: grid;
+        grid-auto-flow: column;
+        justify-content: end;
+
+        .detail {
+            border: 1px solid transparent;
+            border-left: 1px solid $gray-light;
+            margin-top: 0.15rem;
+
+            &:first-child {
+                border-left: 1px solid transparent;
+            }
+        }
+    }
 }
 
 //Exceptions

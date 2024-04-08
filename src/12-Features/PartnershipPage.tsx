@@ -1,8 +1,8 @@
 import axios from 'axios';
 import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { PartnerListItem, ProfileListItem, ProfilePartnerCountListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem, PartnerCountListItem, NewPartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
-import { ProfileItem } from '../2-Widgets/SearchList/SearchListItemCards';
+import { PartnerItem, ProfileItem } from '../2-Widgets/SearchList/SearchListItemCards';
 import formatRelativeDate from '../1-Utilities/dateFormat';
 import { useNavigate } from 'react-router-dom';
 import { makeAbbreviatedText, makeDisplayText } from '../1-Utilities/utilities';
@@ -18,9 +18,9 @@ import { ToastStyle } from '../100-App/app-types';
 
 
 export enum PARTNERSHIP_VIEW {
-    PENDING = 'PENDING', //Dual View
-    RECENT = 'RECENT',
-    FEWER = 'FEWER'
+    PENDING_PARTNERSHIPS = 'PENDING_PARTNERSHIPS', //Dual View
+    NEW_USERS = 'NEW_USERS',
+    FEWER_PARTNERSHIPS = 'FEWER_PARTNERSHIPS'
 }
 
 /* ADMIN ACCESS PAGE */
@@ -29,10 +29,10 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     const JWT:string = useAppSelector((state) => state.account.jwt);
 
     const [defaultDisplayTitleList, setDefaultDisplayTitleList] = useState<string[]>(['Unassigned Users']);
-    const [dualPartnerList, setDualPartnerList] = useState<[PartnerListItem, PartnerListItem][]>([]);
-    const [statusMap, setStatusMap] = useState<ProfilePartnerCountListItem[]>([]);
-    const [unassignedPartnerList, setUnassignedPartnerList] = useState<ProfileListItem[]>([]);
-    const [availablePartnerList, setAvailablePartnerList] = useState<ProfileListItem[]>([]);
+    const [dualPartnerList, setDualPartnerList] = useState<[NewPartnerListItem, NewPartnerListItem][]>([]);
+    const [statusMap, setStatusMap] = useState<PartnerCountListItem[]>([]);
+    const [unassignedPartnerList, setUnassignedPartnerList] = useState<NewPartnerListItem[]>([]);
+    const [availablePartnerList, setAvailablePartnerList] = useState<NewPartnerListItem[]>([]);
 
     const [selectedUser, setSelectedUser] = useState<ProfileListItem|undefined>(undefined); //undefined hides popup
     const [selectedPartner, setSelectedPartner] = useState<ProfileListItem|undefined>(undefined);
@@ -40,23 +40,23 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
 
 
     useEffect(() => {
-        if(JWT && props.view === PARTNERSHIP_VIEW.PENDING) {
+        if(JWT && props.view === PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) {
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/pending-list`, { headers:{ jwt:JWT } })
-                .then((response:{ data:[PartnerListItem, PartnerListItem][] }) => {
+                .then((response:{ data:[NewPartnerListItem, NewPartnerListItem][] }) => {
                     setDualPartnerList(response.data);
 
                 }).catch((error) => { processAJAXError(error); });
 
         /* Status Maps */
-        } else if(JWT && props.view === PARTNERSHIP_VIEW.RECENT || props.view === PARTNERSHIP_VIEW.FEWER) {
-            axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/${(props.view === PARTNERSHIP_VIEW.FEWER) ? 'fewer-status-map' : 'status-map'}`, { headers:{ jwt:JWT } })
-                .then((response:{ data:ProfilePartnerCountListItem[] }) => {
+        } else if(JWT && props.view === PARTNERSHIP_VIEW.NEW_USERS || props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) {
+            axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/${(props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) ? 'fewer-status-map' : 'status-map'}`, { headers:{ jwt:JWT } })
+                .then((response:{ data:PartnerCountListItem[] }) => {
                     setStatusMap(response.data);
 
                 }).catch((error) => { processAJAXError(error); });
 
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/unassigned-list`, { headers:{ jwt:JWT } })
-                .then((response:{ data:ProfileListItem[] }) => {
+                .then((response:{ data:NewPartnerListItem[] }) => {
                     setUnassignedPartnerList(response.data);
 
                 }).catch((error) => { processAJAXError(error); });
@@ -65,9 +65,9 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     },[JWT, props.view]);
 
     useEffect(() => {
-        if(selectedUser && !showDelete && (props.view === PARTNERSHIP_VIEW.RECENT || props.view === PARTNERSHIP_VIEW.FEWER)) 
+        if(selectedUser && !showDelete && (props.view === PARTNERSHIP_VIEW.NEW_USERS || props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS)) 
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/client/${selectedUser.userID}/available`, { headers: { jwt: JWT }})
-                .then((response:{ data:ProfileListItem[] }) => {
+                .then((response:{ data:NewPartnerListItem[] }) => {
                     setAvailablePartnerList([...response.data]);
                     setDefaultDisplayTitleList((response.data.length > 0) ? ['Available Partners'] : ['Unassigned Users']);
                     notify(`${response.data.length} Available Partners`, ToastStyle.INFO);
@@ -79,28 +79,21 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     return (
         <div id='partnership-page'>
             <div className='main-content'>
-            {(props.view === PARTNERSHIP_VIEW.PENDING) ?
+            {(props.view === PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) ?
                 <div id='dual-view' className='grid-container'>
                     <h1 className='grid-header' style={{ gridColumn: '1 / span 2' }}>Pending Partnerships</h1>
                     {dualPartnerList.map((partnershipPair, index) => (
                         <React.Fragment key={`pending-pair-${index}`}>
-                            <ProfileItem
+                            <PartnerItem
                                 key={`pending-user-${index}`}
-                                user={partnershipPair[0]}
+                                partner={partnershipPair[0]}
                                 onClick={(id) => navigate(`/portal/edit/profile/${id}`)}
-                                alternativeButtonText={formatRelativeDate(partnershipPair[0].contractDT || '', undefined, { shortForm: false, includeHours: false })}
-                                primaryButtonText={makeDisplayText(partnershipPair[0].status)}
-                                onPrimaryButtonClick={() => {
-                                    setSelectedUser(partnershipPair[0]);
-                                    setSelectedPartner(partnershipPair[1]);
-                                }}
                             />
-                            <ProfileItem
+                            <PartnerItem
                                 key={`pending-partner-${index}`}
-                                user={partnershipPair[1]}
+                                partner={partnershipPair[1]}
                                 onClick={(id) => navigate(`/portal/edit/profile/${id}`)}
-                                alternativeButtonText={formatRelativeDate(partnershipPair[1].contractDT || '', undefined, { shortForm: false, includeHours: false })}
-                                primaryButtonText={makeDisplayText(partnershipPair[1].status)}
+                                primaryButtonText='Assign Partnership'
                                 onPrimaryButtonClick={() => {
                                     setSelectedUser(partnershipPair[0]);
                                     setSelectedPartner(partnershipPair[1]);
@@ -112,7 +105,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
             : 
                 <div id='status-view' className='grid-container' style={{gridTemplateColumns: `auto repeat(${Object.values(PartnerStatusEnum).length + 1}, 1fr)`}} >
                     <span key={`status-header-profile`} className='grid-header grid-profile-header' >
-                        <h1 >{makeDisplayText(props.view)} Partners</h1>
+                        <h1 >{makeDisplayText(props.view)}</h1>
                     </span>
                     <span key={`status-header-max-partners`} className='grid-header grid-header-rotate' >
                         <h3>Max</h3>
@@ -126,19 +119,19 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
 
                     {statusMap.map((partner, index) => (
                         <React.Fragment key={`status-${index}`}>
-                            <ProfileItem
+                            <PartnerItem
                                 key={`status-profile-${index}-${(selectedUser?.userID === partner.userID) ? 'selected' : ''}`}
                                 class={(selectedUser?.userID === partner.userID) ? 'selected' : undefined}
-                                user={partner}
+                                partner={partner}
                                 onClick={(id) => navigate(`/portal/edit/profile/${id}`)}
                                 primaryButtonText='New Partner'
                                 onPrimaryButtonClick={() => setSelectedUser(partner)}
-                                alternativeButtonText='Remove'
+                                alternativeButtonText='Clear Status'
                                 onAlternativeButtonClick={() => { setSelectedUser(partner); setShowDelete(true); }}
                             />
-                            <p key={`status-${index}-max-partners`} >{partner.maxPartners || 0}</p>
+                            <p key={`status-${index}-max-partners`} className='status-count' >{partner.maxPartners || 0}</p>
                             {[...partner.partnerCountMap].map(([status, count]) => (
-                                <p key={`status-${index}-${status}-${count}`} >{count || 0}</p>
+                                <p key={`status-${index}-${status}-${count}`} className='status-count' >{count || 0}</p>
                             ))}
                         </React.Fragment>
                     ))}
@@ -146,7 +139,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
             }
         </div>
 
-        {(props.view !== PARTNERSHIP_VIEW.PENDING) &&
+        {(props.view !== PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) &&
             <SearchList
                     key={'Partnership'}
                     defaultDisplayTitleList={defaultDisplayTitleList}
@@ -159,10 +152,10 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                                     searchAlternativeButtonText: 'Remove',
                                     onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); setShowDelete(true); }
                                 }),
-                                [...unassignedPartnerList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                [...unassignedPartnerList].map((partner:NewPartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.PARTNER, displayItem: partner, 
                                     onClick: (id:number) => navigate(`/portal/edit/profile/${id}`),
                                     primaryButtonText: (selectedUser) ? 'Assign Partnership' : '', 
-                                    onPrimaryButtonCallback: (id:number) => setSelectedPartner(profile),
+                                    onPrimaryButtonCallback: (id:number) => setSelectedPartner(partner),
                                 }))
                             ], 
                             [ /* Only ADMIN can Choose or Search Partners */
@@ -174,10 +167,10 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                                     onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); setShowDelete(true); }
                                 }),
 
-                                [...availablePartnerList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                [...availablePartnerList].map((partner:NewPartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.PARTNER, displayItem: partner, 
                                     onClick: (id:number) => navigate(`/portal/edit/profile/${id}`),
                                     primaryButtonText: (selectedUser) ? 'Assign Partnership' : '', 
-                                    onPrimaryButtonCallback: (id:number) => setSelectedPartner(profile),
+                                    onPrimaryButtonCallback: (id:number) => setSelectedPartner(partner),
                                 }))
                             ], 
                     ])}

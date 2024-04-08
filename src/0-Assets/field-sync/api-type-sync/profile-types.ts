@@ -31,12 +31,19 @@ export interface ProfileListItem {
 
 export interface PartnerListItem extends ProfileListItem {
     status: PartnerStatusEnum, //Transformed in reference to requesting userID
-    contractDT?: Date,
-    partnershipDT?: Date,
+    contractDT?: Date|string,
+    partnershipDT?: Date|string,
 }
 
-export interface ProfilePartnerCountListItem extends ProfileListItem {
+export interface NewPartnerListItem extends PartnerListItem {
     maxPartners: number,
+    gender: GenderEnum,
+    dateOfBirth: Date|string,
+    walkLevel: number,
+    postalCode: string,
+}
+
+export interface PartnerCountListItem extends NewPartnerListItem {
     partnerCountMap: Map<PartnerStatusEnum, number> | [PartnerStatusEnum, number][]
 }
 
@@ -50,16 +57,15 @@ export interface ProfilePublicResponse {
     circleList?: CircleListItem[],
 };
 
-export interface ProfilePartnerResponse extends ProfilePublicResponse {
-    walkLevel: number,
-};
 
-export interface ProfileResponse extends ProfilePartnerResponse  {
+export interface ProfileResponse extends ProfilePublicResponse  {
     lastName: string, 
     email:string,
     postalCode: string, 
     dateOfBirth: string,
     isActive: boolean,
+    maxPartners: number,
+    walkLevel: number,
     notes?: string,
     userRoleList: RoleEnum[],
     circleInviteList?: CircleListItem[],
@@ -83,6 +89,7 @@ export interface ProfileEditRequestBody {
     dateOfBirth?: string, 
     gender?: GenderEnum,
     isActive?: boolean,
+    maxPartners?: number,
     walkLevel?: number,
     image?: string,
     notes?: string,

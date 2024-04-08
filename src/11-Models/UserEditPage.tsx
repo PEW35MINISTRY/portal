@@ -3,7 +3,7 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { NewPartnerListItem, PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
@@ -57,7 +57,7 @@ const UserEditPage = () => {
     const [partnerList, setPartnerList] = useState<PartnerListItem[]>([]);
     const [partnerPendingUserList, setPartnerPendingUserList] = useState<PartnerListItem[]>([]);
     const [partnerPendingPartnerList, setPartnerPendingPartnerList] = useState<PartnerListItem[]>([]);
-    const [availablePartnerList, setAvailablePartnerList] = useState<ProfileListItem[]>([]);
+    const [availablePartnerList, setAvailablePartnerList] = useState<NewPartnerListItem[]>([]);
     const [prayerRequestList, setPrayerRequestList] = useState<PrayerRequestListItem[]>([]);
 
 
@@ -233,7 +233,7 @@ const UserEditPage = () => {
      * PARTNERSHIPS *
      ****************/
     const fetchAvailablePartners = (fetchUserID:string|number = editingUserID) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/client/${fetchUserID}/available`, { headers: { jwt: jwt }})
-        .then((response:{ data:ProfileListItem[] }) => {
+        .then((response:{ data:NewPartnerListItem[] }) => {
             setAvailablePartnerList([...response.data]);
             setDefaultDisplayTitleList(['Available Partners']);
             notify(`${response.data.length} Available Partners`, ToastStyle.INFO);
@@ -376,10 +376,10 @@ const UserEditPage = () => {
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => setNewPartner(item as PartnerListItem),
                             }),
 
-                            [...availablePartnerList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                            [...availablePartnerList].map((partner:NewPartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.PARTNER, displayItem: partner, 
                                 onClick: (id:number) => redirectToProfile(id),
                                 primaryButtonText: userHasAnyRole([RoleEnum.ADMIN]) ? 'Assign Partnership' : '', 
-                                onPrimaryButtonCallback: (id:number) => setNewPartner({...profile, status: PartnerStatusEnum.PENDING_CONTRACT_BOTH}),
+                                onPrimaryButtonCallback: (id:number) => setNewPartner({...partner, status: PartnerStatusEnum.PENDING_CONTRACT_BOTH}),
                             }))
                         ], 
                         [ /* MEMBER & LEADER CIRCLES | Admin Search */

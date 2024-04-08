@@ -77,4 +77,13 @@ const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options
   }
 
   export default formatRelativeDate;
+
+
+
+  export const calculateAge = (date:Date|string):number => {
+    if(date === undefined || date === '') date = new Date();
+    else if(typeof date === 'string') date = new Date(date);
+
+    return new Date().getFullYear() - date.getFullYear();
+  };
   

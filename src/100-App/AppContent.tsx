@@ -58,7 +58,7 @@ type MenuPageListing = {
 
 type SubMenuListing = {
   label:string,
-  route?:string,
+  route:string,
   onClick?:Function,
   addRoute?:string,
   exclusiveRoleList?:RoleEnum[] //Inherits from MenuPageListing
@@ -68,7 +68,8 @@ const AppContent = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const userID:number = useAppSelector((state) => state.account.userID);
-    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    const userRole:RoleEnum = useAppSelector((state) => state.account.userProfile.userRole);
+    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const displayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const profileImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
 
@@ -78,6 +79,40 @@ const AppContent = () => {
     const [visitedRouteSet, setVisitedRouteSet] = useState<Set<string>>(new Set()); // Tracking subMenu
 
     const addVisitedPage = (page: MenuPageListing) => setVisitedRouteSet(currentSet => new Set([...currentSet, page.route]));
+    
+    const isPageAccessible = (path: string):boolean => {
+      const menuPage: MenuPageListing | undefined = MENU_CONFIG_LIST.find((page: MenuPageListing) => 
+        matchMenuRouteToPath(page.route, path) 
+        || matchMenuRouteToPath(page.addRoute, path)
+        || (page.subMenu?.some(subPage => matchMenuRouteToPath(subPage.route, path) 
+          || matchMenuRouteToPath(subPage.addRoute, path)))
+      );
+
+      if(!menuPage || !userRoleList) {
+        if(!menuPage) console.error('Unmatched React Router Path:', path, MENU_CONFIG_LIST.map(page => page.route));
+        return false;
+      }
+
+      const menuExclusiveRoleList: RoleEnum[] = menuPage.exclusiveRoleList ?? [];
+      const subMenuExclusiveRoleList: RoleEnum[] = menuPage.subMenu?.flatMap(subPage => subPage.exclusiveRoleList ?? []) ?? [];
+      
+      return (
+        // Default Permit All Access
+        ((menuExclusiveRoleList.length === 0) && (subMenuExclusiveRoleList.length === 0))
+    
+        // Check Page Permissions
+        || (userRoleList?.some(role => menuExclusiveRoleList.includes(role))  
+            && (subMenuExclusiveRoleList.length === 0))
+    
+        // Check SubMenu Permissions
+        || ((menuExclusiveRoleList.length === 0)
+            && userRoleList?.some(role => subMenuExclusiveRoleList.includes(role)))
+    
+        // Check Combined Permissions
+        || (menuExclusiveRoleList?.some(role => userRoleList.includes(role))
+              && subMenuExclusiveRoleList?.some(role => userRoleList.includes(role)))
+      );
+    }    
 
 
     const MENU_CONFIG_LIST:MenuPageListing[] = [
@@ -118,7 +153,7 @@ const AppContent = () => {
               {MENU_CONFIG_LIST.map((page, index) =>
                 <React.Fragment key={'menu-'+index} >
                   <NavLink key={'main-menu-'+index} to={page.route || ''} onClick={()=> { addVisitedPage(page); if(page.onClick) page.onClick(); }}
-                    className={({ isActive }) => (isActive ? 'active' : '') + ' page' + ((page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}>
+                    className={({ isActive }) => (isActive ? 'active' : '') + ' page' + (isPageAccessible(page.route) ? '' : ' hide')}>
                     {({ isActive }) => (
                       <>
                         <img className={isActive ? 'active-icon' : 'active-icon hide'} src={page.activeIcon} />
@@ -137,12 +172,11 @@ const AppContent = () => {
                       {page.subMenu.map((subPage, subIndex) => (
                         <NavLink 
                           key={'sub-menu-' + index + '-' + subIndex} 
-                          to={subPage.route || ''} 
+                          to={subPage.route} 
                           onClick={() => { addVisitedPage(page); if(subPage.onClick) subPage.onClick(); }}
                           className={({ isActive }) => 
                             (isActive ? 'active' : '') + ' sub-page' + 
-                            ((subPage.exclusiveRoleList === undefined || subPage.exclusiveRoleList.includes(userRole as RoleEnum)) &&
-                             (page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}
+                            (isPageAccessible(subPage.route) ? '' : ' hide')}
                         >
                           <label className={showMenu ? '' : 'hide'} >{subPage.label}</label>
                           {subPage.addRoute && showMenu &&
@@ -195,20 +229,20 @@ const AppContent = () => {
                   <Route path='/portal' element={ <Navigate to='/portal/dashboard' /> }/>
                   <Route path='/portal/dashboard/*' element={<Dashboard/>}/>
                   <Route path='/portal/support/*' element={<SupportPage/>}/>
-                  <Route path='/portal/edit/content-archive/:id/:action' element={<ContentArchivePage/>}/>
-                  <Route path='/portal/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>
-                  <Route path='/portal/edit/profile/:id/:action' element={<UserEditPage/>}/>
-                  <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>
-                  <Route path='/portal/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.RECENT} />}/>
-                  <Route path='/portal/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER} />}/>
-                  <Route path='/portal/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING} />}/>
-                  <Route path='/portal/edit/circle/:id/:action' element={<CircleEditPage/>}/>
-                  <Route path='/portal/edit/circle/:id/*' element={<CircleEditPage/>}/>
-                  <Route path='/portal/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>
-                  <Route path='/portal/edit/prayer-request/:id/*' element={<PrayerRequestEditPage/>}/>
-                  <Route path='/portal/chat/direct/*' element={<DirectChat/>}/>
-                  <Route path='/portal/chat/circle/*' element={<CircleChat/>}/>
-                  <Route path='/portal/logs/*' element={<Log/>}/>
+                  {isPageAccessible('/portal/edit/content-archive') && <Route path='/portal/edit/content-archive/:id/:action' element={<ContentArchivePage/>}/>}
+                  {isPageAccessible('/portal/edit/content-archive') && <Route path='/portal/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>}
+                  {isPageAccessible('/portal/edit/profile') && <Route path='/portal/edit/profile/:id/:action' element={<UserEditPage/>}/>}
+                  {isPageAccessible('/portal/edit/profile') && <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>}
+                  {isPageAccessible('/portal/partnership/recent') && <Route path='/portal/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
+                  {isPageAccessible('/portal/partnership/fewer') && <Route path='/portal/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/portal/partnership/pending') && <Route path='/portal/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/portal/edit/circle') && <Route path='/portal/edit/circle/:id/:action' element={<CircleEditPage/>}/>}
+                  {isPageAccessible('/portal/edit/circle') && <Route path='/portal/edit/circle/:id/*' element={<CircleEditPage/>}/>}
+                  {isPageAccessible('/portal/edit/prayer-request') && <Route path='/portal/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>}
+                  {isPageAccessible('/portal/edit/prayer-request') && <Route path='/portal/edit/prayer-request/:id/*' element={<PrayerRequestEditPage/>}/>}
+                  {isPageAccessible('/portal/chat/direct') && <Route path='/portal/chat/direct/*' element={<DirectChat/>}/>}
+                  {isPageAccessible('/portal/chat/circle') && <Route path='/portal/chat/circle/*' element={<CircleChat/>}/>}
+                  {isPageAccessible('/portal/logs') && <Route path='/portal/logs/*' element={<Log/>}/>}
                   <Route path='*' element={<PageNotFound/>} />
                 </Routes>
             </div>
@@ -230,3 +264,15 @@ const AppContent = () => {
         </div>
       </div>);
   }
+
+  const matchMenuRouteToPath = (menuRoute:string|undefined, path:string|undefined):boolean => {
+    if(menuRoute === undefined || path === undefined) return false;
+    
+    if(menuRoute === path) return true;
+
+    const cleanRoute:string = menuRoute.replace(/^\/+/, '').replace(/\/\-?\d+.*$/, ''); //leading slash and following numbers
+    const cleanPath:string = path.replace(/^\/+/, '').replace(/\/\:+.*$/, '');
+    
+    return (cleanPath.length > 3) && cleanRoute.includes(cleanPath);
+  }
+  

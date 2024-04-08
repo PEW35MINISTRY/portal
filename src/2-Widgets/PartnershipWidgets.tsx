@@ -93,7 +93,7 @@ export const PartnershipStatusADMIN = ({...props}:{key:string, user:ProfileListI
 export const PartnershipDeleteAllADMIN = ({...props}:{key:string, user:ProfileListItem, statusMap?:Map<PartnerStatusEnum, number>, selectedStatus?:PartnerStatusEnum, onCancel:() => void}) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
-    const [status, setStatus] = useState<PartnerStatusEnum>(props.selectedStatus || PartnerStatusEnum.PARTNER);
+    const [status, setStatus] = useState<PartnerStatusEnum>(props.selectedStatus || PartnerStatusEnum.FAILED);
 
     useEffect(() => {
         if(userRole !== RoleEnum.ADMIN)
@@ -173,11 +173,6 @@ export const PartnershipContract = ({...props}:{key:string, partner:PartnerListI
                 <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
                     <h1 className='name'>New Partner</h1>
                        
-                    <div className='partner-detail-box' >
-                        <img className='form-header-image profile-image' src={props.partner.image || PROFILE_DEFAULT} alt='Profile-Image' />
-                        <h3>{props.partner.displayName}</h3>
-                    </div>
-
                     <h6 className='contract' >{PARTNERSHIP_CONTRACT(userName, props.partner.displayName)}</h6>
     
                     <button className='submit-button' type='button' onClick={onAcceptPartnership}>Accept Partnership</button>

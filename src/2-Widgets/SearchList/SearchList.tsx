@@ -1,9 +1,9 @@
 import axios from 'axios';
 import React, { ReactElement, useEffect, useLayoutEffect, useState } from 'react';
-import { CircleAnnouncementItem, CircleEventItem, CircleItem, ContentArchiveItem, LabelItem, PrayerRequestCommentItem, PrayerRequestItem, ProfileItem } from './SearchListItemCards';
+import { CircleAnnouncementItem, CircleEventItem, CircleItem, ContentArchiveItem, LabelItem, PartnerItem, PrayerRequestCommentItem, PrayerRequestItem, ProfileItem } from './SearchListItemCards';
 import { CircleAnnouncementListItem, CircleEventListItem, CircleListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem } from '../../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
 import SearchDetail, { ListItemTypesEnum, DisplayItemType, LabelListItem, SearchType, SearchTypeInfo, SEARCH_MIN_CHARS } from '../../0-Assets/field-sync/input-config-sync/search-config';
 import { processAJAXError, useAppSelector } from '../../1-Utilities/hooks';
 import { SHOW_TITLE_OPTIONS, SearchListKey, SearchListValue} from './searchList-types';
@@ -170,6 +170,9 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
                     : item.displayType === ListItemTypesEnum.USER ? 
                         <ProfileItem key={`${props.key}+${index}`} {...item} user={item.displayItem as ProfileListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
+
+                    : item.displayType === ListItemTypesEnum.PARTNER ? 
+                        <PartnerItem key={`${props.key}+${index}`} {...item} partner={item.displayItem as PartnerListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />
 
                     : item.displayType === ListItemTypesEnum.CIRCLE ? 
                         <CircleItem key={`${props.key}+${index}`} {...item} circle={item.displayItem as CircleListItem} onClick={item.onClick} onPrimaryButtonClick={item.onPrimaryButtonCallback} onAlternativeButtonClick={item.onAlternativeButtonCallback} />

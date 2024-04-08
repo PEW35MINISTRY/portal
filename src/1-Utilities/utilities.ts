@@ -31,7 +31,7 @@ export const assembleRequestBody = (inputMap:Map<string,any>):Object => {
     const requestBody = {};
     inputMap.forEach((value, field) => {
         if(field === 'userRoleTokenList') { //@ts-ignore
-            requestBody[field] = Array.from((finalMap.get('userRoleTokenList') as Map<string,string>).entries())
+            requestBody[field] = Array.from((inputMap.get('userRoleTokenList') as Map<string,string>).entries())
                                     .map(([role, token]) => ({role: role, token: token || ''}));
         } else {
             if(value === '') value = null; //Valid for clearing fields in database

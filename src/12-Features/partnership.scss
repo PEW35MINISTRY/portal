@@ -48,7 +48,7 @@
                     border-color: $blue;
                 }
     
-                p {
+                .status-count {
                     color: $gray-light;
                 }
             }
@@ -124,13 +124,14 @@
                 }
             }
 
-            h3, p {
+            h3 {
                 padding: 0.5rem 0.15rem;
                 text-align: center;
                 align-items: baseline;
             }
 
-            p {
+            .status-count {
+                @extend h3;
                 margin: auto;
             }
 
