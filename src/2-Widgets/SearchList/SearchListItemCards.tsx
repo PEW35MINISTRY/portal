@@ -1,12 +1,13 @@
 import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../../0-Assets/field-sync/api-type-sync/circle-types';
 import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
 import { PrayerRequestListItem, PrayerRequestCommentListItem } from '../../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
 import { RoleEnum } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { LabelListItem } from '../../0-Assets/field-sync/input-config-sync/search-config';
-import formatRelativeDate from '../../1-Utilities/dateFormat';
+import formatRelativeDate, { calculateAge } from '../../1-Utilities/dateFormat';
 import { useAppSelector } from '../../1-Utilities/hooks';
 import { ContentArchivePreview } from '../../11-Models/ContentArchivePage';
+import { makeAbbreviatedText, makeDisplayText } from '../../1-Utilities/utilities';
 
 
 
@@ -29,10 +30,10 @@ export const LabelItem = ({...props}:{key:any, label:LabelListItem, onClick?:(id
             <label className='title'>{props.label}</label>
         </div>;
 
-export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:(id:number, item:ProfileListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ProfileListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ProfileListItem)=>void}) => {
+export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:(id:number, item:ProfileListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ProfileListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ProfileListItem)=>void, class?:string}) => {
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     return (
-        <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
+        <div key={props.key} className={`search-item ${props.class || ''}`} onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
             <div className='detail-box profile-detail-box'>
                 <img src={props.user.image || PROFILE_DEFAULT} alt={props.user.displayName} />
                 <label className='title name'>{props.user.firstName}<p>{props.user.displayName}</p></label>
@@ -42,6 +43,36 @@ export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:
                 <div className='search-item-button-row' >
                         {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.user.userID, props.user);}} >{props.alternativeButtonText}</button>}
                         {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.user.userID, props.user);}} >{props.primaryButtonText}</button>}
+                </div>}
+        </div>);
+}
+
+
+export const PartnerItem = ({...props}:{key:any, partner:PartnerListItem, onClick?:(id:number, item:ProfileListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ProfileListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ProfileListItem)=>void, class?:string}) => {
+    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    return (
+        <div key={props.key} className={`search-item ${props.class || ''}`} onClick={()=>props.onClick && props.onClick(props.partner.userID, props.partner)}>
+            <div className='detail-box profile-detail-box'>
+                <img src={props.partner.image || PROFILE_DEFAULT} alt={props.partner.displayName} />
+                <label className='title name'>{props.partner.firstName}<p>{props.partner.displayName}</p></label>
+                {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.partner.userID}</label>}
+            </div>
+            <div className='detail-box additional-detail-box'>
+                {props.partner.status && <p className='detail'>{makeDisplayText(props.partner.status)}</p>}
+                {props.partner.partnershipDT ? <p className='detail'>{formatRelativeDate(props.partner.partnershipDT as Date, undefined, {shortForm: false, includeHours: false})}</p>
+                    : props.partner.contractDT && <p className='detail'>{formatRelativeDate(props.partner.contractDT as Date, undefined, {shortForm: false, includeHours: false})}</p>}
+            </div>
+            {/* NewPartnerListItem Additional Details */}
+            <div className='detail-box additional-detail-box'>
+                {('gender' in props.partner) && <p className='detail'>G: {makeAbbreviatedText(String(props.partner.gender))}</p>}
+                {('dateOfBirth' in props.partner) && <p className='detail'>Age: {calculateAge(props.partner.dateOfBirth as Date)}</p>}
+                {('postalCode' in props.partner) && <p className='detail'>L: {String(props.partner.postalCode)}</p>}
+                {('walkLevel' in props.partner) && <p className='detail'>W: {String(props.partner.walkLevel)}</p>}
+            </div>
+            {(props.alternativeButtonText || props.primaryButtonText) && 
+                <div className='search-item-button-row' >
+                        {(props.alternativeButtonText) && <button className='search-item-alternative-button' onClick={(e)=>{e.stopPropagation(); props.onAlternativeButtonClick && props.onAlternativeButtonClick(props.partner.userID, props.partner);}} >{props.alternativeButtonText}</button>}
+                        {(props.primaryButtonText) && <button className='search-item-primary-button' onClick={(e)=>{e.stopPropagation(); props.onPrimaryButtonClick && props.onPrimaryButtonClick(props.partner.userID, props.partner);}} >{props.primaryButtonText}</button>}
                 </div>}
         </div>);
 }

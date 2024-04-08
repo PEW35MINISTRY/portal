@@ -451,3 +451,49 @@
         left: 0;
     }
 }
+
+#partnership-status,
+#partnership-delete-all {
+
+    .center-absolute-inside {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .matching-profile-box {
+        width: 100%;
+        margin: 1.0rem auto 0 auto;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        position: relative;
+
+        &:last-child {
+            position: absolute;
+            right: 0;
+        }
+    }
+
+    .update-partnership-inputs {
+        margin: 0.5rem auto 2.0rem auto;
+        display: grid;
+        grid-template-columns: 1fr 300px 1fr;
+        max-width: max-content;
+        grid-auto-flow: row dense;
+        gap: 0 1.0rem;
+
+        input {
+            text-align: center;
+            max-width: 2.0rem;            
+        }     
+        
+        option {
+            text-align: center;
+        }
+    }
+
+    .search-item {
+        border: none;
+    }
+}

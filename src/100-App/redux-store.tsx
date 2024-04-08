@@ -3,7 +3,7 @@ import axios from 'axios';
 import { JwtResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types.js';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
-import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { AXIOSError, ToastStyle } from './app-types';
 import { notify } from '../1-Utilities/hooks';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
@@ -39,18 +39,44 @@ const accountSlice = createSlice({
     updateJWT: (state, action:PayloadAction<string>) => state = {...state, jwt: action.payload},
     updateProfile: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: action.payload},
     updateProfileImage: (state, action:PayloadAction<string|undefined>) => state = {...state, userProfile: {...state.userProfile, image: action.payload}},
-    addCircle: (state, action:PayloadAction<CircleListItem>) => state = {...state, userProfile: {...state.userProfile, circleList: [action.payload, ...(state.userProfile.circleList || []) as CircleListItem[]]}},
-    removeCircle: (state, action:PayloadAction<number>) => state = {...state, userProfile: {...state.userProfile, circleList: [...(state.userProfile.circleList || []) as CircleListItem[]].filter(circle => circle.circleID !== action.payload)}},
-    addPartner: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: {...state.userProfile, partnerList: [action.payload, ...(state.userProfile.partnerList || []) as ProfileListItem[]]}},
-    removePartner: (state, action:PayloadAction<number>) => state = {...state, userProfile: {...state.userProfile, partnerList: [...(state.userProfile.partnerList || []) as ProfileListItem[]].filter(partner => partner.userID !== action.payload)}},
-    addPrayerRequest: (state, action:PayloadAction<PrayerRequestListItem>) => state = {...state, userProfile: {...state.userProfile, prayerRequestList: [action.payload, ...(state.userProfile.prayerRequestList || []) as PrayerRequestListItem[]]}},
-    removePrayerRequest: (state, action:PayloadAction<number>) => state = {...state, userProfile: {...state.userProfile, prayerRequestList: [...(state.userProfile.prayerRequestList || []) as PrayerRequestListItem[]].filter(prayerRequest => prayerRequest.prayerRequestID !== action.payload)}},
-    addContact: (state, action:PayloadAction<ProfileResponse>) => state = {...state, userProfile: {...state.userProfile, contactList: [action.payload, ...(state.userProfile.contactList || []) as ProfileListItem[]]}},
+
+    addCircle: (state, action: PayloadAction<CircleListItem>) => state = addListItem(state, action, 'circleList'),
+    removeCircle: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'circleList', 'circleID'),
+    addCircleInvite: (state, action: PayloadAction<CircleListItem>) => state = addListItem(state, action, 'circleInviteList'),
+    removeCircleInvite: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'circleInviteList', 'circleID'),
+    addCircleRequest: (state, action: PayloadAction<CircleListItem>) => state = addListItem(state, action, 'circleRequestList'),
+    removeCircleRequest: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'circleRequestList', 'circleID'),
+    addPartner: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerList'),
+    removePartner: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'partnerList', 'userID'),
+    addPartnerPendingUser: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerPendingUserList'),
+    removePartnerPendingUser: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'partnerPendingUserList', 'userID'),
+    addPartnerPendingPartner: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerPendingPartnerList'),
+    removePartnerPendingPartner: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'partnerPendingPartnerList', 'userID'),
+    addPrayerRequest: (state, action: PayloadAction<PrayerRequestListItem>) => state = addListItem(state, action, 'prayerRequestList'),
+    removePrayerRequest: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'prayerRequestList', 'requestID'),
+    addContact: (state, action: PayloadAction<ProfileListItem>) => state = addListItem(state, action, 'contactList'),
+    removeContact: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'contactList', 'userID'),
   },
 });
 
 //Export Dispatch Actions
-export const { setAccount, resetAccount, updateJWT, updateProfile, updateProfileImage, addCircle, removeCircle, addPartner, removePartner, addPrayerRequest, removePrayerRequest, addContact } = accountSlice.actions;
+export const { setAccount, resetAccount, updateJWT, updateProfile, updateProfileImage, 
+        addCircle, removeCircle, addCircleInvite, removeCircleInvite, addCircleRequest, removeCircleRequest,
+        addPartner, removePartner, addPartnerPendingUser, removePartnerPendingUser, addPartnerPendingPartner, removePartnerPendingPartner, 
+        addPrayerRequest, removePrayerRequest, addContact, removeContact
+    } = accountSlice.actions;
+
+//List Utilities
+const addListItem = <T, K extends keyof ProfileResponse>(state:AccountState, action:PayloadAction<T>, listKey:K):AccountState => ({
+  ...state, userProfile: { ...state.userProfile,
+    [listKey]: [action.payload, ...(state.userProfile[listKey] || []) as T[]]
+  }});
+
+const removeListItem = <T, K extends keyof ProfileResponse>(state:AccountState, action:PayloadAction<number>, listKey:K, idKey:keyof T):AccountState => ({
+  ...state, userProfile: { ...state.userProfile,
+    [listKey]: (state.userProfile[listKey] as T[] || []).filter((item:T) => item[idKey] !== action.payload)
+  }});
+  
 
 /**********************************************************
  * REDUX MIDDLEWARE: for non-static/async state operations

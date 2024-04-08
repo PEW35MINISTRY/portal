@@ -1,6 +1,6 @@
 /************* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *************/
 
-import { GenderEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
+import { GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
 import { CircleListItem } from './circle-types.js'
 import { PrayerRequestListItem } from './prayer-request-types.js'
 
@@ -29,9 +29,27 @@ export interface ProfileListItem {
     image?: string,
 }
 
+export interface PartnerListItem extends ProfileListItem {
+    status: PartnerStatusEnum, //Transformed in reference to requesting userID
+    contractDT?: Date|string,
+    partnershipDT?: Date|string,
+}
+
+export interface NewPartnerListItem extends PartnerListItem {
+    maxPartners: number,
+    gender: GenderEnum,
+    dateOfBirth: Date|string,
+    walkLevel: number,
+    postalCode: string,
+}
+
+export interface PartnerCountListItem extends NewPartnerListItem {
+    partnerCountMap: Map<PartnerStatusEnum, number> | [PartnerStatusEnum, number][]
+}
+
 export interface ProfilePublicResponse {
     userID: number, 
-    userRole: string, 
+    userRole: RoleEnum, 
     firstName: string,
     displayName: string, 
     gender: GenderEnum,
@@ -39,19 +57,22 @@ export interface ProfilePublicResponse {
     circleList?: CircleListItem[],
 };
 
-export interface ProfilePartnerResponse extends ProfilePublicResponse {
-    walkLevel: number,
-};
 
-export interface ProfileResponse extends ProfilePartnerResponse  {
+export interface ProfileResponse extends ProfilePublicResponse  {
     lastName: string, 
     email:string,
     postalCode: string, 
     dateOfBirth: string,
     isActive: boolean,
+    maxPartners: number,
+    walkLevel: number,
     notes?: string,
     userRoleList: RoleEnum[],
-    partnerList?: ProfileListItem[],
+    circleInviteList?: CircleListItem[],
+    circleRequestList?: CircleListItem[],
+    partnerList?: PartnerListItem[],
+    partnerPendingUserList?: PartnerListItem[],
+    partnerPendingPartnerList?: PartnerListItem[],
     prayerRequestList?: PrayerRequestListItem[],
     contactList?: ProfileListItem[],
     profileAccessList?: ProfileListItem[], //Leaders
@@ -68,6 +89,7 @@ export interface ProfileEditRequestBody {
     dateOfBirth?: string, 
     gender?: GenderEnum,
     isActive?: boolean,
+    maxPartners?: number,
     walkLevel?: number,
     image?: string,
     notes?: string,
