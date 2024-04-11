@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { ReactElement, forwardRef, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CredentialProfile } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { LOGIN_PROFILE_FIELDS, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch } from '../1-Utilities/hooks';
@@ -20,6 +20,7 @@ import LOGO from '../0-Assets/logo.png';
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
+    const location = useLocation();
     const [inputMap, setInputMap] = useState<Map<string, string>>(new Map());
 
 
@@ -63,7 +64,8 @@ const Login = () => {
                 window.localStorage.setItem('user', JSON.stringify(account));
 
                 notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
-                navigate('/portal/dashboard');
+                const redirect = new URLSearchParams(location.search).get('redirect');
+                navigate((redirect && redirect !== '/login') ? redirect : '/portal/dashboard');
 
             }).catch((error) => processAJAXError(error));
 

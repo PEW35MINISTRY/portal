@@ -57,7 +57,7 @@ export const processAJAXError = (error: AXIOSError, callback?:Function) => {
       : (status < 500) ? ToastStyle.WARN
       : ToastStyle.ERROR,
     (status === 401 && callback === undefined) 
-      ? ()=>window.location.assign('/login') : callback);
+      ? ()=>window.location.assign(`/login?redirect=${encodeURIComponent(window.location.pathname)}`) : callback);
 }
 
 // Parses Query Parameters

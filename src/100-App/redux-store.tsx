@@ -113,17 +113,17 @@ export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; ty
     } catch(error) {
       console.error('Auto attempt failed to Re-login with cached credentials', error);
 
-      logoutAccount(dispatch, getState);
+      logoutAccount(dispatch, getState, `/login?redirect=${encodeURIComponent(window.location.pathname)}`);
 
-      notify('Please Login', ToastStyle.WARN, ()=>window.location.assign('/login'));
+      notify('Please Login', ToastStyle.WARN);
     }
   }
 }
 
-export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount'; }) => void, getState: AccountState) => {
-  console.warn('REDUX Account & localStorage cleared: logoutAccount');
+export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount'; }) => void, getState: AccountState, redirect:string = '/login') => {
+  console.warn('REDUX Account & localStorage cleared: logoutAccount | redirect: ', redirect);
   window.localStorage.setItem('user', '');
-  window.location.assign('/login');
+  window.location.assign(redirect);
   dispatch(resetAccount());
   notify('Logging Out', ToastStyle.INFO);
 }

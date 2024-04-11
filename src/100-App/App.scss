@@ -343,24 +343,34 @@
         margin: 0;
         height: $page-height;
         width: 100%;
-        overflow-y: auto;
+        border-radius: 0;
 
         #page-not-found {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            width: 100%;
+            height: 100vh;
             background-color: $gray-dark;
+            border-radius: 0;
 
-            div {
+            .scroll-body {
                 display: flex;
-                align-items: center;
-                justify-content: center;
                 flex-direction: column;
+                align-items: center;
+                padding: 10vh;
+                height: 100vh;
+                overflow-y: auto;
 
-                h1 {
-                    color: $blue;
+                #empty-tomb {
+                    margin-bottom: 5vh;
+                    width: 70%;
+                    max-width: 600px;
+                }
+
+                h2 {
+                    color: white;
+                    white-space: wrap;
                 }
             }
         }

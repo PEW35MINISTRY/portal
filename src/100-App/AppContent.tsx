@@ -21,6 +21,7 @@ import Log from '../12-Features/Log';
 
 //Assets
 import LOGO from '../0-Assets/logo.png';
+import EMPTY_TOMB from '../0-Assets/404-empty-tomb.png';
 import SUPPORT_ICON from '../0-Assets/support-icon-blue.png';
 import SUPPORT_ICON_ACTIVE from '../0-Assets/support-icon-white.png';
 import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
@@ -253,14 +254,15 @@ const AppContent = () => {
   export default AppContent;
   
   const PageNotFound = () => {
+    const navigate = useNavigate();
   
     return (
       <div id='page-not-found'>
-        <div>
-          <h1>Sorry Page Not Found</h1>
-          <Link to='/portal'>
-            <button >Return to Dashboard</button>
-          </Link>
+        <div className='scroll-body'>
+          <img id='empty-tomb' src={EMPTY_TOMB} />
+          <h2>The tomb is empty and so is this page.</h2>
+            <button className='primary-button' onClick={()=>navigate('/portal/dashboard')} >Return to Dashboard</button>
+            <button className='alternative-button' onClick={()=>navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)} >Renew Login</button>
         </div>
       </div>);
   }
