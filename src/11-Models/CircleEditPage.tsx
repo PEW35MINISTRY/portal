@@ -16,6 +16,7 @@ import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import ImageUpload from '../2-Widgets/ImageUpload';
+import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -43,6 +44,7 @@ const CircleEditPage = () => {
     const [leaderProfile, setLeaderProfile] = useState<ProfileListItem>();
 
     const [editingCircleID, setEditingCircleID] = useState<number>(-2);
+    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
     const [showAnnouncement, setShowAnnouncement] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
     const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
@@ -63,7 +65,7 @@ const CircleEditPage = () => {
         : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
 
 
-    //Triggers | (delays fetchProfile until after Redux auto login)
+    //Triggers | (delays fetchCircle until after Redux auto login)
     useLayoutEffect(() => {
         if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(CIRCLE_FIELDS_ADMIN);
@@ -71,40 +73,53 @@ const CircleEditPage = () => {
             setEDIT_FIELDS(CIRCLE_FIELDS);
 
         //setEditingCircleID
-        if(isNaN(id as any) || userLeaderCircleList.length === 0) { //new
-            setEditingCircleID(-1);
-            setInputMap(new Map());
-            setImage(undefined)
-            setLeaderProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
+        if(userID > 0 && jwt.length > 0) {
+            if(isNaN(id as any)) { //new
+                navigate(`/portal/edit/circle/new`);
+                setEditingCircleID(-1);
 
-        } else if(parseInt(id as string) < 1) //default on navigation
-            setEditingCircleID(userLeaderCircleList[0].circleID); //triggers fetchCircle
-        else //edit
-            setEditingCircleID(parseInt(id as string)); //triggers fetchCircle
+            } else if((userLeaderCircleList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
+                navigate(`/portal/edit/circle/${userLeaderCircleList[0].circleID}`);
+                setEditingCircleID(userLeaderCircleList[0].circleID);
 
-    }, [id, userLeaderCircleList.length]);
+            } else if(parseInt(id as string) < 1) { //new
+                navigate(`/portal/edit/circle/new`);
+                setEditingCircleID(-1);
 
+            } else if(parseInt(id as string) > 0) //edit
+                setEditingCircleID(parseInt(id as string));
+        }
 
-    /* Sync state change to URL action */
+        /* Sync state change to URL action */
+        setShowNotFound(false);
+        setShowDeleteConfirmation(action === 'delete');
+        setShowAnnouncement(action === 'announcement')
+        setShowImageUpload(action === 'image');
+
+    }, [jwt, userID, id, action, userLeaderCircleList]);
+
     useEffect(() => {
-        if(showDeleteConfirmation) 
-            navigate(`/portal/edit/circle/${editingCircleID}/delete`);
-        else if(showAnnouncement) 
-            navigate(`/portal/edit/circle/${editingCircleID}/announcement`);
-        else if(showImageUpload) 
-            navigate(`/portal/edit/circle/${editingCircleID}/image`);
-        else 
-            navigate(`/portal/edit/circle/${editingCircleID}`);
+        if(showNotFound) {
+            setShowDeleteConfirmation(false);
+            setShowAnnouncement(false);
+            setShowImageUpload(false);
+        }
+    }, [showNotFound]);
 
-    }, [showDeleteConfirmation, showImageUpload]);
-            
 
     /*******************************************
      *     RETRIEVE CIRCLE BEING EDITED
      * *****************************************/
     useLayoutEffect(() => { 
-        if(editingCircleID > 0) navigate(`/portal/edit/circle/${editingCircleID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
-        if(editingCircleID > 0) fetchCircle(editingCircleID); }, [editingCircleID]);
+        if(editingCircleID > 0) {
+            navigate(`/portal/edit/circle/${editingCircleID}/${action || ''}`, {replace: (id.toString() === '-1')});
+            fetchCircle(editingCircleID); 
+        
+        } else { //(id === -1)
+            setLeaderProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
+            setInputMap(new Map());
+            setImage(undefined);
+        }}, [editingCircleID]);
 
 
     const fetchCircle = (fetchCircleID:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${fetchCircleID}`, {headers: { jwt: jwt }})
@@ -121,7 +136,7 @@ const CircleEditPage = () => {
 
             [...Object.entries(fields)].forEach(([field, value]) => {
                 if(field === 'memberList') {
-                    setMemberProfileList([...value]); //TODO
+                    setMemberProfileList([...value]);
 
                 } else if(field === 'pendingRequestList') {
                     setRequestProfileList([...value]);
@@ -151,16 +166,8 @@ const CircleEditPage = () => {
                     console.log(`EditCircle-skipping field: ${field}`, value);
             });
             setInputMap(new Map(valueMap));
-
-            /* Update State based on sub route */
-            if(action === 'delete') 
-                setShowDeleteConfirmation(true);
-            else if(action === 'announcement') 
-                setShowAnnouncement(true);
-            else if(action === 'image') 
-                setShowImageUpload(true);
         })
-        .catch((error) => processAJAXError(error, () => navigate('/portal/edit/circle/-1')));
+        .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
 
     /*******************************************
      *      SAVE CIRCLE CHANGES TO SEVER
@@ -202,7 +209,6 @@ const CircleEditPage = () => {
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted circle ${editingCircleID}`, ToastStyle.SUCCESS, () => {
-                    setShowDeleteConfirmation(false);
                     dispatch(removeCircle(editingCircleID));
                     navigate('/portal/edit/circle/-1');
                 });
@@ -265,7 +271,10 @@ const CircleEditPage = () => {
     return (
         <div id='edit-circle'  className='form-page form-page-stretch'>
 
-            <FormInput
+        {showNotFound ?
+           <PageNotFound primaryButtonText={'New Circle'} onPrimaryButtonClick={()=>navigate('/portal/edit/circle/new')} />
+           
+           : <FormInput
                 key={editingCircleID}
                 getIDField={()=>({modelIDField: 'circleID', modelID: editingCircleID})}
                 validateUniqueFields={true}
@@ -298,6 +307,7 @@ const CircleEditPage = () => {
                     <h2 className='sub-header'>{getDisplayNew() ? 'Create Details' : `Edit Details`}</h2>
                 </div>}
             />
+        }
 
             <SearchList
                 key={'CircleEdit-'+editingCircleID}
@@ -427,7 +437,7 @@ const CircleEditPage = () => {
                 />}
 
             {(showDeleteConfirmation) &&
-                <div key={'CircleEdit-confirmDelete-'+editingCircleID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
+                <div key={'CircleEdit-confirmDelete-'+editingCircleID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/circle/${editingCircleID}`)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         {leaderProfile && 
@@ -450,7 +460,7 @@ const CircleEditPage = () => {
                         {(eventList.length > 0) && <label >{`+ ${eventList.length} Events`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => navigate(`/portal/edit/circle/${editingCircleID}`)}>Cancel</button>
                     </div>
                 </div>
                 }

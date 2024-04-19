@@ -9,13 +9,14 @@ import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, PartnerStatusEnum, Role
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
-import { addCircle, addCircleRequest, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, updateProfile, updateProfileImage } from '../100-App/redux-store';
+import { addCircle, addCircleRequest, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, setLastNewPartnerRequest, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import ImageUpload from '../2-Widgets/ImageUpload';
 import { PartnershipContract, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
+import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -29,6 +30,7 @@ const UserEditPage = () => {
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
+    const userLastNewPartnerRequest:number = useAppSelector((state) => state.settings.lastNewPartnerRequest);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
     const userCircleInviteList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleInviteList) || [];
@@ -44,6 +46,7 @@ const UserEditPage = () => {
     const [image, setImage] = useState<string|undefined>(undefined); //Read Only
 
     const [editingUserID, setEditingUserID] = useState<number>(-1);
+    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
     const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
     const [newPartner, setNewPartner] = useState<PartnerListItem|undefined>(undefined); //undefined hides new partnership popup
@@ -76,40 +79,50 @@ const UserEditPage = () => {
 
 
     //Triggers | (delays fetchProfile until after Redux auto login)
-    useLayoutEffect(() => { 
-        if(id as number > 0) 
-            setEditingUserID(parseInt(id.toString()));
-    }, [id]);
-
-
-    /* Sync state change to URL action */
-    useEffect(() => {
-        if(showDeleteConfirmation) 
-            navigate(`/portal/edit/profile/${editingUserID}/delete`);
-        else if(showImageUpload) 
-            navigate(`/portal/edit/profile/${editingUserID}/image`);
-        else 
-            navigate(`/portal/edit/profile/${editingUserID}`);
-
-    }, [showDeleteConfirmation, showImageUpload]);
-
-
-    //componentDidMount
     useLayoutEffect(() => {
         if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS_ADMIN);
         else
-            setEDIT_FIELDS(EDIT_PROFILE_FIELDS);       
-         
-        },[userID]);
+            setEDIT_FIELDS(EDIT_PROFILE_FIELDS); 
+
+        //setEditingUserID
+        if(userID > 0 && jwt.length > 0) {
+            if(isNaN(id as any) || (parseInt(id as string) < 1)) { //new
+                navigate(`/portal/edit/profile/${userID}`);
+                setEditingUserID(userID);
+
+            } else //edit
+                setEditingUserID(parseInt(id as string));
+        }
+
+        /* Sync state change to URL action */
+        setShowNotFound(false);
+        setShowDeleteConfirmation(action === 'delete');
+        setShowImageUpload(action === 'image');
+
+    }, [jwt, userID, id, action]);
+
+    useEffect(() => {
+        if(showNotFound) {
+            setShowDeleteConfirmation(false);
+            setShowImageUpload(false);
+        }
+    }, [showNotFound]);
             
 
     /*******************************************
      *     RETRIEVE PROFILE BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
-        navigate(`/portal/edit/profile/${editingUserID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
-        if(editingUserID > 0 && userID > 0) fetchProfile(editingUserID); }, [userID, editingUserID]);
+        if(editingUserID > 0 && userID > 0) {
+            navigate(`/portal/edit/profile/${editingUserID}/${action || ''}`, {replace: (id.toString() === '-1')}); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
+            fetchProfile(editingUserID); 
+            setShowNotFound(false);
+
+        } else { //(id === -1)
+            setShowNotFound(true);  
+        }  
+    }, [userID, editingUserID]);
 
 
     const fetchProfile = (fetchUserID:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}`,{
@@ -162,14 +175,8 @@ const UserEditPage = () => {
                     console.log(`EditProfile-skipping field: ${field}`, value);
             });
             setInputMap(new Map(valueMap));
-
-            /* Update State based on sub route */
-            if(action === 'delete') 
-                setShowDeleteConfirmation(true);
-            else if(action === 'image') 
-                setShowImageUpload(true);
         })
-        .catch((error) => processAJAXError(error, () => navigate(`/portal/edit/profile/${userID}`)));
+        .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
 
 
     /* Checks Currently Editing Profile */
@@ -209,13 +216,12 @@ const UserEditPage = () => {
                 { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted user ${editingUserID}`, ToastStyle.SUCCESS, () => {
-                    setShowDeleteConfirmation(false);
                     if(userID === editingUserID) { //Delete self
                         dispatch(resetAccount());
                         navigate(`/login`);
                     } 
                     else 
-                        setEditingUserID(userID);
+                        navigate(`/portal/edit/profile/${userID}`);
                 });
             }).catch((error) => processAJAXError(error));
 
@@ -248,13 +254,20 @@ const UserEditPage = () => {
         })
         .catch((error) => processAJAXError(error));
 
+    
+    const showNewPartnerButton = ():boolean => 
+        (editingUserHasAnyRole([RoleEnum.STUDENT])) 
+        && (userHasAnyRole([RoleEnum.ADMIN]) 
+            || ((getInputField('maxPartners') > (partnerList.length + userPartnerPendingPartnerList.length + partnerPendingPartnerList.length))
+                && (Date.now() - userLastNewPartnerRequest) >= 60 * 60 * 1000));
+
 
     /*****************************
      * REDIRECT LINKED UTILITIES *
      *****************************/
-    const redirectToProfile = (redirectUserID:number, displayType?:string):void => {
+    const redirectToProfile = (redirectUserID:number):void => {
         if(userHasAnyRole([RoleEnum.ADMIN]) || userAccessProfileList.map((profile:ProfileListItem) => profile.userID).includes(redirectUserID)) 
-            setEditingUserID(redirectUserID);
+            navigate(`/portal/edit/profile/${redirectUserID}`);
         else if(partnerList.map((profile:PartnerListItem) => profile.userID).includes(redirectUserID))
             notify('TODO - Partner profile popup');
         else
@@ -282,7 +295,10 @@ const UserEditPage = () => {
     return (
         <div id='edit-profile'  className='form-page form-page-stretch'>
 
-            <FormInput
+        {showNotFound ?
+           <PageNotFound primaryButtonText={'New User'} onPrimaryButtonClick={()=>navigate('/signup')} />
+           
+           : <FormInput
                 key={editingUserID}
                 getIDField={()=>({modelIDField: 'userID', modelID: editingUserID})}
                 validateUniqueFields={true}
@@ -292,7 +308,7 @@ const UserEditPage = () => {
                 onSubmitText='Save Changes'              
                 onSubmitCallback={makeEditRequest}
                 onAlternativeText='Delete Profile'
-                onAlternativeCallback={()=>setShowDeleteConfirmation(true)}
+                onAlternativeCallback={()=>navigate(`/portal/edit/profile/${editingUserID}/delete`)}
                 headerChildren={
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -306,13 +322,14 @@ const UserEditPage = () => {
                         </div>
                         <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
                         <div className='form-header-horizontal'>
-                            <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Image</button>
-                            {(editingUserHasAnyRole([RoleEnum.STUDENT])) &&
-                                <button type='button' className='alternative-button form-header-button' onClick={() => userHasAnyRole([RoleEnum.ADMIN]) ? fetchAvailablePartners() : fetchNewRandomPartner()}>New Partner</button>}
+                            <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/profile/${editingUserID}/image`)}>Edit Image</button>
+                            {showNewPartnerButton() &&
+                                <button type='button' className='alternative-button form-header-button' onClick={() => {if(userHasAnyRole([RoleEnum.ADMIN])) fetchAvailablePartners(); else fetchNewRandomPartner();  dispatch(setLastNewPartnerRequest()); }}>New Partner</button>}
                         </div>
                         <h2>{`Edit Profile`}</h2>
                     </div>}
             />
+        }
 
             <SearchList
                 key={'UserEdit-'+editingUserID}
@@ -470,7 +487,7 @@ const UserEditPage = () => {
             />
 
             {(showDeleteConfirmation) &&
-                <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
+                <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>navigate(`/portal/edit/profile/${editingUserID}`)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
                         <div className='form-header-detail-box'>
@@ -492,7 +509,7 @@ const UserEditPage = () => {
                         {(prayerRequestList.length > 0) && <label >{`+ ${prayerRequestList.length} Prayer Requests`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={()=>navigate(`/portal/edit/profile/${editingUserID}`)}>Cancel</button>
                     </div>
                 </div>}
 
@@ -524,16 +541,16 @@ const UserEditPage = () => {
                         imageStyle='profile-image'
                         currentImage={ image }
                         defaultImage={ PROFILE_DEFAULT }
-                        onCancel={()=>setShowImageUpload(false)}
+                        onCancel={() => navigate(`/portal/edit/profile/${editingUserID}`)}
                         onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image`, { headers: { jwt: jwt }} )
                             .then(response => {
-                                setShowImageUpload(false);
+                                navigate(`/portal/edit/profile/${editingUserID}`);
                                 setImage(undefined);
                                 notify(`Profile Image Deleted`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(undefined)))})
                             .catch((error) => processAJAXError(error))}
                         onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
                             .then(response => {
-                                setShowImageUpload(false);
+                                navigate(`/portal/edit/profile/${editingUserID}`);
                                 setImage(response.data);
                                 notify(`Profile Image Uploaded`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(response.data)))})
                             .catch((error) => processAJAXError(error))}

@@ -13,6 +13,7 @@ import { EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/fiel
 import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
+import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import './contentArchive.scss';
 
@@ -35,6 +36,7 @@ const ContentArchivePage = () => {
     const [previewURL, setPreviewURL] = useState<string|undefined>(undefined);
 
     const [editingContentID, setEditingContentID] = useState<number>(-1);
+    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
 
     //SearchList Cache
@@ -48,14 +50,6 @@ const ContentArchivePage = () => {
         }
     },[userID]);
 
-    /* Set Privilege Edit Fields Available */
-    useLayoutEffect (() => {
-        if(userRole === RoleEnum.ADMIN)
-            setEDIT_FIELDS(EDIT_CONTENT_FIELDS_ADMIN);
-        else
-            setEDIT_FIELDS(EDIT_CONTENT_FIELDS);
-
-    }, [userRole, editingContentID]);
 
     /* Search for Content by ID */
     useLayoutEffect (() => {
@@ -72,36 +66,58 @@ const ContentArchivePage = () => {
         
     }, [searchUserID]);
 
-    useLayoutEffect (() => { //setEditingContentID
-        if(parseInt((id || '-1') as string) > 0) //URL navigate
-            setEditingContentID(parseInt(id as string)); //triggers fetchContentArchive
 
-        else if(isNaN(id as any) || ownedContentList.length === 0) { //new
-            setEditingContentID(-1);
-            setInputMap(new Map());
+    //Triggers | (delays fetchCircle until after Redux auto login)
+    useLayoutEffect(() => {
+        if(userRole === RoleEnum.ADMIN)
+            setEDIT_FIELDS(EDIT_CONTENT_FIELDS_ADMIN);
+        else
+            setEDIT_FIELDS(EDIT_CONTENT_FIELDS);
 
-        } else //default on navigation
-            setEditingContentID(ownedContentList[0].contentID);
+        //setEditingContentID
+        if(userID > 0 && jwt.length > 0) {
+            if(isNaN(id as any)) { //new
+                navigate(`/portal/edit/content-archive/new`);
+                setEditingContentID(-1);
 
-    }, [id, ownedContentList]);
-            
+            } else if((ownedContentList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
+                navigate(`/portal/edit/content-archive/${ownedContentList[0].contentID}`);
+                setEditingContentID(ownedContentList[0].contentID);
+
+            } else if(parseInt(id as string) < 1) { //new
+                navigate(`/portal/edit/content-archive/new`);
+                setEditingContentID(-1);
+
+            } else if(parseInt(id as string) > 0) //edit
+                setEditingContentID(parseInt(id as string));
+        }
 
         /* Sync state change to URL action */
-        useEffect(() => {
-            if(showDeleteConfirmation) 
-                navigate(`/portal/edit/content-archive/${editingContentID}/delete`);
-            else 
-                navigate(`/portal/edit/content-archive/${editingContentID}`);
+        setShowNotFound(false);
+        setShowDeleteConfirmation(action === 'delete');
 
-        }, [showDeleteConfirmation]);
+    }, [jwt, userID, userRole, id, action, ownedContentList]);
+    
+    useEffect(() => {
+        if(showNotFound) {
+            setShowDeleteConfirmation(false);
+        }
+    }, [showNotFound]);
+
 
 
     /*******************************************
      *   RETRIEVE CONTENT ARCHIVE BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
-        if(editingContentID > 0) navigate(`/portal/edit/content-archive/${editingContentID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
-        if(editingContentID > 0 && jwt.length > 0) fetchContentArchive(editingContentID); 
+        if(editingContentID > 0) {
+            navigate(`/portal/edit/content-archive/${editingContentID}/${action || ''}`, {replace: (id.toString() === '-1')});
+            fetchContentArchive(editingContentID);
+
+        } else { //(id === -1)
+            setInputMap(new Map());
+            setPreviewURL(undefined);
+        }
     }, [editingContentID, jwt]);
 
     const fetchContentArchive = (fetchContentID:string|number) => 
@@ -127,11 +143,8 @@ const ContentArchivePage = () => {
                 });
                 setInputMap(new Map(valueMap));
 
-                /* Update State based on sub route */
-                if(action === 'delete') 
-                    setShowDeleteConfirmation(true);
             })
-            .catch((error) => processAJAXError(error, () => navigate('/portal/edit/content-archive/-1')));
+            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
 
     /*******************************************
      *  SAVE CONTENT ARCHIVE CHANGES TO SEVER
@@ -175,7 +188,6 @@ const ContentArchivePage = () => {
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted Content`, ToastStyle.SUCCESS, () => {
-                    setShowDeleteConfirmation(false);
                     navigate('/portal/edit/content-archive/-1');
                 });
             }).catch((error) => processAJAXError(error));
@@ -203,7 +215,10 @@ const ContentArchivePage = () => {
     return (
         <div id='edit-content-archive'  className='form-page form-page-stretch'>
 
-            <FormInput
+    {showNotFound ?
+           <PageNotFound primaryButtonText={'New Content Archive'} onPrimaryButtonClick={()=>navigate('/portal/edit/circle/new')} />
+           
+           : <FormInput
                 key={editingContentID}
                 getIDField={()=>({modelIDField: 'contentID', modelID: editingContentID})}
                 getInputField={getInputField}
@@ -212,7 +227,7 @@ const ContentArchivePage = () => {
                 onSubmitText={(editingContentID > 0) ? 'Save Content' : 'Create Content'}              
                 onSubmitCallback={(editingContentID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
-                onAlternativeCallback={()=>setShowDeleteConfirmation(true)}
+                onAlternativeCallback={() => navigate(`/portal/edit/content-archive/${editingContentID}/delete`)}
                 headerChildren={
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -227,6 +242,7 @@ const ContentArchivePage = () => {
                         <button className='alternative-button update-button' onClick={onUpdatePreview}>Update Preview</button>
                     </div>}
             />
+        }
 
             <SearchList
                 key={'ContentArchiveEdit-'+editingContentID}
@@ -245,7 +261,7 @@ const ContentArchivePage = () => {
             />
 
             {(showDeleteConfirmation) &&
-                <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
+                <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/content-archive/${editingContentID}`)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>
@@ -269,7 +285,7 @@ const ContentArchivePage = () => {
                         )}
                         <hr/>
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => navigate(`/portal/edit/content-archive/${editingContentID}`)}>Cancel</button>
                     </div>
                 </div>}
         </div>

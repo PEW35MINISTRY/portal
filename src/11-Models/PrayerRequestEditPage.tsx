@@ -16,6 +16,7 @@ import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -44,6 +45,7 @@ const PrayerRequestEditPage = () => {
 
     const [editingPrayerRequestID, setEditingPrayerRequestID] = useState<number>(-1);
     const [searchUserID, setSearchUserID] = useState<number>(userID);
+    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
     const [showNewComment, setShowNewComment] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
 
@@ -68,25 +70,6 @@ const PrayerRequestEditPage = () => {
         : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
 
 
-    //Sync userID and SearchID on initial load
-    useEffect(() => {
-        if(userID > 0) {
-            setSearchUserID(userID);
-            setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
-        }
-    },[userID]);
-
-    /* Set Privilege Edit Fields Available */
-    useLayoutEffect (() => {
-        if(userHasAnyRole([RoleEnum.ADMIN]))
-            setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
-        else if(editingPrayerRequestID === -1)
-            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
-        else
-            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
-
-    }, [userRole, editingPrayerRequestID]);
-
     /* Search for Prayer Request by user/requestor */
     useLayoutEffect (() => {
         if(searchUserID <= 0)
@@ -107,40 +90,75 @@ const PrayerRequestEditPage = () => {
         
     }, [searchUserID]);
 
-    useLayoutEffect (() => { //setEditingPrayerRequestID
-        if(parseInt((id || '-1') as string) > 0) //URL navigate
-            setEditingPrayerRequestID(parseInt(id as string)); //triggers fetchPrayerRequest, if editingPrayerRequestID changes value
 
-        else if(isNaN(id as any) || ownedPrayerRequestList.length === 0) { //new
+    //Triggers | (delays fetchPrayerRequest until after Redux auto login)
+    useLayoutEffect(() => {
+        if(userHasAnyRole([RoleEnum.ADMIN]))
+            setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
+        else if(editingPrayerRequestID === -1)
+            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
+        else
+            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
+
+        if(userID > 0) {
+            setSearchUserID(userID);
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
-            setEditingPrayerRequestID(-1);
-            setInputMap(new Map());
-            setCommentList([]);
+        }
+        
+        //setEditingPrayerRequestID
+        if(userID > 0 && jwt.length > 0) {
+            if(isNaN(id as any)) { //new
+                navigate(`/portal/edit/prayer-request/new`);
+                setEditingPrayerRequestID(-1);
 
-        } else //default on navigation
-            setEditingPrayerRequestID(ownedPrayerRequestList[0].prayerRequestID);
+            } else if((ownedPrayerRequestList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
+                navigate(`/portal/edit/prayer-request/${ownedPrayerRequestList[0].prayerRequestID}`);
+                setEditingPrayerRequestID(ownedPrayerRequestList[0].prayerRequestID);
 
-    }, [id, ownedPrayerRequestList]);
-            
+            } else if(parseInt(id as string) < 1) { //new
+                navigate(`/portal/edit/prayer-request/new`);
+                setEditingPrayerRequestID(-1);
+
+            } else if(parseInt(id as string) > 0) //edit
+                setEditingPrayerRequestID(parseInt(id as string));
+        }
 
         /* Sync state change to URL action */
-        useEffect(() => {
-            if(showDeleteConfirmation) 
-                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`);
-            else if(showNewComment) 
-                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/comment`);
-            else 
-                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`);
+        setShowNotFound(false);
+        setShowDeleteConfirmation(action === 'delete');
+        setShowNewComment(action === 'comment');
 
-        }, [showDeleteConfirmation, showNewComment]);
+    }, [jwt, userID, id, action, ownedPrayerRequestList]);
+
+    useEffect(() => {
+        if(showNotFound) {
+            setShowDeleteConfirmation(false);
+            setShowNewComment(false);
+        }
+    }, [showNotFound]);
+            
 
 
     /*******************************************
      *   RETRIEVE Prayer Request BEING EDITED
      * *****************************************/
     useLayoutEffect (() => { 
-        if(editingPrayerRequestID > 0) navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
-        if(editingPrayerRequestID > 0 && jwt.length > 0) fetchPrayerRequest(editingPrayerRequestID); 
+        if(editingPrayerRequestID > 0) {
+            navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: (id.toString() === '-1')});
+            fetchPrayerRequest(editingPrayerRequestID); 
+
+        } else { //(id === -1)
+            setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
+            setEditingPrayerRequestID(-1);
+            setInputMap(new Map());
+            setCommentList([]);
+            setUserRecipientList([]);
+            setCircleRecipientList([]);
+            setAddUserRecipientIDList([]);
+            setRemoveUserRecipientIDList([]);
+            setAddCircleRecipientIDList([]);
+            setRemoveCircleRecipientIDList([]);
+        }
     }, [editingPrayerRequestID, jwt]);
 
     const fetchPrayerRequest = (fetchPrayerRequestID:string|number) => 
@@ -153,7 +171,7 @@ const PrayerRequestEditPage = () => {
                 setUserRecipientList([]);
                 setCircleRecipientList([]);
 
-                [...Object.entries(fields)].forEach(([field, value]) => { //TODO these list are not returned if empty and state must be reset to []
+                [...Object.entries(fields)].forEach(([field, value]) => {
                     if(field === 'commentList') {
                         setCommentList([...value]);
                         setDefaultDisplayTitleList(([...value].length > 0) ? ['Comments'] : ['Prayer Requests']);
@@ -182,13 +200,8 @@ const PrayerRequestEditPage = () => {
                 setAddCircleRecipientIDList([]);
                 setRemoveCircleRecipientIDList([]);
 
-                /* Update State based on sub route */
-                if(action === 'delete') 
-                    setShowDeleteConfirmation(true);
-                else if(action === 'comment')
-                    setShowNewComment(true);
             })
-            .catch((error) => processAJAXError(error, () => navigate('/portal/edit/prayer-request/-1')));
+            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
 
     /*******************************************
      *  SAVE PRAYER REQUEST CHANGES TO SEVER
@@ -254,7 +267,6 @@ const PrayerRequestEditPage = () => {
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${editingPrayerRequestID}`, { headers: { jwt: jwt }} )
             .then(response => {
                 notify(`Deleted Prayer Request`, ToastStyle.SUCCESS, () => {
-                    setShowDeleteConfirmation(false);
                     navigate('/portal/edit/prayer-request/-1');
                 });
             }).catch((error) => processAJAXError(error));
@@ -267,7 +279,7 @@ const PrayerRequestEditPage = () => {
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
-                setShowNewComment(false);
+                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`);
                 setDefaultDisplayTitleList(['Comments']);
                 setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
             })
@@ -342,7 +354,10 @@ const PrayerRequestEditPage = () => {
     return (
         <div id='edit-prayer-request'  className='form-page'>
 
-            <FormInput
+        {showNotFound ?
+           <PageNotFound primaryButtonText={'New Prayer Request'} onPrimaryButtonClick={()=>navigate('/portal/edit/prayer-request/new')} />
+           
+           : <FormInput
                 key={editingPrayerRequestID}
                 getIDField={()=>({modelIDField: 'prayerRequestID', modelID: editingPrayerRequestID})}
                 getInputField={getInputField}
@@ -351,7 +366,7 @@ const PrayerRequestEditPage = () => {
                 onSubmitText={(editingPrayerRequestID > 0) ? 'Save Changes' : 'Create Prayer Request'}              
                 onSubmitCallback={(editingPrayerRequestID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
-                onAlternativeCallback={()=>setShowDeleteConfirmation(true)}
+                onAlternativeCallback={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`)}
                 headerChildren={
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -369,11 +384,12 @@ const PrayerRequestEditPage = () => {
                             </span>
                         </div>
                         <div className='form-header-horizontal'>
-                            {(editingPrayerRequestID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowNewComment(true)}>New Comment</button>}
+                            {(editingPrayerRequestID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/comment`)}>New Comment</button>}
                         </div>
                         {(editingPrayerRequestID > 0) && <h2 className='sub-header'>Edit Details</h2>}
                     </div>}
             />
+        }
 
             <SearchList
                 key={'PrayerRequestEdit-'+editingPrayerRequestID+defaultDisplayTitleList[0]}
@@ -451,11 +467,11 @@ const PrayerRequestEditPage = () => {
                 <PrayerRequestCommentPage 
                     key={'PrayerRequestEdit-comment-'+editingPrayerRequestID}
                     onSaveCallback={makePrayerCommentRequest}
-                    onCancelCallback={()=>setShowNewComment(false)}
+                    onCancelCallback={()=>navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}
                 />}
 
             {(showDeleteConfirmation) &&
-                <div key={'PrayerRequestEdit-confirmDelete-'+editingPrayerRequestID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>setShowDeleteConfirmation(false)}>
+                <div key={'PrayerRequestEdit-confirmDelete-'+editingPrayerRequestID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>
@@ -486,7 +502,7 @@ const PrayerRequestEditPage = () => {
                         {(getInputField('prayerCount')) && <label >{`+ ${getInputField('prayerCount') || 0} Prayers`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={()=>setShowDeleteConfirmation(false)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}>Cancel</button>
                     </div>
                 </div>}
         </div>

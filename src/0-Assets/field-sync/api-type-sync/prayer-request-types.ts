@@ -2,6 +2,7 @@
 
 import { PrayerRequestTagEnum } from '../input-config-sync/prayer-request-field-config.js'
 import { ProfileListItem } from './profile-types.js'
+import { CircleListItem } from './circle-types.js'
 
 /****************************************************************************************
 *                   PRAYER REQUEST TYPES                                                *
@@ -38,8 +39,8 @@ export interface PrayerRequestResponseBody {
     tagList?: PrayerRequestTagEnum[],
     expirationDate: string,
     commentList?: PrayerRequestCommentListItem[],
-    userRecipientList?: number[],
-    circleRecipientList?: number[],
+    userRecipientList?: ProfileListItem[],
+    circleRecipientList?: CircleListItem[],
 }
 
 export interface PrayerRequestPostRequestBody {
