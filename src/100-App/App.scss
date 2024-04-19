@@ -344,35 +344,5 @@
         height: $page-height;
         width: 100%;
         border-radius: 0;
-
-        #page-not-found {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: $gray-dark;
-            border-radius: 0;
-
-            .scroll-body {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 10vh;
-                height: 100vh;
-                overflow-y: auto;
-
-                #empty-tomb {
-                    margin-bottom: 5vh;
-                    width: 70%;
-                    max-width: 600px;
-                }
-
-                h2 {
-                    color: white;
-                    white-space: wrap;
-                }
-            }
-        }
     }
 }

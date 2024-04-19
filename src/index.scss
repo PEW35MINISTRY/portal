@@ -253,3 +253,9 @@ textarea {
                           3px 100%;
   }
 }
+
+@keyframes fade-out {
+  to {
+      opacity: 0;
+  }
+}
