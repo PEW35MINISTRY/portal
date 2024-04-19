@@ -113,18 +113,20 @@ export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; ty
     } catch(error) {
       console.error('Auto attempt failed to Re-login with cached credentials', error);
 
-      logoutAccount(dispatch, getState, `/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      logoutAccount(dispatch, `/login?redirect=${encodeURIComponent(window.location.pathname)}`);
 
       notify('Please Login', ToastStyle.WARN);
     }
   }
 }
 
-export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount'; }) => void, getState: AccountState, redirect:string = '/login') => {
+export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount'; }) => void, redirect?:string) => {
   console.warn('REDUX Account & localStorage cleared: logoutAccount | redirect: ', redirect);
   window.localStorage.setItem('user', '');
-  window.location.assign(redirect);
+  if(redirect && redirect.startsWith('/portal'))
+      window.location.assign(redirect);
   dispatch(resetAccount());
+  store.dispatch(resetLastNewPartnerRequest());
   notify('Logging Out', ToastStyle.INFO);
 }
 
@@ -138,10 +140,14 @@ export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount
 
 export type SettingsState = {
   ignoreCache: boolean,
+  skipAnimation: boolean,
+  lastNewPartnerRequest: number, //timestamp
 }
 
 const initialSettingsState:SettingsState = {
   ignoreCache: false,
+  skipAnimation: false,
+  lastNewPartnerRequest: Date.now() - 60 * 60 * 1000, //1 hour ago
 }; 
  
 const settingsSlice = createSlice({
@@ -149,12 +155,18 @@ const settingsSlice = createSlice({
   initialState: initialSettingsState,
   reducers: {
     setIgnoreCache: (state, action:PayloadAction<boolean>) => state = {...state, ignoreCache: action.payload},
+    setSkipAnimation: (state, action:PayloadAction<boolean>) => state = {...state, skipAnimation: action.payload},
+    setLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: Date.now()},
+    resetLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: initialSettingsState.lastNewPartnerRequest},
     resetSettings: () => initialSettingsState,
   },
 });
 
 //Export Dispatch Actions
-export const { setIgnoreCache, resetSettings } = settingsSlice.actions;
+export const { setIgnoreCache, setSkipAnimation, 
+    setLastNewPartnerRequest, resetLastNewPartnerRequest,
+    resetSettings } = settingsSlice.actions;
+
 const store = configureStore({
   reducer: {
     account: accountSlice.reducer,

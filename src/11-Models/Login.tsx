@@ -65,7 +65,7 @@ const Login = () => {
 
                 notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
                 const redirect = new URLSearchParams(location.search).get('redirect');
-                navigate((redirect && redirect !== '/login') ? redirect : '/portal/dashboard');
+                navigate((redirect && redirect.startsWith('/portal')) ? redirect : '/portal/dashboard/animation');
 
             }).catch((error) => processAJAXError(error));
 

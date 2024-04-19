@@ -1,14 +1,16 @@
 import React, { useRef, useState } from 'react';
-import { Link, NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { makeDisplayText } from '../1-Utilities/utilities';
-import store, { AppDispatch, logoutAccount } from './redux-store';
+import { logoutAccount } from './redux-store';
 
 import './App.scss';
 
 //Components
 import Dashboard from '../10-Dashboard/Dashboard';
+import AnimationPage from '../12-Features/AnimationPage';
 import SupportPage from '../10-Dashboard/SupportPage';
 import CircleEditPage from '../11-Models/CircleEditPage';
 import PrayerRequestEditPage from '../11-Models/PrayerRequestEditPage';
@@ -18,10 +20,11 @@ import ContentArchivePage from '../11-Models/ContentArchivePage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
 import Log from '../12-Features/Log';
+import PageNotFound from '../2-Widgets/NotFoundPage';
+
 
 //Assets
 import LOGO from '../0-Assets/logo.png';
-import EMPTY_TOMB from '../0-Assets/404-empty-tomb.png';
 import SUPPORT_ICON from '../0-Assets/support-icon-blue.png';
 import SUPPORT_ICON_ACTIVE from '../0-Assets/support-icon-white.png';
 import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
@@ -68,11 +71,16 @@ type SubMenuListing = {
 const AppContent = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:RoleEnum = useAppSelector((state) => state.account.userProfile.userRole);
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const displayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const profileImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
+
+    //Initial default pages:
+    const defaultCircleID: number = useAppSelector((state) => state.account.userProfile.circleList?.[0]?.circleID ?? -1);
+    const defaultPrayerRequestID: number = useAppSelector((state) => state.account.userProfile.prayerRequestList?.[0]?.prayerRequestID ?? -1);
 
     const menuRef = useRef<null | HTMLDivElement>(null);
     const [showMenu, setShowMenu] = useState<boolean>(true);
@@ -124,8 +132,8 @@ const AppContent = () => {
         subMenu: [{label: 'Fewer', route: `/portal/partnership/fewer`},
                   {label: 'Pending', route: `/portal/partnership/pending`}]
       },
-      {label: 'Circle', route: '/portal/edit/circle/-1', activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
-      {label: 'Prayer Request', route: '/portal/edit/prayer-request/-1', activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
+      {label: 'Circle', route: `/portal/edit/circle/${defaultCircleID}`, activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
+      {label: 'Prayer Request', route: `/portal/edit/prayer-request/${defaultPrayerRequestID}`, activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Circle Chat', route: '/portal/chat/circle', activeIcon: CIRCLE_CHAT_ICON_ACTIVE, inactiveIcon: CIRCLE_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.DEVELOPER, RoleEnum.ADMIN]},
@@ -133,11 +141,13 @@ const AppContent = () => {
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
       {label: 'Preferences', route: '/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
-      {label: 'Logout', route: '/login', onClick: ()=>store.dispatch((logoutAccount) as AppDispatch), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
+      {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
 
     return (
         <div id='app'>
+
+          {location.pathname === '/portal/dashboard/animation' && <AnimationPage/>}
   
           <div id='app-navigation' className={showMenu ? '' : 'collapse'} ref={menuRef} onClick={(event)=>{if(event.currentTarget === event.target) setShowMenu(current => !current)}}>
             <Link to='/portal/dashboard' style={{ textDecoration: 'none' }}>
@@ -227,24 +237,25 @@ const AppContent = () => {
           <div id='app-content'>
                {/* Priority Order */}
                 <Routes>
-                  <Route path='/portal' element={ <Navigate to='/portal/dashboard' /> }/>
-                  <Route path='/portal/dashboard/*' element={<Dashboard/>}/>
-                  <Route path='/portal/support/*' element={<SupportPage/>}/>
-                  {isPageAccessible('/portal/edit/content-archive') && <Route path='/portal/edit/content-archive/:id/:action' element={<ContentArchivePage/>}/>}
-                  {isPageAccessible('/portal/edit/content-archive') && <Route path='/portal/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>}
-                  {isPageAccessible('/portal/edit/profile') && <Route path='/portal/edit/profile/:id/:action' element={<UserEditPage/>}/>}
-                  {isPageAccessible('/portal/edit/profile') && <Route path='/portal/edit/profile/:id/*' element={<UserEditPage/>}/>}
-                  {isPageAccessible('/portal/partnership/recent') && <Route path='/portal/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
-                  {isPageAccessible('/portal/partnership/fewer') && <Route path='/portal/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
-                  {isPageAccessible('/portal/partnership/pending') && <Route path='/portal/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
-                  {isPageAccessible('/portal/edit/circle') && <Route path='/portal/edit/circle/:id/:action' element={<CircleEditPage/>}/>}
-                  {isPageAccessible('/portal/edit/circle') && <Route path='/portal/edit/circle/:id/*' element={<CircleEditPage/>}/>}
-                  {isPageAccessible('/portal/edit/prayer-request') && <Route path='/portal/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>}
-                  {isPageAccessible('/portal/edit/prayer-request') && <Route path='/portal/edit/prayer-request/:id/*' element={<PrayerRequestEditPage/>}/>}
-                  {isPageAccessible('/portal/chat/direct') && <Route path='/portal/chat/direct/*' element={<DirectChat/>}/>}
-                  {isPageAccessible('/portal/chat/circle') && <Route path='/portal/chat/circle/*' element={<CircleChat/>}/>}
-                  {isPageAccessible('/portal/logs') && <Route path='/portal/logs/*' element={<Log/>}/>}
-                  <Route path='*' element={<PageNotFound/>} />
+                  <Route path='/' element={ <Navigate to='/dashboard' /> }/>
+                  <Route path='/dashboard/*' element={<Dashboard/>}/>
+                  <Route path='/support/*' element={<SupportPage/>}/>
+                  {isPageAccessible('/edit/content-archive') && <Route path='/edit/content-archive/:id/:action' element={<ContentArchivePage/>}/>}
+                  {isPageAccessible('/edit/content-archive') && <Route path='/edit/content-archive/:id/*' element={<ContentArchivePage/>}/>}
+                  <Route path='/edit/profile/new/*' element={<Navigate to='/signup' />}/>
+                  {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/:action' element={<UserEditPage/>}/>}
+                  {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/*' element={<UserEditPage/>}/>}
+                  {isPageAccessible('/partnership/recent') && <Route path='/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
+                  {isPageAccessible('/partnership/fewer') && <Route path='/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/partnership/pending') && <Route path='/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/edit/circle') && <Route path='/edit/circle/:id/:action' element={<CircleEditPage/>}/>}
+                  {isPageAccessible('/edit/circle') && <Route path='/edit/circle/:id/*' element={<CircleEditPage/>}/>}
+                  {isPageAccessible('/edit/prayer-request') && <Route path='/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>}
+                  {isPageAccessible('/edit/prayer-request') && <Route path='/edit/prayer-request/:id/*' element={<PrayerRequestEditPage/>}/>}
+                  {isPageAccessible('/chat/direct') && <Route path='/chat/direct/*' element={<DirectChat/>}/>}
+                  {isPageAccessible('/chat/circle') && <Route path='/chat/circle/*' element={<CircleChat/>}/>}
+                  {isPageAccessible('/logs') && <Route path='/logs/*' element={<Log/>}/>}
+                  <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('portal/dashboard')} />} />
                 </Routes>
             </div>
         </div>
@@ -253,27 +264,14 @@ const AppContent = () => {
 
   export default AppContent;
   
-  const PageNotFound = () => {
-    const navigate = useNavigate();
-  
-    return (
-      <div id='page-not-found'>
-        <div className='scroll-body'>
-          <img id='empty-tomb' src={EMPTY_TOMB} />
-          <h2>The tomb is empty and so is this page.</h2>
-            <button className='primary-button' onClick={()=>navigate('/portal/dashboard')} >Return to Dashboard</button>
-            <button className='alternative-button' onClick={()=>navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)} >Renew Login</button>
-        </div>
-      </div>);
-  }
 
   const matchMenuRouteToPath = (menuRoute:string|undefined, path:string|undefined):boolean => {
     if(menuRoute === undefined || path === undefined) return false;
     
     if(menuRoute === path) return true;
 
-    const cleanRoute:string = menuRoute.replace(/^\/+/, '').replace(/\/\-?\d+.*$/, ''); //leading slash and following numbers
-    const cleanPath:string = path.replace(/^\/+/, '').replace(/\/\:+.*$/, '');
+    const cleanRoute:string = menuRoute.replace(/^\/*(portal\/)?/, '').replace(/\/\-?\d+.*$/, ''); //leading slash and following numbers
+    const cleanPath:string = path.replace(/^\/*(portal\/)?/, '').replace(/\/\:+.*$/, '');
     
     return (cleanPath.length > 3) && cleanRoute.includes(cleanPath);
   }
