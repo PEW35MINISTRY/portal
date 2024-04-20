@@ -13,9 +13,6 @@ import Login from '../11-Models/Login';
 import SignUpPage from '../11-Models/UserSignUpPage';
 import AppContent from './AppContent';
 
-//Assets
-import LOGO from './0-Assets/logo.png';
-
 
 const App = () => {
 
@@ -23,9 +20,11 @@ const App = () => {
     <BrowserRouter>
         <Provider store={store}>
         <Routes>
-            <Route path='/login' element={<Login/>}/>
-            <Route path='/signup' element={<SignUpPage/>}/>
-            <Route path='/*' element={<AppContent/>}/>
+            <Route path='/login/*' element={<Login/>}/>
+            <Route path='/signup/*' element={<SignUpPage/>}/>
+            <Route path='/portal/' element={ <Navigate to='/portal/dashboard' /> }/>
+            <Route path='/portal/*' element={<AppContent/>}/>
+            <Route path='*' element={ <Navigate to='/login' /> }/>
         </Routes>
         <ToastContainer
             position='top-right'

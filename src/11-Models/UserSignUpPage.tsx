@@ -5,7 +5,7 @@ import { assembleRequestBody } from '../1-Utilities/utilities';
 import { SIGNUP_PROFILE_FIELDS } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
-import store, { AccountState, AppDispatch, logoutAccount, setAccount } from '../100-App/redux-store';
+import { AccountState, logoutAccount, setAccount } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 
 import '../2-Widgets/Form/form.scss';
@@ -25,7 +25,7 @@ const SignUpPage = () => {
     //componentDidMount
     useEffect(() => { //Auto logout current User
         if(JWT.length > 0){
-            store.dispatch((logoutAccount) as AppDispatch);
+            dispatch(() => logoutAccount(dispatch, '/signup'));
         }
     },[]);
 

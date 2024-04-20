@@ -103,7 +103,6 @@ export const PartnershipDeleteAllADMIN = ({...props}:{key:string, user:ProfileLi
     const deleteAllPartnerships = () => axios.delete(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/client/${props.user.userID}/status/${status}`, { headers: { jwt:jwt }})
         .then((response:{ data:string }) => {
             notify(`All ${makeDisplayText(status)} Partnership Cleared`, ToastStyle.SUCCESS);
-            props.onCancel();
         })
         .catch((error) => processAJAXError(error, () => props.onCancel()));
 

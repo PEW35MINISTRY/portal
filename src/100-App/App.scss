@@ -343,26 +343,6 @@
         margin: 0;
         height: $page-height;
         width: 100%;
-        overflow-y: auto;
-
-        #page-not-found {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            width: 100%;
-            background-color: $gray-dark;
-
-            div {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-
-                h1 {
-                    color: $blue;
-                }
-            }
-        }
+        border-radius: 0;
     }
 }
