@@ -12,10 +12,10 @@ import { CircleImage, ProfileImage } from '../ImageWidgets';
 
 
 //Assets
-import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/announcement-icon-blue.png';
-import PRAYER_ICON from '../../0-Assets/prayer-request-icon-blue.png';
-import LIKE_ICON from '../../0-Assets/like-icon-blue.png';
-import CIRCLE_EVENT_DEFAULT from '../../0-Assets/event-icon-blue.png';
+import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/icons/announcement-icon-blue.png';
+import PRAYER_ICON from '../../0-Assets/icons/prayer-request-icon-blue.png';
+import LIKE_ICON from '../../0-Assets/icons/like-icon-blue.png';
+import CIRCLE_EVENT_DEFAULT from '../../0-Assets/icons/event-icon-blue.png';
 
 
 

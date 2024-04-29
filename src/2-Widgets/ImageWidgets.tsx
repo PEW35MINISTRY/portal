@@ -3,10 +3,10 @@ import { SUPPORTED_IMAGE_EXTENSION_LIST } from '../0-Assets/field-sync/input-con
 import { useAppSelector } from '../1-Utilities/hooks';
 
 /* Default Images */
-import LOGO from '../0-Assets/logo.png';
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
-import CIRCLE_DEFAULT from '../0-Assets/circle-default.png';
-import NOT_FOUND from '../0-Assets/404-icon-black.png';
+import LOGO from '../0-Assets/brand/logo.png';
+import PROFILE_DEFAULT from '../0-Assets/default-images/profile-default.png';
+import CIRCLE_DEFAULT from '../0-Assets/default-images/circle-default.png';
+import NOT_FOUND from '../0-Assets/icons/404-icon-black.png';
 
 export enum ImageDefaultEnum {
     LOGO = 'LOGO',

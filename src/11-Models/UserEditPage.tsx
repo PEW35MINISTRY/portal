@@ -500,7 +500,7 @@ const UserEditPage = () => {
                         <h2>Delete Profile?</h2>
 
                         {makeDisplayList(Array.from((getInputField('userRoleTokenList') as Map<string,string>)?.keys() || [])).map((role) =>
-                            <label >{`+ ${role} Role`}</label>
+                            <label key={role}>{`+ ${role} Role`}</label>
                         )}
                         <hr/>
                         {(memberCircleList.length > 0) && <label >{`+ ${memberCircleList.length} Memberships`}</label>}

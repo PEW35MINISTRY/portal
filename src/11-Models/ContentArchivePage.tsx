@@ -19,10 +19,10 @@ import { ImageWidget } from '../2-Widgets/ImageWidgets';
 import './contentArchive.scss';
 
 //Assets
-import MEDIA_DEFAULT from '../0-Assets/media-blue.png';
-import GOT_QUESTIONS from '../0-Assets/got-questions.png';
-import BIBLE_PROJECT from '../0-Assets/bible-project.png';
-import THROUGH_THE_WORD from '../0-Assets/through-the-word.png';
+import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
+import GOT_QUESTIONS from '../0-Assets/default-images/got-questions.png';
+import BIBLE_PROJECT from '../0-Assets/default-images/bible-project.png';
+import THROUGH_THE_WORD from '../0-Assets/default-images/through-the-word.png';
 
 
 const ContentArchivePage = () => {

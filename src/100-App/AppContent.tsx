@@ -24,28 +24,28 @@ import PageNotFound from '../2-Widgets/NotFoundPage';
 
 
 //Assets
-import SUPPORT_ICON from '../0-Assets/support-icon-blue.png';
-import SUPPORT_ICON_ACTIVE from '../0-Assets/support-icon-white.png';
-import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
-import CONTENT_ICON_ACTIVE from '../0-Assets/media-icon-white.png';
-import PROFILE_ICON from '../0-Assets/profile-icon-blue.png';
-import PROFILE_ICON_ACTIVE from '../0-Assets/profile-icon-white.png';
-import PARTNER_ICON from '../0-Assets/partner-icon-blue.png';
-import PARTNER_ICON_ACTIVE from '../0-Assets/partner-icon-white.png';
-import CIRCLE_ICON from '../0-Assets/circle-icon-blue.png';
-import CIRCLE_ICON_ACTIVE from '../0-Assets/circle-icon-white.png';
-import PRAYER_REQUEST_ICON from '../0-Assets/prayer-request-icon-blue.png';
-import PRAYER_REQUEST_ICON_ACTIVE from '../0-Assets/prayer-request-icon-white.png';
-import DIRECT_CHAT_ICON from '../0-Assets/messaging-icon-blue.png';
-import DIRECT_CHAT_ICON_ACTIVE from '../0-Assets/messaging-icon-white.png';
-import CIRCLE_CHAT_ICON from '../0-Assets/chat-icon-blue.png';
-import CIRCLE_CHAT_ICON_ACTIVE from '../0-Assets/chat-icon-white.png';
-import LOG_ICON from '../0-Assets/log-icon-blue.png';
-import LOG_ICON_ACTIVE from '../0-Assets/log-icon-white.png';
-import PREFERENCES_ICON from '../0-Assets/settings-icon-blue.png';
-import PREFERENCES_ICON_ACTIVE from '../0-Assets/settings-icon-white.png';
-import LOGOUT_ICON from '../0-Assets/logout-icon-blue.png';
-import LOGOUT_ICON_ACTIVE from '../0-Assets/logout-icon-white.png';
+import SUPPORT_ICON from '../0-Assets/icons/support-icon-blue.png';
+import SUPPORT_ICON_ACTIVE from '../0-Assets/icons/support-icon-white.png';
+import CONTENT_ICON from '../0-Assets/icons/media-icon-blue.png';
+import CONTENT_ICON_ACTIVE from '../0-Assets/icons/media-icon-white.png';
+import PROFILE_ICON from '../0-Assets/icons/profile-icon-blue.png';
+import PROFILE_ICON_ACTIVE from '../0-Assets/icons/profile-icon-white.png';
+import PARTNER_ICON from '../0-Assets/icons/partner-icon-blue.png';
+import PARTNER_ICON_ACTIVE from '../0-Assets/icons/partner-icon-white.png';
+import CIRCLE_ICON from '../0-Assets/icons/circle-icon-blue.png';
+import CIRCLE_ICON_ACTIVE from '../0-Assets/icons/circle-icon-white.png';
+import PRAYER_REQUEST_ICON from '../0-Assets/icons/prayer-request-icon-blue.png';
+import PRAYER_REQUEST_ICON_ACTIVE from '../0-Assets/icons/prayer-request-icon-white.png';
+import DIRECT_CHAT_ICON from '../0-Assets/icons/messaging-icon-blue.png';
+import DIRECT_CHAT_ICON_ACTIVE from '../0-Assets/icons/messaging-icon-white.png';
+import CIRCLE_CHAT_ICON from '../0-Assets/icons/chat-icon-blue.png';
+import CIRCLE_CHAT_ICON_ACTIVE from '../0-Assets/icons/chat-icon-white.png';
+import LOG_ICON from '../0-Assets/icons/log-icon-blue.png';
+import LOG_ICON_ACTIVE from '../0-Assets/icons/log-icon-white.png';
+import PREFERENCES_ICON from '../0-Assets/icons/settings-icon-blue.png';
+import PREFERENCES_ICON_ACTIVE from '../0-Assets/icons/settings-icon-white.png';
+import LOGOUT_ICON from '../0-Assets/icons/logout-icon-blue.png';
+import LOGOUT_ICON_ACTIVE from '../0-Assets/icons/logout-icon-white.png';
 
 
 type MenuPageListing = {
