@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
-import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { makeDisplayText } from '../1-Utilities/utilities';
 import { logoutAccount } from './redux-store';
+import { ImageDefaultEnum, ImageWidget, ProfileImage } from '../2-Widgets/ImageWidgets';
 
 import './App.scss';
 
@@ -24,7 +24,6 @@ import PageNotFound from '../2-Widgets/NotFoundPage';
 
 
 //Assets
-import LOGO from '../0-Assets/logo.png';
 import SUPPORT_ICON from '../0-Assets/support-icon-blue.png';
 import SUPPORT_ICON_ACTIVE from '../0-Assets/support-icon-white.png';
 import CONTENT_ICON from '../0-Assets/media-icon-blue.png';
@@ -152,7 +151,7 @@ const AppContent = () => {
           <div id='app-navigation' className={showMenu ? '' : 'collapse'} ref={menuRef} onClick={(event)=>{if(event.currentTarget === event.target) setShowMenu(current => !current)}}>
             <Link to='/portal/dashboard' style={{ textDecoration: 'none' }}>
               <div id='logo-box' className='page' >
-                <img src={LOGO} alt='log-title'/>
+                <ImageWidget defaultImage={ImageDefaultEnum.LOGO} />
                 <h1 className={showMenu ? '' : 'hide'} >Encouraging Prayer</h1>
               </div>
             </Link>
@@ -167,9 +166,9 @@ const AppContent = () => {
                     className={({ isActive }) => (isActive ? 'active' : '') + ' page' + (isPageAccessible(page.route) ? '' : ' hide')}>
                     {({ isActive }) => (
                       <>
-                        <img className={isActive ? 'active-icon' : 'active-icon hide'} src={page.activeIcon} />
-                        <img className={isActive ? 'inactive-icon hide' : 'inactive-icon'} src={page.inactiveIcon} />
-                        <label className={showMenu ? '' : 'hide'} style={(!page.addRoute) ? { gridColumn: '2 / span 3'} : undefined}>{page.label}</label>
+                        <img className={`page-icon active-icon ${isActive ? '' : 'hide'}`} src={page.activeIcon} />
+                        <img className={`page-icon inactive-icon ${isActive ? 'hide' : ''}`} src={page.inactiveIcon} />
+                        <label className={`page-label ${showMenu ? '' : 'hide'}`} style={(!page.addRoute) ? { gridColumn: '2 / span 3'} : undefined}>{page.label}</label>
                         {page.addRoute && showMenu &&
                           <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(page.addRoute || 'menu/add/' + index);}} >
                             <span className='add-button' ><p>+</p></span>
@@ -189,7 +188,7 @@ const AppContent = () => {
                             (isActive ? 'active' : '') + ' sub-page' + 
                             (isPageAccessible(subPage.route) ? '' : ' hide')}
                         >
-                          <label className={showMenu ? '' : 'hide'} >{subPage.label}</label>
+                          <label className={`page-label ${showMenu ? '' : 'hide'}`} >{subPage.label}</label>
                           {subPage.addRoute && showMenu &&
                           <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(subPage.addRoute || 'menu/add/' + index);}} >
                             <span className='add-button' ><p>+</p></span>
@@ -212,9 +211,9 @@ const AppContent = () => {
                 {PROFILE_MENU_CONFIG_LIST.map((page, index) => 
                   <NavLink key={'profile-menu-'+index} to={page.route || 'menu/profile/'+index}  onClick={() => {setShowProfileMenu(false); if(page.onClick) page.onClick();}}
                       className={'page' + ((page.exclusiveRoleList === undefined || page.exclusiveRoleList.includes(userRole as RoleEnum)) ? '' : ' hide')}>
-                        <img className={'active-icon'} src={page.activeIcon} />
-                        <img className={'inactive-icon'} src={page.inactiveIcon} />
-                        <label className={showMenu ? '' : 'hide'} >{page.label}</label>
+                        <img className={'page-icon active-icon'} src={page.activeIcon} />
+                        <img className={'page-icon inactive-icon'} src={page.inactiveIcon} />
+                        <label className={`page-label ${showMenu ? '' : ' hide'}`} >{page.label}</label>
                         {page.addRoute && showMenu &&
                             <section className='add-button-wrapper' onClick={(event)=> {event.preventDefault(); event.stopPropagation(); navigate(page.addRoute || 'menu/profile/add'+index);}} >
                               <span className='add-button' ><p>+</p></span>
@@ -224,9 +223,9 @@ const AppContent = () => {
                 
               </div> }
 
-            <section id='profile-box' className={'page'} onClick={()=>setShowProfileMenu(true)}>             
-              <img className={'active-icon'} src={profileImage || PROFILE_ICON_ACTIVE} alt='User-Profile-Image' />
-              <img className={'inactive-icon'} src={profileImage || PROFILE_ICON} alt='User-Profile-Image' />
+            <section id='profile-box' className={'page'} onClick={()=>setShowProfileMenu(true)}>    
+              <ProfileImage className={'page-icon active-icon'} src={profileImage || PROFILE_ICON_ACTIVE} defaultUser={true} />
+              <ProfileImage className={'page-icon inactive-icon'} src={profileImage} defaultUser={true} />
               <section id='profile-box-vertical' className={showMenu ? '' : 'hide'} >
                 <h2 className={showMenu ? '' : 'hide'} >{displayName}</h2>
                 <h5 className={showMenu ? '' : 'hide'} >{makeDisplayText(userRole)}</h5>

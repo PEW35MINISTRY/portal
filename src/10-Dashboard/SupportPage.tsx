@@ -5,12 +5,9 @@ import React, { ReactElement, forwardRef, useEffect, useLayoutEffect, useRef, us
 import { useNavigate } from 'react-router-dom';
 import { ProfileListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { useAppSelector, processAJAXError } from '../1-Utilities/hooks';
+import { ImageDefaultEnum, ImageWidget, ProfileImage } from '../2-Widgets/ImageWidgets';
 
 import './support.scss';
-
-//Assets
-import LOGO from '../0-Assets/logo.png';
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
 
 
 //TODO Make dynamic once email system is implemented & custom route
@@ -40,10 +37,10 @@ const SupportPage = () => {
     return (
         <div id='contact-page' >
             <h1 >ENCOURAGING PRAYER</h1>
-            <img className='logo-image' src={LOGO} alt='Logo-Image' />
+            <ImageWidget defaultImage={ImageDefaultEnum.LOGO} className='logo-image' />
 
             <div className='profile-box'>
-                <img className='profile-image' src={supportProfile?.image || PROFILE_DEFAULT} alt='Profile-Image' onError={(e)=>e.currentTarget.src = PROFILE_DEFAULT} />
+                <ProfileImage src={supportProfile?.image} />
                 <h2 >{supportProfile?.firstName || 'SUPPORT'}</h2>
                 <label className='title id-left'>{supportProfile?.displayName}</label>
             </div>

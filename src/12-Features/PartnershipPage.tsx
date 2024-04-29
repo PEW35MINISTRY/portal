@@ -2,20 +2,17 @@ import axios from 'axios';
 import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PartnerListItem, ProfileListItem, PartnerCountListItem, NewPartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
-import { PartnerItem, ProfileItem } from '../2-Widgets/SearchList/SearchListItemCards';
-import formatRelativeDate from '../1-Utilities/dateFormat';
+import { PartnerItem } from '../2-Widgets/SearchList/SearchListItemCards';
 import { useNavigate } from 'react-router-dom';
 import { makeAbbreviatedText, makeDisplayText } from '../1-Utilities/utilities';
-
-
-import './partnership.scss';
-import { PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { PartnerStatusEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { PartnershipDeleteAllADMIN, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { ToastStyle } from '../100-App/app-types';
 
+import './partnership.scss';
 
 export enum PARTNERSHIP_VIEW {
     PENDING_PARTNERSHIPS = 'PENDING_PARTNERSHIPS', //Dual View

@@ -9,9 +9,6 @@ import { addPartner, addPartnerPendingPartner, removePartnerPendingUser } from '
 import { ProfileItem } from './SearchList/SearchListItemCards';
 
 
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
-
-
 /*****************************************************
  *  ADMIN | Partnership Status POP-UP PAGE COMPONENT *
  * ***************************************************/

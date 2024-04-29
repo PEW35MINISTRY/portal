@@ -9,12 +9,11 @@ import { AccountState, setAccount } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import { assembleRequestBody } from '../1-Utilities/utilities';
 import { LoginResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types';
+import { ImageDefaultEnum, ImageWidget } from '../2-Widgets/ImageWidgets';
 
 import '../2-Widgets/Form/form.scss';
 import './user.scss';
 
-//Assets
-import LOGO from '../0-Assets/logo.png';
 
 
 const Login = () => {
@@ -79,7 +78,7 @@ const Login = () => {
         <div id='login-page' className='center-absolute-wrapper'>
             <div id='popup-wrapper' className='form-page-block center-absolute-inside' >
                 <div id='logo-box' >
-                    <img src={LOGO} alt='log-title'/>
+                    <ImageWidget defaultImage={ImageDefaultEnum.LOGO} />
                     <h1>Encouraging Prayer</h1>
                 </div>
 

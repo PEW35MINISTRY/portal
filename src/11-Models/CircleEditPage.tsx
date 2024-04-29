@@ -15,14 +15,10 @@ import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
-import ImageUpload from '../2-Widgets/ImageUpload';
+import { CircleImage, ImageDefaultEnum, ImageUpload, ProfileImage } from '../2-Widgets/ImageWidgets';
 import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
-
-//Assets
-import CIRCLE_DEFAULT from '../0-Assets/circle-default.png';
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
 
 
 const CircleEditPage = () => {
@@ -294,12 +290,12 @@ const CircleEditPage = () => {
                             {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingCircleID}</label> }
                         </span>
                         <span className='right-align'>
-                            {leaderProfile && <img className='leader-profile-image' src={leaderProfile.image || PROFILE_DEFAULT} alt={leaderProfile.displayName} />}
+                            {leaderProfile && <ProfileImage className='leader-profile-image' src={leaderProfile.image} />}
                             {leaderProfile && <label className='title'>{leaderProfile.displayName}</label>}
                             {(leaderProfile && userRole === RoleEnum.ADMIN) && <label className='id-left'>#{leaderProfile.userID}</label>}
                         </span>
                     </div> 
-                    <img className='form-header-image circle-image' src={image || CIRCLE_DEFAULT} alt='Circle-Image' />
+                    <CircleImage className='form-header-image' src={image} />
                     <div className='form-header-horizontal'>
                         {(editingCircleID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Image</button>}
                         {(editingCircleID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowAnnouncement(true)}>New Announcement</button>}
@@ -447,12 +443,12 @@ const CircleEditPage = () => {
                                         {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingCircleID}</label>}
                                     </span>
                                     <span className='right-align'>
-                                        <img className='leader-profile-image' src={leaderProfile.image || PROFILE_DEFAULT} alt={leaderProfile.displayName} />
+                                        <ProfileImage className='leader-profile-image' src={leaderProfile.image} />
                                         <label className='title'>{leaderProfile?.displayName}</label>
                                         {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{leaderProfile.userID}</label>}
                                     </span>
                                 </div> }
-                        <img className='form-header-image circle-image' src={getInputField('image') || CIRCLE_DEFAULT} alt='Circle-Image' />
+                        <CircleImage className='form-header-image' src={image} />
                         <h2>Delete Circle?</h2>
 
                         <label >{`+ ${requestProfileList.length + inviteProfileList.length + memberProfileList.length} Memberships`}</label>
@@ -471,7 +467,7 @@ const CircleEditPage = () => {
                         title='Upload Circle Image'
                         imageStyle='circle-image'
                         currentImage={ image }
-                        defaultImage={ PROFILE_DEFAULT }
+                        defaultImage={ ImageDefaultEnum.CIRCLE }
                         onCancel={()=>setShowImageUpload(false)}
                         onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/image`, { headers: { jwt: jwt }} )
                             .then(response => {

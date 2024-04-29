@@ -14,6 +14,7 @@ import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import PageNotFound from '../2-Widgets/NotFoundPage';
+import { ImageWidget } from '../2-Widgets/ImageWidgets';
 
 import './contentArchive.scss';
 

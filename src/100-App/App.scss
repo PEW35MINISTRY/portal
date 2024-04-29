@@ -46,7 +46,7 @@
                 padding: 0 0.15rem;
             }
 
-            img {
+            .page-icon {
                 grid-column: 1;
                 align-self: center;
                 justify-self: center;
@@ -57,7 +57,7 @@
                 font-size: 2.5rem;
             }
 
-            label, p {
+            .page-label {
                 grid-column: 2;
                 font-family: 'EB Garamond';
                 font-weight: 500;
@@ -73,7 +73,7 @@
                 }
             }
 
-            &.sub-page label, &.sub-page p {
+            &.sub-page .page-label {
                 border-left: 2px solid $blue;
                 border-radius: 0;
                 padding: 0.15rem 0.75rem;
@@ -115,7 +115,7 @@
                 background-color: $red;
                 cursor: grab;
     
-                h1, h2, h3, h4, h5, h6, label, p {
+                h1, h2, h3, h4, h5, h6, label, p, .page-label {
                     color: white;
                     cursor: grab;
                 }
@@ -195,7 +195,7 @@
             padding-top: 0.5rem;
             border-top: 2px solid $t-white;
 
-            img {
+            .profile-image {
                 margin: auto;
                 border-radius: 50%;
             }
