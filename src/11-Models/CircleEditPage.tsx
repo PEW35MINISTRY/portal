@@ -280,7 +280,7 @@ const CircleEditPage = () => {
                 onSubmitText={getDisplayNew() ? 'Create Circle' : 'Save Changes'}
                 onSubmitCallback={getDisplayNew() ? makePostRequest : makeEditRequest}
                 onAlternativeText={getDisplayNew() ? undefined : 'Delete Circle'}
-                onAlternativeCallback={()=>setShowDeleteConfirmation(true)}
+                onAlternativeCallback={() => navigate(`/portal/edit/circle/${editingCircleID}/delete`)}
                 headerChildren={
                 <div className='form-header-vertical'>
                     <div className='form-header-detail-box'>

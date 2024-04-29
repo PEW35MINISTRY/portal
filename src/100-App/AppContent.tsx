@@ -254,7 +254,7 @@ const AppContent = () => {
                   {isPageAccessible('/chat/direct') && <Route path='/chat/direct/*' element={<DirectChat/>}/>}
                   {isPageAccessible('/chat/circle') && <Route path='/chat/circle/*' element={<CircleChat/>}/>}
                   {isPageAccessible('/logs') && <Route path='/logs/*' element={<Log/>}/>}
-                  <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('portal/dashboard')} />} />
+                  <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('/portal/dashboard')} />} />
                 </Routes>
             </div>
         </div>
