@@ -14,14 +14,15 @@ import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import PageNotFound from '../2-Widgets/NotFoundPage';
+import { ImageWidget } from '../2-Widgets/ImageWidgets';
 
 import './contentArchive.scss';
 
 //Assets
-import MEDIA_DEFAULT from '../0-Assets/media-blue.png';
-import GOT_QUESTIONS from '../0-Assets/got-questions.png';
-import BIBLE_PROJECT from '../0-Assets/bible-project.png';
-import THROUGH_THE_WORD from '../0-Assets/through-the-word.png';
+import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
+import GOT_QUESTIONS from '../0-Assets/default-images/got-questions.png';
+import BIBLE_PROJECT from '../0-Assets/default-images/bible-project.png';
+import THROUGH_THE_WORD from '../0-Assets/default-images/through-the-word.png';
 
 
 const ContentArchivePage = () => {

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 import './notFound.scss';
 
-import EMPTY_TOMB from '../0-Assets/404-empty-tomb.png';
+import EMPTY_TOMB from '../0-Assets/images/404-empty-tomb.png';
 
 const PageNotFound = (props:{primaryButtonText?:string, onPrimaryButtonClick?:()=>void}) => {
     const navigate = useNavigate();

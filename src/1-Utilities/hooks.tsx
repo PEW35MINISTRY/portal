@@ -6,7 +6,7 @@ import { AXIOSError, ToastStyle } from '../100-App/app-types';
 import type { AppDispatch, RootState } from '../100-App/redux-store';
 
 //Assets
-import LOGO_ICON from '../0-Assets/logo-icon.png';
+import LOGO_ICON from '../0-Assets/brand/logo-icon.png';
 
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`

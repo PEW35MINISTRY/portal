@@ -5,8 +5,8 @@ import { useAppSelector } from '../1-Utilities/hooks';
 import './animation.scss';
 
 //Assets
-import ANIMATED_LOGO from '../0-Assets/logo-animation-1000.gif';
-import ANIMATED_LOGO_MOBILE from '../0-Assets/logo-animation-600.gif';
+import ANIMATED_LOGO from '../0-Assets/brand/logo-animation-1000.gif';
+import ANIMATED_LOGO_MOBILE from '../0-Assets/brand/logo-animation-600.gif';
 
 const AnimationPage = () => {
     const navigate = useNavigate();

@@ -5,7 +5,7 @@ import { useAppDispatch } from '../1-Utilities/hooks';
 import './dashboard.scss';
 
 //Assets
-import SAMPLE from '../0-Assets/dashboard-sample.png';
+import SAMPLE from '../0-Assets/images/dashboard-sample.png';
 
 const Dashboard = () => {
     const navigate = useNavigate();

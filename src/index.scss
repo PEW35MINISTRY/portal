@@ -177,6 +177,18 @@ textarea {
   }
 }
 
+.circle-image {
+  object-fit: contain;
+  border-radius: calc(2 * $radius);
+  margin: 0 auto 1.0rem auto;
+}
+
+.profile-image {
+  object-fit: contain;
+  border-radius: 50%;
+  margin: auto;
+}
+
 //Animations
 @keyframes zoom-pulse {
   0%,100% {

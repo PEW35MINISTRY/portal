@@ -8,16 +8,14 @@ import formatRelativeDate, { calculateAge } from '../../1-Utilities/dateFormat';
 import { useAppSelector } from '../../1-Utilities/hooks';
 import { ContentArchivePreview } from '../../11-Models/ContentArchivePage';
 import { makeAbbreviatedText, makeDisplayText } from '../../1-Utilities/utilities';
-
+import { CircleImage, ProfileImage } from '../ImageWidgets';
 
 
 //Assets
-import PROFILE_DEFAULT from '../../0-Assets/profile-default.png';
-import CIRCLE_DEFAULT from '../../0-Assets/circle-default.png';
-import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/announcement-icon-blue.png';
-import PRAYER_ICON from '../../0-Assets/prayer-request-icon-blue.png';
-import LIKE_ICON from '../../0-Assets/like-icon-blue.png';
-import CIRCLE_EVENT_DEFAULT from '../../0-Assets/event-icon-blue.png';
+import CIRCLE_ANNOUNCEMENT_ICON from '../../0-Assets/icons/announcement-icon-blue.png';
+import PRAYER_ICON from '../../0-Assets/icons/prayer-request-icon-blue.png';
+import LIKE_ICON from '../../0-Assets/icons/like-icon-blue.png';
+import CIRCLE_EVENT_DEFAULT from '../../0-Assets/icons/event-icon-blue.png';
 
 
 
@@ -35,7 +33,7 @@ export const ProfileItem = ({...props}:{key:any, user:ProfileListItem, onClick?:
     return (
         <div key={props.key} className={`search-item ${props.class || ''}`} onClick={()=>props.onClick && props.onClick(props.user.userID, props.user)}>
             <div className='detail-box profile-detail-box'>
-                <img src={props.user.image || PROFILE_DEFAULT} alt={props.user.displayName} />
+                <ProfileImage src={props.user.image} />
                 <label className='title name'>{props.user.firstName}<p>{props.user.displayName}</p></label>
                 {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.user.userID}</label>}
             </div>
@@ -53,7 +51,7 @@ export const PartnerItem = ({...props}:{key:any, partner:PartnerListItem, onClic
     return (
         <div key={props.key} className={`search-item ${props.class || ''}`} onClick={()=>props.onClick && props.onClick(props.partner.userID, props.partner)}>
             <div className='detail-box profile-detail-box'>
-                <img src={props.partner.image || PROFILE_DEFAULT} alt={props.partner.displayName} />
+                <ProfileImage src={props.partner.image} />
                 <label className='title name'>{props.partner.firstName}<p>{props.partner.displayName}</p></label>
                 {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.partner.userID}</label>}
             </div>
@@ -82,7 +80,7 @@ export const CircleItem = ({...props}:{key:any, circle:CircleListItem, onClick?:
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
     return (
     <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.circle.circleID, props.circle)}>
-        <img className='image-wide' src={props.circle.image || CIRCLE_DEFAULT} alt={props.circle.name}/>
+        <CircleImage src={props.circle.image} className='image-wide' />
         <div className='detail-box'>
             <label className='title name'>{props.circle.name}</label>
             <p className='status'>{props.circle.status}</p>
@@ -139,7 +137,7 @@ export const PrayerRequestItem = ({...props}:{key:any, prayerRequest:PrayerReque
     <div key={props.key} className='search-item search-prayer-request-item' onClick={()=>props.onClick && props.onClick(props.prayerRequest.prayerRequestID, props.prayerRequest)}>
         {props.prayerRequest.requestorProfile && 
             <div className='detail-box profile-detail-box'>
-                <img className='icon' src={props.prayerRequest.requestorProfile.image || PROFILE_DEFAULT} alt={props.prayerRequest.requestorProfile.displayName} />
+                <ProfileImage src={props.prayerRequest.requestorProfile.image} className='icon'/>
                 <p >{props.prayerRequest.requestorProfile.displayName}</p>
                 {(props.prayerRequest.prayerCount > 0) && <img className='icon' src={PRAYER_ICON} alt='prayer-count'/>}
                 {(props.prayerRequest.prayerCount > 0) && <label className='count' >{props.prayerRequest.prayerCount}</label>}
@@ -166,7 +164,7 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
     <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.prayerRequestComment.commentID, props.prayerRequestComment)} >       
         {props.prayerRequestComment.commenterProfile && 
             <div className='detail-box' >
-                <img className='icon' src={props.prayerRequestComment.commenterProfile.image || PROFILE_DEFAULT} alt={props.prayerRequestComment.commenterProfile.displayName} />
+                <ProfileImage src={props.prayerRequestComment.commenterProfile.image} className='icon'/>
                 <p >{props.prayerRequestComment.commenterProfile.displayName}</p>
                 {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.prayerRequestComment.prayerRequestID}| #{props.prayerRequestComment.commentID}</label>}
                 {(props.prayerRequestComment.likeCount > 0) && <img className='icon' src={LIKE_ICON} alt='like-count'/>}

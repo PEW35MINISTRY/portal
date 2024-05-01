@@ -14,14 +14,12 @@ import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
-import ImageUpload from '../2-Widgets/ImageUpload';
+import { ImageDefaultEnum, ImageUpload, ProfileImage } from '../2-Widgets/ImageWidgets';
 import { PartnershipContract, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
 import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
 
-//Assets
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
 
 const UserEditPage = () => {
     const navigate = useNavigate();
@@ -138,6 +136,7 @@ const UserEditPage = () => {
             setPartnerPendingUserList([]);
             setPartnerPendingPartnerList([]);
             setPrayerRequestList([]);
+            setAvailablePartnerList([]);
             setImage(undefined);
 
             [...Object.entries(fields)].forEach(([field, value]) => {
@@ -320,7 +319,7 @@ const UserEditPage = () => {
                                 {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingUserID}</label>}
                             </span>
                         </div>
-                        <img className='form-header-image profile-image' src={image || PROFILE_DEFAULT} alt='Profile-Image' />
+                        <ProfileImage className='form-header-image' src={image} />
                         <div className='form-header-horizontal'>
                             <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/profile/${editingUserID}/image`)}>Edit Image</button>
                             {showNewPartnerButton() &&
@@ -497,11 +496,11 @@ const UserEditPage = () => {
                                 {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingUserID}</label>}
                             </span>
                         </div>
-                        <img className='form-header-image profile-image' src={getInputField('image') || PROFILE_DEFAULT} alt='Profile-Image' />
+                        <ProfileImage className='form-header-image' src={image} />
                         <h2>Delete Profile?</h2>
 
                         {makeDisplayList(Array.from((getInputField('userRoleTokenList') as Map<string,string>)?.keys() || [])).map((role) =>
-                            <label >{`+ ${role} Role`}</label>
+                            <label key={role}>{`+ ${role} Role`}</label>
                         )}
                         <hr/>
                         {(memberCircleList.length > 0) && <label >{`+ ${memberCircleList.length} Memberships`}</label>}
@@ -540,7 +539,7 @@ const UserEditPage = () => {
                         title='Upload Profile Image'
                         imageStyle='profile-image'
                         currentImage={ image }
-                        defaultImage={ PROFILE_DEFAULT }
+                        defaultImage={ ImageDefaultEnum.PROFILE }
                         onCancel={() => navigate(`/portal/edit/profile/${editingUserID}`)}
                         onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image`, { headers: { jwt: jwt }} )
                             .then(response => {

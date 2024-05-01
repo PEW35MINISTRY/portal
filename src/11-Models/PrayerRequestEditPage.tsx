@@ -19,9 +19,8 @@ import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchLi
 import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
+import { CircleImage, ProfileImage } from '../2-Widgets/ImageWidgets';
 
-//Assets
-import PROFILE_DEFAULT from '../0-Assets/profile-default.png';
 
 const PrayerRequestEditPage = () => {
     const navigate = useNavigate();
@@ -378,7 +377,7 @@ const PrayerRequestEditPage = () => {
                                 {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{editingPrayerRequestID}</label>}
                             </span>
                             <span className='right-align'>
-                                {requestorProfile && <img className='leader-profile-image' src={requestorProfile.image || PROFILE_DEFAULT} alt={requestorProfile.displayName} />}
+                                {requestorProfile && <ProfileImage className='leader-profile-image' src={requestorProfile.image} />}
                                 {requestorProfile && <label className='title'>{requestorProfile.displayName}</label>}
                                 {(requestorProfile && userRole === RoleEnum.ADMIN) && <label className='id-left'>#{requestorProfile.userID}</label>}
                             </span>
@@ -482,7 +481,7 @@ const PrayerRequestEditPage = () => {
                             </span>
                             { requestorProfile &&
                                 <span className='right-align'>
-                                    <img className='leader-profile-image' src={requestorProfile?.image || PROFILE_DEFAULT} alt={requestorProfile.displayName} />
+                                    <ProfileImage className='leader-profile-image' src={requestorProfile.image} />
                                     <label className='title'>{requestorProfile.displayName}</label>
                                     {userHasAnyRole([RoleEnum.ADMIN]) && <label className='id-left'>#{requestorProfile.userID}</label>}
                                 </span>}
