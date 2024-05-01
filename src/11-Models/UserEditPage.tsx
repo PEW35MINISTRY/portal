@@ -181,14 +181,14 @@ const UserEditPage = () => {
     /* Checks Currently Editing Profile */
     const editingUserHasAnyRole = (roleList: RoleEnum[]):boolean =>
         (!getInputField('userRoleTokenList') || getInputField('userRoleTokenList').length === 0) ? 
-            roleList.includes(RoleEnum.STUDENT)
+            roleList.includes(RoleEnum.USER)
         : Array.from((getInputField('userRoleTokenList') as Map<RoleEnum, string>).keys())
             .some((editingUserRole: RoleEnum) => roleList.includes(editingUserRole));
 
     /* Checks Logged in User */
     const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
         (!userRoleList || userRoleList.length === 0) ? 
-            roleList.includes(RoleEnum.STUDENT)
+            roleList.includes(RoleEnum.USER)
         : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
 
         
@@ -255,7 +255,7 @@ const UserEditPage = () => {
 
     
     const showNewPartnerButton = ():boolean => 
-        (editingUserHasAnyRole([RoleEnum.STUDENT])) 
+        (editingUserHasAnyRole([RoleEnum.USER])) 
         && (userHasAnyRole([RoleEnum.ADMIN]) 
             || ((getInputField('maxPartners') > (partnerList.length + userPartnerPendingPartnerList.length + partnerPendingPartnerList.length))
                 && (Date.now() - userLastNewPartnerRequest) >= 60 * 60 * 1000));
@@ -418,8 +418,8 @@ const UserEditPage = () => {
                                         .catch((error) => processAJAXError(error))
                                     }))
                         ], 
-                        [ /* Pending User Acceptance | Student Search */
-                            new SearchListKey({displayTitle:'New Circles', searchType: userHasAnyRole([RoleEnum.STUDENT]) ? SearchType.CIRCLE : SearchType.NONE,
+                        [ /* Pending User Acceptance | User Search */
+                            new SearchListKey({displayTitle:'New Circles', searchType: userHasAnyRole([RoleEnum.USER]) ? SearchType.CIRCLE : SearchType.NONE,
                                 onSearchClick: (id:number) => redirectToCircle(id),
                                 searchPrimaryButtonText: 'Request to Join', 
                                 onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => 
@@ -430,7 +430,7 @@ const UserEditPage = () => {
 
                             [...circleInviteList].map((circle:CircleListItem) => new SearchListValue({displayType: ListItemTypesEnum.CIRCLE, displayItem: circle, 
                                 onClick: (id:number) => redirectToCircle(id),
-                                primaryButtonText: userHasAnyRole([RoleEnum.STUDENT]) ? 'Accept' : '', 
+                                primaryButtonText: userHasAnyRole([RoleEnum.USER]) ? 'Accept' : '', 
                                 onPrimaryButtonCallback: (id:number) => 
                                     axios.delete(`${process.env.REACT_APP_DOMAIN}/api/circle/${id}/accept`, { headers: { jwt: jwt }} )
                                         .then((response:{ data: CircleListItem }) => notify(`Joined Circle ${circle.name}`, ToastStyle.SUCCESS, () => (editingUserID === userID) ? dispatch(addCircle(circle)) : setMemberCircleList(list => [circle, ...list])))

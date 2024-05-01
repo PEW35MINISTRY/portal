@@ -8,7 +8,7 @@ The **Encouraging Prayer Portal** will allow circle leader and admin management 
 ![alt text](https://encouragingprayer.org/static/media/page-portal-mac.e2fa6cc47cf7827dad74.png)
 
 ## Encouraging Prayer System: 
-Will be a software social platform to connect students, enable communication, and promote biblical content.  The primary focus will be establishing prayer partners and promoting daily prayer among users, and sending content based on the user's unique identifiers.  Secondarily will be hosting Circles organized by local leaders via providing group organization within the scope of the app, and also the ability to curate, manage, and send content based on user registration data. The platform will consist of a Mobile App directed at students, Web portal for circle leaders, and Server and Data management.
+Will be a software social platform to connect users, enable communication, and promote biblical content.  The primary focus will be establishing prayer partners and promoting daily prayer among users, and sending content based on the user's unique identifiers.  Secondarily will be hosting Circles organized by local leaders via providing group organization within the scope of the app, and also the ability to curate, manage, and send content based on user registration data. The platform will consist of a Mobile App directed at general users, Web portal for circle leaders, and Server and Data management.
 
 ![alt text](http://encouragingprayer.org/encouraging-prayer.png)
 

@@ -23,7 +23,7 @@ export type AccountState = {
 
 const initialAccountState:AccountState = {
   userID: -1,
-  userRole: RoleEnum.STUDENT,
+  userRole: RoleEnum.USER,
   jwt: '',
   userProfile: {} as ProfileResponse
 }; 

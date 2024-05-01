@@ -132,7 +132,7 @@ const AppContent = () => {
                   {label: 'Pending', route: `/portal/partnership/pending`}]
       },
       {label: 'Circle', route: `/portal/edit/circle/${defaultCircleID}`, activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
-      {label: 'Prayer Request', route: `/portal/edit/prayer-request/${defaultPrayerRequestID}`, activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
+      {label: 'Prayer Request', route: `/portal/edit/prayer-request/${defaultPrayerRequestID}`, activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.USER, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Circle Chat', route: '/portal/chat/circle', activeIcon: CIRCLE_CHAT_ICON_ACTIVE, inactiveIcon: CIRCLE_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.DEVELOPER, RoleEnum.ADMIN]},

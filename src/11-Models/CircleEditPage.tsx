@@ -26,7 +26,7 @@ const CircleEditPage = () => {
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt) || '';
     const userID:number = useAppSelector((state) => state.account.userID) || -1;
-    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole) || RoleEnum.STUDENT;
+    const userRole:string = useAppSelector((state) => state.account.userProfile.userRole) || RoleEnum.USER;
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName) || '';
@@ -57,7 +57,7 @@ const CircleEditPage = () => {
     /* Checks Logged in User */
     const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
         (!userRoleList || userRoleList.length === 0) ? 
-            roleList.includes(RoleEnum.STUDENT)
+            roleList.includes(RoleEnum.USER)
         : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
 
 
@@ -346,7 +346,7 @@ const CircleEditPage = () => {
 
                                 alternativeButtonText: 'Decline', 
                                 onAlternativeButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.USER) ? `/api/circle/${id}/leave` 
                                             : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
                                         .then(response => notify(`Request Revoked`, ToastStyle.SUCCESS,  ()=> setRequestProfileList(current => current.filter(user => user.userID !== id))))
                                         .catch((error) => processAJAXError(error))
@@ -384,7 +384,7 @@ const CircleEditPage = () => {
                                 onClick: (id:number) => redirectToProfile(id),
                                 alternativeButtonText: 'Decline Invite', 
                                 onAlternativeButtonCallback: (id:number) => 
-                                axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.USER) ? `/api/circle/${id}/leave` 
                                             : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
                                         .then(response => notify(`Invite Revoked`, ToastStyle.SUCCESS,  ()=> setInviteProfileList(current => current.filter(user => user.userID !== id))))
                                         .catch((error) => processAJAXError(error))
@@ -404,7 +404,7 @@ const CircleEditPage = () => {
                                 onClick: (id:number) => redirectToProfile(id),
                                 alternativeButtonText: 'Remove', 
                                 onAlternativeButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.STUDENT) ? `/api/circle/${id}/leave` 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}${(userRole === RoleEnum.USER) ? `/api/circle/${id}/leave` 
                                             : `/api/leader/circle/${editingCircleID}/client/${id}/leave`}`, { headers: { jwt: jwt }} )
                                         .then(response => notify(`Member Removed`, ToastStyle.SUCCESS, ()=> setMemberProfileList(current => current.filter(user => user.userID !== id))))
                                         .catch((error) => processAJAXError(error))

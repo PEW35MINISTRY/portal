@@ -193,7 +193,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
      * *********************/
     const getAgeFromDate = (date: Date):number => Math.floor((new Date().getTime() - date.getTime()+(25*60*60*1000)) / 31557600000);  //Reverse offset one day for delay
     const getDateInputDefaultValue = (field:InputField):Date => (field.field === 'dateOfBirth') 
-                                        ? ((props.getInputField('userRole') as RoleEnum === RoleEnum.STUDENT) 
+                                        ? ((props.getInputField('userRole') as RoleEnum === RoleEnum.USER) 
                                             ? getDateYearsAgo(15) : getDateYearsAgo(30))
                                         : new Date();
 
@@ -312,8 +312,8 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
     const onAdd = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if(event)
             event.preventDefault();
-        //Token required for all user roles; except STUDENT
-        if(roleSelected !== 'defaultValue' && tokenInput.length > 0 || roleSelected === 'STUDENT') {
+        //Token required for all user roles; except USER Role
+        if(roleSelected !== 'defaultValue' && tokenInput.length > 0 || roleSelected === 'USER') {
             props.setInputField('userRoleTokenList', new Map(props.getInputField(props.field.field)).set(roleSelected, tokenInput));
             setRoleSelected('defaultValue');
             setTokenInput('');
@@ -350,7 +350,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
             </select>
             {(roleSelected !== 'defaultValue') &&
                 <section className='custom-input-box'>
-                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'STUDENT') ? 'hidden' : 'visible'}}/>
+                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'USER') ? 'hidden' : 'visible'}}/>
                     <button type='button' onClick={onAdd} >ADD</button>
                 </section>
             }

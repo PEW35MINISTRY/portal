@@ -22,5 +22,5 @@ export const getInputHighestRole = (getInputField:Function):RoleEnum => {
 
     return Object.values(RoleEnum).reverse().find((role, index) => (roleMap.has(RoleEnum[role]))) as RoleEnum
         || getInputField('userRole') as RoleEnum
-        || RoleEnum.STUDENT
+        || RoleEnum.USER
 }
