@@ -33,12 +33,13 @@ export const getDefaultImage = (type?:ImageDefaultEnum):string|undefined => {
  * General Image Render | Handles Defaults                 *
  * src can be either: URL, Base64, imported (not raw path) *
  ***********************************************************/
-export const ImageWidget = (props:{defaultImage?:ImageDefaultEnum, src?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
-    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || getDefaultImage(props.defaultImage));
+export const ImageWidget = (props:{defaultImage?:ImageDefaultEnum, src?:string, defaultSrc?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
+    const defaultImage = props.defaultSrc || getDefaultImage(props.defaultImage);
+    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || defaultImage);
   
-    useEffect(() => setCurrentSource(props.src || getDefaultImage(props.defaultImage)), [props.src]);  
+    useEffect(() => setCurrentSource(props.src || defaultImage), [props.src]);  
 
-    const handleError = () => setCurrentSource(getDefaultImage(props.defaultImage));
+    const handleError = () => setCurrentSource(defaultImage);
   
     return ( <img className={`${props.className || ''}`} style={props.style} src={currentSource} onError={handleError} alt='Image' />);
   };
@@ -48,18 +49,24 @@ export const ImageWidget = (props:{defaultImage?:ImageDefaultEnum, src?:string, 
  * Profile Image Render | Handles Defaults                 *
  * src can be either: URL, Base64, imported (not raw path) *
  ***********************************************************/
-export const ProfileImage = (props:{defaultUser?:boolean, src?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
+export const ProfileImage = (props:{defaultUser?:boolean, src?:string, defaultSrc?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
+    const defaultProfile = props.defaultSrc || PROFILE_DEFAULT;
     const profileImageURL = useAppSelector(state => state.account.userProfile.image);  
-    const [currentSource, setCurrentSource] = useState<string | undefined>(props.src || (props.defaultUser ? profileImageURL : PROFILE_DEFAULT));  
+    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || (props.defaultUser && profileImageURL) || defaultProfile);
 
-    useEffect(() => setCurrentSource(props.src || (props.defaultUser ? profileImageURL : PROFILE_DEFAULT)), [props.src, profileImageURL]);
+    useEffect(() => {
+        setCurrentSource(props.src || (props.defaultUser && profileImageURL) || defaultProfile);
+    }, [props.src, props.defaultUser, profileImageURL, props.defaultSrc]);
 
     //Priority Fallback Sequence
     const handleError = () => {
-        if (currentSource === props.src)
-            setCurrentSource(props.defaultUser ? (profileImageURL || PROFILE_DEFAULT) : PROFILE_DEFAULT);
-        else if (currentSource === profileImageURL)
-            setCurrentSource(PROFILE_DEFAULT);
+        if (currentSource === props.src) {
+            setCurrentSource(props.defaultUser && profileImageURL ? profileImageURL : defaultProfile);
+        } else if (currentSource === profileImageURL) {
+            setCurrentSource(defaultProfile);
+        } else {
+            setCurrentSource(defaultProfile);
+        }
     };
   
     return ( <img className={`profile-image ${props.className || ''}`} style={props.style} src={currentSource} onError={handleError} alt='Profile Image' />);
@@ -70,12 +77,13 @@ export const ProfileImage = (props:{defaultUser?:boolean, src?:string, className
  * Circle Image Render | Handles Defaults                  *
  * src can be either: URL, Base64, imported (not raw path) *
  ***********************************************************/
-export const CircleImage = (props:{src?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
-    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || CIRCLE_DEFAULT);
+export const CircleImage = (props:{src?:string, defaultSrc?:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
+    const defaultCircle = props.defaultSrc || CIRCLE_DEFAULT;
+    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || defaultCircle);
 
-    useEffect(() => setCurrentSource(props.src || CIRCLE_DEFAULT), [props.src]);
+    useEffect(() => setCurrentSource(props.src || defaultCircle), [props.src]);
 
-    const handleError = () => setCurrentSource(CIRCLE_DEFAULT);
+    const handleError = () => setCurrentSource(defaultCircle);
   
     return ( <img className={`circle-image ${props.className || ''}`} style={props.style} src={currentSource} onError={handleError} alt='Circle Image' />);
   };

@@ -139,7 +139,7 @@ const AppContent = () => {
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
-      {label: 'Preferences', route: '/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
+      {label: 'Preferences', route: '/portal/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
       {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
 
@@ -224,8 +224,8 @@ const AppContent = () => {
               </div> }
 
             <section id='profile-box' className={'page'} onClick={()=>setShowProfileMenu(true)}>    
-              <ProfileImage className={'page-icon active-icon'} src={profileImage || PROFILE_ICON_ACTIVE} defaultUser={true} />
-              <ProfileImage className={'page-icon inactive-icon'} src={profileImage} defaultUser={true} />
+              <ProfileImage className={'page-icon active-icon'} src={profileImage} defaultSrc={PROFILE_ICON_ACTIVE} defaultUser={true} />
+              <ProfileImage className={'page-icon inactive-icon'} src={profileImage} defaultSrc={PROFILE_ICON} defaultUser={true} />
               <section id='profile-box-vertical' className={showMenu ? '' : 'hide'} >
                 <h2 className={showMenu ? '' : 'hide'} >{displayName}</h2>
                 <h5 className={showMenu ? '' : 'hide'} >{makeDisplayText(userRole)}</h5>
