@@ -65,7 +65,7 @@ const PrayerRequestEditPage = () => {
     /* Checks Logged in User */
     const userHasAnyRole = (roleList: RoleEnum[]):boolean =>
         (!userRoleList || userRoleList.length === 0) ? 
-            roleList.includes(RoleEnum.STUDENT)
+            roleList.includes(RoleEnum.USER)
         : roleList.some(role => userRoleList.some((userRole:RoleEnum) => userRole === role));
 
 

@@ -132,14 +132,14 @@ const AppContent = () => {
                   {label: 'Pending', route: `/portal/partnership/pending`}]
       },
       {label: 'Circle', route: `/portal/edit/circle/${defaultCircleID}`, activeIcon: CIRCLE_ICON_ACTIVE, inactiveIcon: CIRCLE_ICON, addRoute: '/portal/edit/circle/new', exclusiveRoleList: [RoleEnum.CIRCLE_LEADER, RoleEnum.ADMIN]},
-      {label: 'Prayer Request', route: `/portal/edit/prayer-request/${defaultPrayerRequestID}`, activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.STUDENT, RoleEnum.ADMIN]},
+      {label: 'Prayer Request', route: `/portal/edit/prayer-request/${defaultPrayerRequestID}`, activeIcon: PRAYER_REQUEST_ICON_ACTIVE, inactiveIcon: PRAYER_REQUEST_ICON, addRoute: '/portal/edit/prayer-request/new', exclusiveRoleList: [RoleEnum.USER, RoleEnum.ADMIN]},
       {label: 'Messages', route: '/portal/chat/direct', activeIcon: DIRECT_CHAT_ICON_ACTIVE, inactiveIcon: DIRECT_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Circle Chat', route: '/portal/chat/circle', activeIcon: CIRCLE_CHAT_ICON_ACTIVE, inactiveIcon: CIRCLE_CHAT_ICON, exclusiveRoleList: [RoleEnum.ADMIN]},
       {label: 'Logs', route: '/portal/logs', activeIcon: LOG_ICON_ACTIVE, inactiveIcon: LOG_ICON, exclusiveRoleList: [RoleEnum.DEVELOPER, RoleEnum.ADMIN]},
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
-      {label: 'Preferences', route: '/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
+      {label: 'Preferences', route: '/portal/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
       {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
 
@@ -224,8 +224,8 @@ const AppContent = () => {
               </div> }
 
             <section id='profile-box' className={'page'} onClick={()=>setShowProfileMenu(true)}>    
-              <ProfileImage className={'page-icon active-icon'} src={profileImage || PROFILE_ICON_ACTIVE} defaultUser={true} />
-              <ProfileImage className={'page-icon inactive-icon'} src={profileImage} defaultUser={true} />
+              <ProfileImage className={'page-icon active-icon'} src={profileImage} defaultSrc={PROFILE_ICON_ACTIVE} defaultUser={true} />
+              <ProfileImage className={'page-icon inactive-icon'} src={profileImage} defaultSrc={PROFILE_ICON} defaultUser={true} />
               <section id='profile-box-vertical' className={showMenu ? '' : 'hide'} >
                 <h2 className={showMenu ? '' : 'hide'} >{displayName}</h2>
                 <h5 className={showMenu ? '' : 'hide'} >{makeDisplayText(userRole)}</h5>

@@ -10,7 +10,7 @@ const PageNotFound = (props:{primaryButtonText?:string, onPrimaryButtonClick?:()
     return (
       <div id='page-not-found'>
         <div className='scroll-body'>
-          <img id='empty-tomb' src={EMPTY_TOMB} />
+          <img id='empty-tomb' src={EMPTY_TOMB} alt='Page Not Found' />
           <h2>The tomb is empty and so is this page.</h2>
             {props.primaryButtonText && <button className='primary-button' onClick={props.onPrimaryButtonClick} >{props.primaryButtonText}</button>}
             <button className='alternative-button' onClick={()=>navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)} >Renew Login</button>
