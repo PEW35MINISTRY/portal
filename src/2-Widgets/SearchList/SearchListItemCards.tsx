@@ -6,9 +6,9 @@ import { RoleEnum } from '../../0-Assets/field-sync/input-config-sync/profile-fi
 import { LabelListItem } from '../../0-Assets/field-sync/input-config-sync/search-config';
 import formatRelativeDate, { calculateAge } from '../../1-Utilities/dateFormat';
 import { useAppSelector } from '../../1-Utilities/hooks';
-import { ContentArchivePreview } from '../../11-Models/ContentArchivePage';
+import { ContentArchivePreview, getDefaultThumbnail } from '../../11-Models/ContentArchivePage';
 import { makeAbbreviatedText, makeDisplayText } from '../../1-Utilities/utilities';
-import { CircleImage, ProfileImage } from '../ImageWidgets';
+import { CircleImage, ContentThumbnailImage, ProfileImage } from '../ImageWidgets';
 
 
 //Assets
@@ -181,14 +181,10 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
 
 export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem, onClick?:(id:number, item:ContentListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ContentListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ContentListItem)=>void}) => {
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
+    console.log('Rendering Card', props.content.contentID, props.content.image);
     return (
-    <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >       
-        <ContentArchivePreview
-            url={props.content.url}
-            source={props.content.source}
-            maxWidth={300}
-            height={150}
-        />
+    <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >    
+        <ContentThumbnailImage src={props.content.image} defaultSrc={getDefaultThumbnail(props.content.source)} className='image-wide' />
         {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.content.contentID}</label>}
         <div className='detail-box'>
             <p key={'type'} className='detail-label-primary'>{props.content.type}</p>
