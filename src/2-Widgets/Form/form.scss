@@ -271,7 +271,7 @@
     }    
 }
 
-.circle-image, .profile-image {
+.circle-image, .profile-image, .thumbnail-image {
     max-height: 25vh;
     box-shadow: calc(2 * $radius) calc(2 * $radius) calc(2 * $radius) calc(2 * $radius) rgba(0, 0, 0, 0.3);
   }

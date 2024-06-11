@@ -6,12 +6,14 @@ import { useAppSelector } from '../1-Utilities/hooks';
 import LOGO from '../0-Assets/brand/logo.png';
 import PROFILE_DEFAULT from '../0-Assets/default-images/profile-default.png';
 import CIRCLE_DEFAULT from '../0-Assets/default-images/circle-default.png';
+import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
 import NOT_FOUND from '../0-Assets/icons/404-icon-black.png';
 
 export enum ImageDefaultEnum {
     LOGO = 'LOGO',
     PROFILE = 'PROFILE',
     CIRCLE = 'CIRCLE',
+    MEDIA = 'MEDIA',
     NOT_FOUND = 'NOT_FOUND'
 }
 
@@ -23,6 +25,8 @@ export const getDefaultImage = (type?:ImageDefaultEnum):string|undefined => {
             return PROFILE_DEFAULT;
         case ImageDefaultEnum.CIRCLE:
             return CIRCLE_DEFAULT;
+        case ImageDefaultEnum.MEDIA:
+            return MEDIA_DEFAULT;
         default:
             return NOT_FOUND;
     }
@@ -86,6 +90,22 @@ export const CircleImage = (props:{src?:string, defaultSrc?:string, className?:s
     const handleError = () => setCurrentSource(defaultCircle);
   
     return ( <img className={`circle-image ${props.className || ''}`} style={props.style} src={currentSource} onError={handleError} alt='Circle Image' />);
+  };
+
+
+/***********************************************************
+ * Content Thumbnail Image Render | Handles Defaults                  *
+ * src can be either: URL, Base64, imported (not raw path) *
+ ***********************************************************/
+export const ContentThumbnailImage = (props:{src?:string, defaultSrc:string, className?:string, style?:React.CSSProperties}):JSX.Element => {
+    const defaultThumbnail = props.defaultSrc;
+    const [currentSource, setCurrentSource] = useState<string|undefined>(props.src || defaultThumbnail);
+
+    useEffect(() => setCurrentSource(props.src || defaultThumbnail), [props.src]);
+
+    const handleError = () => setCurrentSource(defaultThumbnail);
+  
+    return ( <img className={`thumbnail-image ${props.className || ''}`} style={props.style} src={currentSource} onError={handleError} alt='Thumbnail Image' />);
   };
 
 

@@ -16,7 +16,7 @@
             max-width: 400px;
             margin: auto;
 
-            .content-image {
+            .content-image, .thumbnail-image {
                 object-fit: contain;
                 height: 100%;
                 width: 100%;
@@ -32,10 +32,6 @@
                 pointer-events: none;
             }
         }
-    }
-
-    .update-button {
-        margin-top: 0;
     }
 }
 

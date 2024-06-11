@@ -177,7 +177,7 @@ textarea {
   }
 }
 
-.circle-image {
+.circle-image, .thumbnail-image {
   object-fit: contain;
   border-radius: calc(2 * $radius);
   margin: 0 auto 1.0rem auto;

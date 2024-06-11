@@ -9,20 +9,26 @@ import { assembleRequestBody, makeDisplayText } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
-import { EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/content-field-config';
-import { ContentListItem, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
+import { ContentSourceEnum, ContentTypeEnum, EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/content-field-config';
+import { ContentListItem, ContentMetaDataResponseBody, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import PageNotFound from '../2-Widgets/NotFoundPage';
-import { ImageWidget } from '../2-Widgets/ImageWidgets';
+import { ContentThumbnailImage, ImageDefaultEnum, ImageUpload } from '../2-Widgets/ImageWidgets';
 
 import './contentArchive.scss';
 
-//Assets
+/* Content Default Thumbnails */
 import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
 import GOT_QUESTIONS from '../0-Assets/default-images/got-questions.png';
 import BIBLE_PROJECT from '../0-Assets/default-images/bible-project.png';
 import THROUGH_THE_WORD from '../0-Assets/default-images/through-the-word.png';
+
+export const getDefaultThumbnail = (contentSource:ContentSourceEnum) =>
+        contentSource === ContentSourceEnum.GOT_QUESTIONS ? GOT_QUESTIONS
+        : contentSource === ContentSourceEnum.BIBLE_PROJECT ? BIBLE_PROJECT
+        : contentSource === ContentSourceEnum.THROUGH_THE_WORD ? THROUGH_THE_WORD
+        : MEDIA_DEFAULT;
 
 
 const ContentArchivePage = () => {
@@ -34,10 +40,11 @@ const ContentArchivePage = () => {
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
-    const [previewURL, setPreviewURL] = useState<string|undefined>(undefined);
+    const [showURLPreview, setShowURLPreview] = useState<boolean>(false); //false shows thumbnail
 
     const [editingContentID, setEditingContentID] = useState<number>(-1);
     const [showNotFound, setShowNotFound] = useState<Boolean>(false);
+    const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
 
     //SearchList Cache
@@ -117,7 +124,7 @@ const ContentArchivePage = () => {
 
         } else { //(id === -1)
             setInputMap(new Map());
-            setPreviewURL(undefined);
+            setShowURLPreview(false);
         }
     }, [editingContentID, jwt]);
 
@@ -132,10 +139,6 @@ const ContentArchivePage = () => {
                         setSearchUserID(value);
                         valueMap.set('recorderID', value);
 
-                    } else if(field === 'url') {
-                        setPreviewURL(value);
-                        valueMap.set(field, value);
-
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                         
@@ -146,6 +149,42 @@ const ContentArchivePage = () => {
 
             })
             .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
+
+
+    /*********************************************
+     *   RETRIEVE METADATA & THUMBNAIL           *
+     * | Doesn't save to Model util Form Saved | *
+     * *******************************************/
+    const allowMetaDataFetch = (url:string = getInputField('url')):boolean => {
+        const urlInputField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'url');
+        const typeInputField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'type');
+        const sourceInputField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'source');
+        const type:ContentTypeEnum|undefined = getInputField('type');
+        const source:ContentSourceEnum|undefined = getInputField('source');
+
+        return (url !== undefined && urlInputField !== undefined && urlInputField.validationRegex.test(url) 
+             && type !== undefined && type !== ContentTypeEnum.CUSTOM && typeInputField !== undefined && typeInputField.validationRegex.test(type) 
+             && source !== undefined && source !== ContentSourceEnum.CUSTOM && sourceInputField !== undefined && sourceInputField.validationRegex.test(source));
+    }
+    
+
+    const fetchMetaData = async(url:string = getInputField('url')) => {
+        const urlInputField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'url');
+        const type:ContentTypeEnum|undefined = getInputField('type');
+        const source:ContentSourceEnum|undefined = getInputField('source');
+
+        if(!allowMetaDataFetch(url))
+            return notify(`Invalid URL${urlInputField ? ' - ' : ''}${urlInputField?.validationMessage || ''}`, ToastStyle.WARN);
+
+        return await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive/utility/meta-data`, { url, type, source }, { headers: { jwt: jwt }})
+            .then((response:{ data:ContentMetaDataResponseBody} ) => {
+                setInputField('image', response.data.imageURL);
+                setInputField('title', response.data.title);
+                setInputField('description', response.data.description);
+                setShowURLPreview(false);
+            })
+            .catch((error) => processAJAXError(error));
+    }
 
     /*******************************************
      *  SAVE CONTENT ARCHIVE CHANGES TO SEVER
@@ -170,14 +209,17 @@ const ContentArchivePage = () => {
                         url: response.data.url, 
                         type: response.data.type,
                         source: response.data.source,
-                        keywordList: [...response.data.keywordList],
+                        title: response.data.title,
                         description: response.data.description,
+                        image: response.data.image,
+                        keywordList: [...response.data.keywordList],
+                        likeCount: response.data.likeCount,
                     }, ...currentList]);
 
                     //Reset for new entry
                     setInputMap(new Map());
                     setEditingContentID(-1);
-                    setPreviewURL(undefined);
+                    setShowURLPreview(false);
                 }))
             .catch((error) => { processAJAXError(error); });
     
@@ -201,14 +243,13 @@ const ContentArchivePage = () => {
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
    
-    /*************************
-     * Update Social Preview *
-     *************************/
-    const onUpdatePreview = (event:React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        event.preventDefault();
-        setPreviewURL(undefined);
-        setTimeout(()=>setPreviewURL(getInputField('url')), 1500);
-    }
+    /********************************
+     * Listen & Auto Fetch MetaData *
+     ********************************/
+    useEffect(() => {
+        if(allowMetaDataFetch() && getInputField('image') === undefined && getInputField('title') === undefined && getInputField('description') === undefined)
+            fetchMetaData();
+    }, [getInputField('url'), getInputField('type'), getInputField('source')]);
 
     /******************
      * RENDER DISPLAY *
@@ -234,13 +275,21 @@ const ContentArchivePage = () => {
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{'Content Archive'}</h1>
                         </div>
-                        <ContentArchivePreview
-                            url={previewURL || ''}
-                            source={getInputField('source')}
-                            maxWidth={400}
-                            height={undefined}
-                        />
-                        <button className='alternative-button update-button' onClick={onUpdatePreview}>Update Preview</button>
+                        {(showURLPreview || !getInputField('image')) ?
+                            <ContentArchivePreview
+                                url={getInputField('url')}
+                                source={getInputField('source')}
+                                maxWidth={400}
+                                height={undefined}
+                            />
+                            : <ContentThumbnailImage className='form-header-image' src={getInputField('image')} defaultSrc={getDefaultThumbnail(getInputField('source'))} />
+                        }
+                        <div className='form-header-horizontal'>
+                            {getInputField('url') && getInputField('image')
+                                && <button className='alternative-button form-header-button' onClick={(event) => {event.preventDefault(); setShowURLPreview(current => !current);}}>Show {showURLPreview ? 'Thumbnail' : 'Content'} Preview</button>}
+                            {(editingContentID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Thumbnail</button>}
+                            {(allowMetaDataFetch()) && <button className='alternative-button form-header-button' onClick={(event) => {event.preventDefault(); fetchMetaData();}}>Fetch Metadata</button>}
+                        </div>
                     </div>}
             />
         }
@@ -261,6 +310,29 @@ const ContentArchivePage = () => {
                     ])}
             />
 
+            {(showImageUpload) &&
+                <ImageUpload
+                    key={'content-thumbnail-image-'+editingContentID}
+                    title='Upload Thumbnail'
+                    imageStyle='thumbnail-image'
+                    currentImage={ getInputField('image') }
+                    defaultImage={ ImageDefaultEnum.MEDIA }
+                    onCancel={()=>setShowImageUpload(false)}
+                    onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}/image`, { headers: { jwt: jwt }} )
+                        .then(response => {
+                            setShowImageUpload(false);
+                            setInputField('image', undefined);
+                            notify(`Thumbnail Deleted`, ToastStyle.SUCCESS)})
+                        .catch((error) => processAJAXError(error))}
+                    onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}/image/${imageFile.name}`, imageFile, { headers: { jwt, 'Content-Type': imageFile.type }} )
+                        .then(response => {
+                            setShowImageUpload(false);
+                            setInputField('image', response.data);
+                            notify(`Thumbnail Uploaded`, ToastStyle.SUCCESS)})
+                        .catch((error) => processAJAXError(error))}
+                />
+            }
+
             {(showDeleteConfirmation) &&
                 <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/content-archive/${editingContentID}`)}>
 
@@ -271,12 +343,7 @@ const ContentArchivePage = () => {
                                 {(userRole === RoleEnum.ADMIN) && <label className='id-left'>#{editingContentID}</label>}
                             </span>
                         </div>                        
-                        <ContentArchivePreview
-                            url={previewURL || ''}
-                            source={getInputField('source')}
-                            maxWidth={400}
-                            height={undefined}
-                        />
+                        <ContentThumbnailImage className='form-header-image' src={getInputField('image')} defaultSrc={getDefaultThumbnail(getInputField('source'))} />
                         <h2>Delete Content?</h2>
                         {getInputField('description') && <p className='id' >{getInputField('description')}</p>}
                         <label >{`-> ${getInputField('type')}`}</label>
@@ -300,7 +367,7 @@ export default ContentArchivePage;
 /**********************************
  * Embedded Social Post Component *
  **********************************/
-export const ContentArchivePreview = (props:{url:string, source:string, maxWidth:number, height:number|undefined}) => {
+export const ContentArchivePreview = (props:{url?:string, source:string, maxWidth:number, height:number|undefined}) => {
     const previewRef = useRef<HTMLDivElement>(null);
     const [previewWidth, setPreviewWidth] = useState<number>(200);
 
