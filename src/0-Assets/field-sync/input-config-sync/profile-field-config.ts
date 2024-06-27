@@ -48,6 +48,15 @@ export enum PartnerStatusEnum {
     FAILED = 'FAILED'
 }
 
+export const walkLevelMultiplier:number = 2; //Database range 1-10
+export const walkLevelOptions = new Map<number, string>([
+    [1, 'Deeper and Meaningful'],
+    [2, 'Growing and Improving'],
+    [3, 'Interested and Learning'],
+    [4, 'Curious and Uncertain'],
+    [5, 'Distant and Disconnected']
+]);
+
 export const getDateYearsAgo = (years: number = 13):Date => {
     let date = new Date();
     date.setFullYear(date.getFullYear() - years);

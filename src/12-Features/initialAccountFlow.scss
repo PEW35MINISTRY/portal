@@ -1,0 +1,95 @@
+@import '../index.scss';
+
+#initial-account-flow {
+
+    #flow-control-box {
+      z-index: 15;
+      position: absolute;
+      bottom: 5vh;
+      max-width: 90vw;
+  
+      #flow-control-indicator-box {
+        display: block;
+        width: 100%;
+        min-width: 70vw;
+        max-width: 500px;
+
+        #progress-step-box {
+          // position: relative;
+          z-index: 2;
+          // margin-top: calc(-1.0rem - 2.25rem);
+          width: 100%;
+          
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+  
+          .step {
+            height: 2.0rem;
+            min-width: 2.0rem;
+
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 0 1.0rem;
+
+            background-color: $t-white;
+            border: 2px solid transparent;
+            border-radius: 50%;
+
+            &.step-current {
+              border-color: $blue
+            }
+  
+            &.step-completed {
+              background-color: $blue;
+
+            }
+  
+            label {
+              margin: auto;
+              padding: 0.25rem;
+              text-align: center;
+              
+              color: white;
+            }
+          }
+        }
+  
+        #progress-line {
+          z-index: 1;
+          position: relative;
+          margin: 0 1.0rem;
+          margin-top: -1.0rem;
+          width: 100%;
+          // min-width: 70vw;
+          // max-width: 500px;
+          height: 0.25rem;
+          background-color: $blue;
+        }
+      }
+  
+      #flow-control-button-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-top: 2.0rem;
+
+        &:has(:only-child) {
+          justify-content: flex-end;
+        }
+        
+        .submit-button,
+        .alternative-button {
+          margin: 0;
+          // padding: 0.3rem 0.5rem;
+        }
+  
+        .alternative-button {
+          border: 1px solid $blue;
+        }
+      }
+    }
+  }  

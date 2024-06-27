@@ -11,6 +11,7 @@ import './App.scss';
 //Components
 import Login from '../11-Models/Login';
 import SignUpPage from '../11-Models/UserSignUpPage';
+import InitialAccountFlow from '../12-Features/InitialAccountFlow';
 import AppContent from './AppContent';
 
 
@@ -21,6 +22,7 @@ const App = () => {
         <Provider store={store}>
         <Routes>
             <Route path='/login/*' element={<Login/>}/>
+            <Route path='/signup/initial-account-flow/*' element={<InitialAccountFlow/>}/>
             <Route path='/signup/*' element={<SignUpPage/>}/>
             <Route path='/portal/' element={ <Navigate to='/portal/dashboard' /> }/>
             <Route path='/portal/*' element={<AppContent/>}/>
