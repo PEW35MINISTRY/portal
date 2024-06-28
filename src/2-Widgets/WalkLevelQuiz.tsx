@@ -5,11 +5,11 @@ import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
 import { InputRangeField } from '../0-Assets/field-sync/input-config-sync/inputField';
 
+import './walkLevelQuiz.scss';
 
-
-/******************************************
- *   WALK LEVEL POP-UP PAGE COMPONENT
- * *********************************************/
+/************************************
+ * WALK LEVEL POP-UP PAGE COMPONENT *
+ ************************************/
 export default ({...props}:{key:string, onSelect:() => void, onCancel?:() => void}) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
@@ -35,20 +35,23 @@ export default ({...props}:{key:string, onSelect:() => void, onCancel?:() => voi
 
             <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                 <div className='form-header-detail-box'>
-                    <h1 className='name'>How do you see your relationship with God?</h1>
+                    <h2 className='name'>How do you see your relationship with God?</h2>
                 </div>
 
                 <div id='walk-level-selection'>
-                    {Array.from(walkLevelOptions.entries()).map(([value, description], index) => (
+                    {Array.from(walkLevelOptions.entries()).map(([value, [emoji, description]], index) => (
                         <React.Fragment key={`walk-level-option-${index}`} >
-                            <label className='walk-level-icon' onClick={() => onSaveWalkLevel(value)}>{value}</label>
+                            <label className='walk-level-icon' onClick={() => onSaveWalkLevel(value)}>{emoji}</label>
                             <label className='walk-level-description' onClick={() => onSaveWalkLevel(value)}>{description}</label>
                         </React.Fragment>
                     ))}
                 </div>
 
-                {props.onCancel && <button className='submit-button alternative-button'  type='button' onClick={() => props.onCancel && props.onCancel()}>Cancel</button>}
-
+                {(props.onCancel) &&
+                    <div className='button-box' >
+                        <button className='submit-button alternative-button'  type='button' onClick={() => props.onCancel && props.onCancel()}>Cancel</button>
+                    </div>
+                }
             </div>
         </div>
     );

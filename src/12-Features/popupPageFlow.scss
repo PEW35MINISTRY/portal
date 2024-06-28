@@ -1,0 +1,104 @@
+@import '../index.scss';
+
+#popup-page-flow {
+    #flow-control-box {
+      z-index: 15;
+      position: absolute;
+      bottom: 1.0rem;
+      max-width: 90vw;
+  
+      #flow-control-indicator-box {
+        position: relative;
+        display: block;
+        width: 100%;
+        min-width: 70vw;
+        max-width: 500px;
+      
+        #progress-step-box {
+          position: relative;
+          z-index: 2;
+          width: 100%;
+          
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+      
+          .step-wrapper {
+            background-color: black;
+            border-radius: 50%;
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
+
+            .step {
+              height: 1.7rem;
+              min-width: 1.7rem;
+
+              position: relative;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              text-align: center;
+
+              background-color: $t-white;
+              border: 3px solid transparent;
+              border-radius: 50%;
+              
+              label {
+                margin: auto;
+                padding: 0.10rem;
+                text-align: center;
+                color: white;
+              }
+
+              &.step-current {
+                border-color: $blue;
+              }
+        
+              &.step-completed {
+                background-color: $blue;
+
+                label {
+                  color: white;
+                }
+              }
+            }
+          }
+        }
+      
+        #progress-line {
+          z-index: 1;
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          height: 0.25rem;
+          margin: 0 1.0rem;
+          background-color: $blue;
+          transform: translateY(-50%);
+        }
+      }  
+  
+      #flow-control-button-box {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-top: 1.0rem;
+
+        &:has(:only-child) {
+          justify-content: flex-end;
+        }
+        .submit-button,
+        .alternative-button {
+          margin: 0;
+        }
+
+        .alternative-button {
+          border: 1px solid $blue;          
+        }
+      }
+    }
+  }  

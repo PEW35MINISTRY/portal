@@ -49,13 +49,14 @@ export enum PartnerStatusEnum {
 }
 
 export const walkLevelMultiplier:number = 2; //Database range 1-10
-export const walkLevelOptions = new Map<number, string>([
-    [1, 'Deeper and Meaningful'],
-    [2, 'Growing and Improving'],
-    [3, 'Interested and Learning'],
-    [4, 'Curious and Uncertain'],
-    [5, 'Distant and Disconnected']
-]);
+export const walkLevelOptions: Map<number, [string, string]> = new Map<number, [string, string]>([
+    [5, ['😊', 'Deeper and Meaningful']],
+    [4, ['😃', 'Growing and Improving']],
+    [3, ['🤓', 'Interested and Learning']],
+    [2, ['🤔', 'Curious and Uncertain']],
+    [1, ['😟', 'Distant and Disconnected']]
+  ]);
+  
 
 export const getDateYearsAgo = (years: number = 13):Date => {
     let date = new Date();

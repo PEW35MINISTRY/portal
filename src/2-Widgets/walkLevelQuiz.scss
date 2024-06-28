@@ -1,0 +1,43 @@
+@import '../index.scss';
+
+$emojiSize: 2.0rem;
+#walk-level-quiz {
+ 
+    .form-page-block {  
+
+      .form-header-detail-box {
+        .name {
+            text-align: center;
+            white-space: wrap;
+        }
+      }
+  
+      #walk-level-selection {
+        display: grid;
+        grid-template-columns: calc($emojiSize * 2) auto;
+        align-items: center;
+        margin-left: 10%;
+
+        .walk-level-icon {
+            grid-column: 1;
+            margin: 0 auto;
+            font-size: $emojiSize;
+        }
+  
+        .walk-level-description {
+            grid-column: 2;
+
+            &:hover {
+                color: $red;
+            }
+        }
+      }
+
+      .button-box {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+    }
+  }
+  
