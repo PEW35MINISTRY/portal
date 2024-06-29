@@ -140,7 +140,7 @@ const AppContent = () => {
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
-      {label: 'New Partner', route: '/portal/partnership/new', activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, exclusiveRoleList: [RoleEnum.USER]},
+      {label: 'New Partner', route: '/portal/dashboard/new-partnership', activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, exclusiveRoleList: [RoleEnum.USER]},
       {label: 'Preferences', route: '/portal/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
       {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
@@ -246,7 +246,6 @@ const AppContent = () => {
                   <Route path='/edit/profile/new/*' element={<Navigate to='/signup' />}/>
                   {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/:action' element={<UserEditPage/>}/>}
                   {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/*' element={<UserEditPage/>}/>}
-                  {<Route path='/partnership/new' element={<PopupPageFlow flowPages={[FlowPage.WALK_LEVEL, FlowPage.PARTNER]} redirectRoute='/portal/dashboard' />}/>}
                   {isPageAccessible('/partnership/recent') && <Route path='/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
                   {isPageAccessible('/partnership/fewer') && <Route path='/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
                   {isPageAccessible('/partnership/pending') && <Route path='/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
@@ -260,6 +259,11 @@ const AppContent = () => {
                   <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('/portal/dashboard')} />} />
                 </Routes>
             </div>
+
+            {/* Popup Overlay (Future could be url query tracking) */}
+            <Routes>
+                <Route path='/dashboard/new-partnership' element={<PopupPageFlow flowPages={[FlowPage.WALK_LEVEL, FlowPage.PARTNER]} redirectRoute='/portal/dashboard' />}/>
+            </Routes>
         </div>
     );
   }

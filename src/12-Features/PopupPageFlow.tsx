@@ -10,7 +10,7 @@ import { PartnershipContract } from '../2-Widgets/PartnershipWidgets';
 import { PartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import WalkLevelQuiz from '../2-Widgets/WalkLevelQuiz';
 
-import './initialAccountFlow.scss';
+import './popupPageFlow.scss';
 
 //Default Order for Initial Account Setup Flow
 export enum FlowPage {
