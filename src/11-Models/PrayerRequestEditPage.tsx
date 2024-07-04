@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatchRequestBody, PrayerRequestResponseBody } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
@@ -8,18 +8,17 @@ import { CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circl
 import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
-import { notify, processAJAXError, useAppDispatch, useAppSelector, useQuery } from '../1-Utilities/hooks';
+import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody, circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
-import { addPrayerRequest, removePrayerRequest } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
+import { ProfileImage } from '../2-Widgets/ImageWidgets';
 import PageNotFound from '../2-Widgets/NotFoundPage';
 
 import '../2-Widgets/Form/form.scss';
-import { CircleImage, ProfileImage } from '../2-Widgets/ImageWidgets';
 
 
 const PrayerRequestEditPage = () => {
@@ -34,7 +33,6 @@ const PrayerRequestEditPage = () => {
     const userDisplayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile);
     const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
-    const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.prayerRequestList) || [];
     const userContactList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.contactList) || [];
     const { id = -1, action } = useParams();
 
@@ -74,18 +72,14 @@ const PrayerRequestEditPage = () => {
         if(searchUserID <= 0)
             return;
         
-        //Get list of owned prayer requests
-        if(searchUserID === userID)
-            setOwnedPrayerRequestList(userPrayerRequestList);
+        //Must Fetch by user, since can't search prayer requests
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${searchUserID}/prayer-request-list`, { headers: { jwt: jwt }})
+            .then(response => {
+                const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
+                setOwnedPrayerRequestList(resultList);
+                if(resultList.length === 0) notify('No Prayer Requests Found', ToastStyle.INFO);
 
-        else  //Must Fetch by user, since can't search prayer requests
-            axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${searchUserID}/prayer-request-list`, { headers: { jwt: jwt }})
-                .then(response => {
-                    const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
-                    setOwnedPrayerRequestList(resultList);
-                    if(resultList.length === 0) notify('No Prayer Requests Found', ToastStyle.INFO);
-
-                }).catch((error) => processAJAXError(error));
+            }).catch((error) => processAJAXError(error));
         
     }, [searchUserID]);
 
@@ -246,14 +240,6 @@ const PrayerRequestEditPage = () => {
                 notify(`Prayer Request Created`, ToastStyle.SUCCESS, () => {
                     setEditingPrayerRequestID(response.data.prayerRequestID);
                     setDefaultDisplayTitleList(['Prayer Requests']);
-                    if(searchUserID === userID)
-                        dispatch(addPrayerRequest({
-                            prayerRequestID: response.data.prayerRequestID || -1,
-                            requestorProfile: {userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image},
-                            topic: response.data.topic || '',
-                            tagList: response.data.tagList || [],
-                            prayerCount: 0                
-                        }));
                 }))
             .catch((error) => { processAJAXError(error); });
     }
@@ -408,7 +394,7 @@ const PrayerRequestEditPage = () => {
                                     axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}`, { headers: { jwt: jwt }} )
                                         .then(response => notify('Prayer Request Deleted', ToastStyle.SUCCESS, () => {
                                             setOwnedPrayerRequestList(current => current.filter(prayerRequest => prayerRequest.prayerRequestID !== id));
-                                            if(searchUserID === userID) dispatch(removePrayerRequest(id))}))
+                                        }))
                                         .catch((error) => processAJAXError(error)),
                             }))
                         ], 
