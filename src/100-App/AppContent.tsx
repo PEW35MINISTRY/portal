@@ -46,6 +46,7 @@ import PREFERENCES_ICON from '../0-Assets/icons/settings-icon-blue.png';
 import PREFERENCES_ICON_ACTIVE from '../0-Assets/icons/settings-icon-white.png';
 import LOGOUT_ICON from '../0-Assets/icons/logout-icon-blue.png';
 import LOGOUT_ICON_ACTIVE from '../0-Assets/icons/logout-icon-white.png';
+import PopupPageFlow, { FlowPage } from '../12-Features/PopupPageFlow';
 
 
 type MenuPageListing = {
@@ -139,6 +140,7 @@ const AppContent = () => {
     ];
 
     const PROFILE_MENU_CONFIG_LIST:MenuPageListing[] = [
+      {label: 'New Partner', route: '/portal/dashboard/new-partnership', activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, exclusiveRoleList: [RoleEnum.USER]},
       {label: 'Preferences', route: '/portal/preferences', activeIcon: PREFERENCES_ICON_ACTIVE, inactiveIcon: PREFERENCES_ICON},
       {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
@@ -257,6 +259,11 @@ const AppContent = () => {
                   <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('/portal/dashboard')} />} />
                 </Routes>
             </div>
+
+            {/* Popup Overlay (Future could be url query tracking) */}
+            <Routes>
+                <Route path='/dashboard/new-partnership' element={<PopupPageFlow flowPages={[FlowPage.WALK_LEVEL, FlowPage.PARTNER]} redirectRoute='/portal/dashboard' />}/>
+            </Routes>
         </div>
     );
   }

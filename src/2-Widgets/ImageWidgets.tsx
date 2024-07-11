@@ -112,7 +112,7 @@ export const ContentThumbnailImage = (props:{src?:string, defaultSrc:string, cla
 /***********************************************
  *   IMAGE UPLOAD POP-UP PAGE COMPONENT
  * *********************************************/
-export const ImageUpload = ({...props}:{key:string, title:string, imageStyle?:string, currentImage?:string, defaultImage:ImageDefaultEnum, onUpload:(file:any) => void, onClear:() => void, onCancel:() => void}) => {
+export const ImageUpload = ({...props}:{key:string, title:string, imageStyle?:string, currentImage?:string, defaultImage:ImageDefaultEnum, onUpload:(file:any) => void, onClear?:() => void, onCancel?:() => void}) => {
     const [file, setFile] = useState<File|undefined>(undefined);
     const [dragActive, setDragActive] = useState<boolean>(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -137,7 +137,7 @@ export const ImageUpload = ({...props}:{key:string, title:string, imageStyle?:st
     };
 
     return (
-        <div key={'Image-Uploader'+props.key} id='image-upload' className='center-absolute-wrapper' onClick={()=>props.onCancel()} >
+        <div key={'Image-Uploader'+props.key} id='image-upload' className='center-absolute-wrapper' onClick={() => props.onCancel && props.onCancel()} >
 
             <div className='form-page-block center-absolute-inside' onDragEnter={onDrag} onClick={(e)=>e.stopPropagation()}>
                 <div className='form-header-detail-box'>
@@ -169,8 +169,8 @@ export const ImageUpload = ({...props}:{key:string, title:string, imageStyle?:st
                 { dragActive && <div className='image-upload-drag-active' onDragEnter={onDrag} onDragLeave={onDrag} onDragOver={onDrag} onDrop={onDrop}></div> }
 
                 {(file !== undefined) && <button className='submit-button submit-button' type='button' onClick={() => props.onUpload(file)}>Upload</button>}
-                {(file === undefined && props.currentImage !== undefined) && <button className='submit-button secondary-button'  type='button' onClick={()=>props.onClear()}>Clear Image</button>}
-                <button className='submit-button alternative-button'  type='button' onClick={()=>props.onCancel()}>Cancel</button>
+                {(file === undefined && props.currentImage !== undefined && props.onClear) && <button className='submit-button secondary-button'  type='button' onClick={() => props.onClear && props.onClear()}>Clear Image</button>}
+                {props.onCancel && <button className='submit-button alternative-button'  type='button' onClick={() => props.onCancel && props.onCancel()}>Cancel</button>}
 
             </div>
         </div>

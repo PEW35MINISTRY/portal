@@ -145,22 +145,23 @@ export const PartnershipContract = ({...props}:{key:string, partner:PartnerListI
     const userName:string =useAppSelector((state) => state.account.userProfile.displayName);
 
     const onAcceptPartnership = () => axios.post(`${process.env.REACT_APP_DOMAIN}/api/partner-pending/${props.partner.userID}/accept`, { }, { headers: { jwt: jwt }} )
-        .then((response:{ data:string }) => notify(`Accepted Partnership with ${props.partner.displayName}`, ToastStyle.SUCCESS, () => {
+        .then((response:{ data:string }) => {
+            props.onAcceptCallback() ;
+            notify(`Accepted Partnership with ${props.partner.displayName}`, ToastStyle.SUCCESS, () => {
                 
-            if(props.partner.status === PartnerStatusEnum.PENDING_CONTRACT_USER) {
-                props.partner.status = PartnerStatusEnum.PARTNER;
-                notify(`Confirmed Partnership with ${props.partner.displayName}`, ToastStyle.SUCCESS, () => { dispatch(addPartner(props.partner)); dispatch(removePartnerPendingUser(props.partner.userID)); });
+                if(props.partner.status === PartnerStatusEnum.PENDING_CONTRACT_USER) {
+                    props.partner.status = PartnerStatusEnum.PARTNER;
+                    notify(`Confirmed Partnership with ${props.partner.displayName}`, ToastStyle.SUCCESS, () => { dispatch(addPartner(props.partner)); dispatch(removePartnerPendingUser(props.partner.userID)); });
 
-            } else if(props.partner.status === PartnerStatusEnum.PENDING_CONTRACT_BOTH) {
-                props.partner.status = PartnerStatusEnum.PENDING_CONTRACT_PARTNER;
-                notify(`Pending ${props.partner.displayName} Acceptance`, ToastStyle.INFO, () => { dispatch(addPartnerPendingPartner(props.partner)); dispatch(removePartnerPendingUser(props.partner.userID)); });
-            }
-            props.onAcceptCallback();
-        }))
+                } else if(props.partner.status === PartnerStatusEnum.PENDING_CONTRACT_BOTH) {
+                    props.partner.status = PartnerStatusEnum.PENDING_CONTRACT_PARTNER;
+                    notify(`Pending ${props.partner.displayName} Acceptance`, ToastStyle.INFO, () => { dispatch(addPartnerPendingPartner(props.partner)); dispatch(removePartnerPendingUser(props.partner.userID)); });
+                }
+            });})
         .catch((error) => processAJAXError(error, props.onDeclineCallback));
 
         const onDeclinePartnership = () => axios.delete(`${process.env.REACT_APP_DOMAIN}/api/partner-pending/${props.partner.userID}/decline`, { headers: { jwt: jwt }} )
-            .then(response => notify(`Declined Partnership`, ToastStyle.SUCCESS, () => { dispatch(removePartnerPendingUser(props.partner.userID)); props.onDeclineCallback(); }))
+            .then(response => {props.onDeclineCallback(); notify(`Declined Partnership`, ToastStyle.SUCCESS, () => dispatch(removePartnerPendingUser(props.partner.userID)));})
             .catch((error) => processAJAXError(error, props.onDeclineCallback));
 
 

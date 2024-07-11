@@ -37,13 +37,17 @@ const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options
     if(endDate !== undefined && typeof endDate === 'string') endDate = new Date(endDate);  
     if(startDate === endDate) endDate = undefined;
 
-    const isPassed:boolean = (options.markPassed === true) && startDate < today;
+    const isPassed:boolean = (options.markPassed === true) && (endDate !== undefined) && (endDate > today);
   
-    //Date is currently ongoing
-    if(today > startDate && endDate != undefined && today < endDate) text += 'Now';
+    //Date is currently onGoing
+    let currentlyOnGoing = false;
+    if(today > startDate && endDate != undefined && today < endDate) {
+      currentlyOnGoing = true;
+      text += 'Now';
+    }
   
     //Day of the week 
-    if(startDate > getFutureDate(today, -1) && startDate < getFutureDate(today, 1) && (!isPassed || !options.includeHours)) text += 'Today';
+    else if(startDate > getFutureDate(today, -1) && startDate < getFutureDate(today, 1) && (!isPassed || !options.includeHours)) text += 'Today';
 
     else if(startDate > getFutureDate(today, -2) && startDate < getFutureDate(today, -1)) text += options.shortForm ? 'Ytd' : 'Yesterday';
 
@@ -58,7 +62,7 @@ const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options
     text += ' ';
     
     //Hours
-    if(options.includeHours && !isPassed) {
+    if(options.includeHours && !currentlyOnGoing && !isPassed) {
         if(startDate.getHours() === 0) text += options.shortForm ? 'Mid' : 'Midnight';
         else if(startDate.getHours() === 12) text += 'Noon';
         else text += `${startDate.getHours() % 12} ${(startDate.getHours() < 12) ? 'AM' : 'PM'}`;
