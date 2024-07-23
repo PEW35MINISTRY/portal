@@ -181,7 +181,7 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
 
 export const ContentArchiveItem = ({...props}:{key:any, content:ContentListItem, onClick?:(id:number, item:ContentListItem)=>void, primaryButtonText?:string, onPrimaryButtonClick?:(id:number, item:ContentListItem)=>void, alternativeButtonText?:string, onAlternativeButtonClick?:(id:number, item:ContentListItem)=>void}) => {
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
-    console.log('Rendering Card', props.content.contentID, props.content.image);
+
     return (
     <div key={props.key} className='search-item' onClick={()=>props.onClick && props.onClick(props.content.contentID, props.content)} >    
         <ContentThumbnailImage src={props.content.image} defaultSrc={getDefaultThumbnail(props.content.source)} className='image-wide' />
