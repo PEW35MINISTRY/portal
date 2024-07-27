@@ -33,7 +33,7 @@ const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true
 
 
     //NOTE: These are independent and don't hold state
-    useEffect(() => { console.log('useEffect Called', pageList.length, selectedIndex);
+    useEffect(() => {
         setPageList(
             flowPages.map((pageType) => {
                 switch(pageType) {

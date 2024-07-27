@@ -2,14 +2,14 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
-import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { checkFieldName, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody, makeDisplayText } from '../1-Utilities/utilities';
 import { ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
-import { ContentSourceEnum, ContentTypeEnum, EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/content-field-config';
+import { ContentSourceEnum, ContentTypeEnum, EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN, MOBILE_CONTENT_SUPPORTED_TYPES_MAP } from '../0-Assets/field-sync/input-config-sync/content-field-config';
 import { ContentListItem, ContentMetaDataResponseBody, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
@@ -250,6 +250,28 @@ const ContentArchivePage = () => {
         if(allowMetaDataFetch() && getInputField('image') === undefined && getInputField('title') === undefined && getInputField('description') === undefined)
             fetchMetaData();
     }, [getInputField('url'), getInputField('type'), getInputField('source')]);
+
+    /*****************************
+     * Update Conditional Fields *
+     *****************************/
+     //Indicating Type supported on Mobile based on Source selection
+    useEffect(() => {
+        let supportedTypeList:ContentTypeEnum[] = [];
+        const typeField:InputSelectionField = EDIT_CONTENT_FIELDS.find((field:InputField) => field.field === 'type') as InputSelectionField;
+
+        if(typeField !== undefined) {
+            if(getInputField('source') !== undefined && MOBILE_CONTENT_SUPPORTED_TYPES_MAP.has(getInputField('source')))
+                supportedTypeList = MOBILE_CONTENT_SUPPORTED_TYPES_MAP.get(getInputField('source')) ?? [];
+                         
+            setInputField('type', (supportedTypeList.length > 0) ? supportedTypeList[0] : ContentTypeEnum.CUSTOM);   
+
+            typeField.selectOptionList.forEach((type:string, index:number) =>
+                typeField.displayOptionList[index] = (supportedTypeList.includes(ContentTypeEnum[type as keyof typeof ContentTypeEnum]))
+                    ? `${makeDisplayText(type)} (mobile)` :  makeDisplayText(type)
+            );
+        }
+    }, [getInputField('source')]);
+
 
     /******************
      * RENDER DISPLAY *
