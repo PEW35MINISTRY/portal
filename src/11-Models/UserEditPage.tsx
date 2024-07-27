@@ -36,7 +36,6 @@ const UserEditPage = () => {
     const userPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerList) || [];
     const userPartnerPendingUserList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingUserList) || [];
     const userPartnerPendingPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingPartnerList) || [];
-    const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.prayerRequestList) || [];
     const { id = -1, action } = useParams();
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
@@ -71,9 +70,8 @@ const UserEditPage = () => {
             setPartnerList(userPartnerList);
             setPartnerPendingUserList(userPartnerPendingUserList);
             setPartnerPendingPartnerList(userPartnerPendingPartnerList)
-            setPrayerRequestList(userPrayerRequestList);
         }
-    }, [ userCircleList, userCircleInviteList, userCircleRequestList, userPartnerList, userPartnerPendingUserList, userPartnerPendingPartnerList, userPrayerRequestList ]);
+    }, [ userCircleList, userCircleInviteList, userCircleRequestList, userPartnerList, userPartnerPendingUserList, userPartnerPendingPartnerList ]);
 
 
     //Triggers | (delays fetchProfile until after Redux auto login)
@@ -123,59 +121,71 @@ const UserEditPage = () => {
     }, [userID, editingUserID]);
 
 
-    const fetchProfile = (fetchUserID:string|number) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}`,{
-        headers: { jwt: jwt }})
-        .then((response:{ data:ProfileResponse }) => {
-            const fields:ProfileResponse = response.data;
-            const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
-            //Clear Lists, not returned if empty
-            setMemberCircleList([]);
-            setCircleInviteList([]);
-            setCircleRequestList([]);
-            setPartnerList([]);
-            setPartnerPendingUserList([]);
-            setPartnerPendingPartnerList([]);
-            setPrayerRequestList([]);
-            setAvailablePartnerList([]);
-            setImage(undefined);
+    const fetchProfile = async(fetchUserID:string|number) => {
+        await axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}`,{
+            headers: { jwt: jwt }})
+            .then((response:{ data:ProfileResponse }) => {
+                const fields:ProfileResponse = response.data;
+                const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
+                //Clear Lists, not returned if empty
+                setMemberCircleList([]);
+                setCircleInviteList([]);
+                setCircleRequestList([]);
+                setPartnerList([]);
+                setPartnerPendingUserList([]);
+                setPartnerPendingPartnerList([]);
 
-            [...Object.entries(fields)].forEach(([field, value]) => {
-                if(field === 'userRoleList') {
-                    valueMap.set('userRoleTokenList', new Map(Array.from(value).map((role) => ([role, '']))));
+                setAvailablePartnerList([]);
+                setImage(undefined);
 
-                } else if(field === 'circleList') {
-                    setMemberCircleList([...value]);
+                [...Object.entries(fields)].forEach(([field, value]) => {
+                    if(field === 'userRoleList') {
+                        valueMap.set('userRoleTokenList', new Map(Array.from(value).map((role) => ([role, '']))));
 
-                } else if(field === 'circleInviteList') {
-                    setCircleInviteList([...value]);
+                    } else if(field === 'circleList') {
+                        setMemberCircleList([...value]);
 
-                } else if(field === 'circleRequestList') {
-                    setCircleRequestList([...value]);
+                    } else if(field === 'circleInviteList') {
+                        setCircleInviteList([...value]);
 
-                } else if(field === 'partnerList') {
-                    setPartnerList([...value]);
+                    } else if(field === 'circleRequestList') {
+                        setCircleRequestList([...value]);
 
-                } else if(field === 'partnerPendingUserList') {
-                    setPartnerPendingUserList([...value]);
+                    } else if(field === 'partnerList') {
+                        setPartnerList([...value]);
 
-                } else if(field === 'partnerPendingPartnerList') {
-                    setPartnerPendingPartnerList([...value]);
+                    } else if(field === 'partnerPendingUserList') {
+                        setPartnerPendingUserList([...value]);
 
-                } else if(field === 'prayerRequestList') {
-                    setPrayerRequestList([...value]);
+                    } else if(field === 'partnerPendingPartnerList') {
+                        setPartnerPendingPartnerList([...value]);
 
-                } else if(field === 'image') {
-                    setImage(value);
-                    valueMap.set('image', value);
+                    } else if(field === 'prayerRequestList') {
+                        setPrayerRequestList([...value]);
 
-                } else if(checkFieldName(EDIT_FIELDS, field))
-                    valueMap.set(field, value);
-                else    
-                    console.log(`EditProfile-skipping field: ${field}`, value);
-            });
-            setInputMap(new Map(valueMap));
-        })
-        .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
+                    } else if(field === 'image') {
+                        setImage(value);
+                        valueMap.set('image', value);
+
+                    } else if(checkFieldName(EDIT_FIELDS, field))
+                        valueMap.set(field, value);
+                    else    
+                        console.log(`EditProfile-skipping field: ${field}`, value);
+                });
+                setInputMap(new Map(valueMap));
+            })
+            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
+
+        //Must Fetch by user, since can't search prayer requests
+        setPrayerRequestList([]);
+        await axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}/prayer-request-list`, { headers: { jwt: jwt }})
+            .then(response => {
+                setPrayerRequestList([]);
+                const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
+                setPrayerRequestList(resultList);
+
+            }).catch((error) => processAJAXError(error));
+    }
 
 
     /* Checks Currently Editing Profile */

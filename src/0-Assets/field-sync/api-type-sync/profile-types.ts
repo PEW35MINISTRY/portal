@@ -1,7 +1,8 @@
 /************* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *************/
 
 import { GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
-import { CircleListItem } from './circle-types.js'
+import { CircleAnnouncementListItem, CircleListItem } from './circle-types.js'
+import { ContentListItem } from './content-types.js';
 import { PrayerRequestListItem } from './prayer-request-types.js'
 
 /**************************************************************************
@@ -35,6 +36,11 @@ export interface PartnerListItem extends ProfileListItem {
     partnershipDT?: Date|string,
 }
 
+export const PROFILE_NEW_PARTNER_PROPERTY_LIST = [ //Sync to NewPartnerListItem
+    'userID', 'displayName', 'firstName', 'image', 'gender', 'postalCode', 'dateOfBirth', 'maxPartners', 'walkLevel',
+    'status', 'contractDT', 'partnershipDT'
+];
+
 export interface NewPartnerListItem extends PartnerListItem {
     maxPartners: number,
     gender: GenderEnum,
@@ -47,33 +53,48 @@ export interface PartnerCountListItem extends NewPartnerListItem {
     partnerCountMap: Map<PartnerStatusEnum, number> | [PartnerStatusEnum, number][]
 }
 
-export interface ProfilePublicResponse {
-    userID: number, 
+export const PROFILE_PUBLIC_PROPERTY_LIST = [ //Sync to ProfilePublicResponse
+    'userID', 'displayName', 'firstName', 'image', 'userRole', 'circleList'
+];
+
+export interface ProfilePublicResponse extends ProfileListItem {
     userRole: RoleEnum, 
-    firstName: string,
-    displayName: string, 
-    gender: GenderEnum,
-    image?: string,
     circleList?: CircleListItem[],
 };
 
+export const PROFILE_PROPERTY_LIST = [ //Sync to ProfileResponse
+    'userID', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'isActive', 'maxPartners', 'walkLevel', 'notes', 'image',
+    'userRole', 'userRoleList',
+    'circleList', 'circleInviteList', 'circleRequestList', 'circleAnnouncementList',
+    'partnerList', 'partnerPendingUserList', 'partnerPendingPartnerList',
+    'newPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
+];
 
-export interface ProfileResponse extends ProfilePublicResponse  {
+export interface ProfileResponse {
+    userID: number, 
+    userRole: RoleEnum,
+    displayName: string,
+    firstName: string,    
     lastName: string, 
     email:string,
+    gender: GenderEnum,
     postalCode: string, 
     dateOfBirth: string,
     isActive: boolean,
     maxPartners: number,
     walkLevel: number,
     notes?: string,
+    image?: string,
     userRoleList: RoleEnum[],
+    circleList?: CircleListItem[],
     circleInviteList?: CircleListItem[],
     circleRequestList?: CircleListItem[],
+    circleAnnouncementList?: CircleAnnouncementListItem[],
     partnerList?: PartnerListItem[],
     partnerPendingUserList?: PartnerListItem[],
     partnerPendingPartnerList?: PartnerListItem[],
-    prayerRequestList?: PrayerRequestListItem[],
+    newPrayerRequestList?: PrayerRequestListItem[], //Recipient for dashboard
+    recommendedContentList?: ContentListItem[],
     contactList?: ProfileListItem[],
     profileAccessList?: ProfileListItem[], //Leaders
 };
