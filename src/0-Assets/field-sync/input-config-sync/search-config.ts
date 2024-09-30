@@ -2,7 +2,7 @@
 import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../api-type-sync/circle-types';
 import { ContentListItem } from '../api-type-sync/content-types';
 import { PrayerRequestListItem, PrayerRequestCommentListItem } from '../api-type-sync/prayer-request-types';
-import { PartnerListItem, ProfileListItem } from '../api-type-sync/profile-types';
+import { ProfileListItem } from '../api-type-sync/profile-types';
 import { CircleSearchRefineEnum, CircleStatusEnum } from './circle-field-config';
 import { ContentSearchRefineEnum } from './content-field-config';
 import { RoleEnum, UserSearchRefineEnum } from './profile-field-config';
@@ -19,7 +19,7 @@ import { RoleEnum, UserSearchRefineEnum } from './profile-field-config';
 
 export type LabelListItem = string;
 
-export type DisplayItemType = LabelListItem | ProfileListItem | PartnerListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
+export type DisplayItemType = LabelListItem | ProfileListItem | CircleListItem | CircleAnnouncementListItem | CircleEventListItem | PrayerRequestListItem | PrayerRequestCommentListItem | ContentListItem;
 
 /* Used for Mapping UI Components */
 export enum ListItemTypesEnum {
@@ -37,10 +37,12 @@ export enum ListItemTypesEnum {
 /* SEARCH CONFIGURATION */
 
 export const SEARCH_MIN_CHARS:number = 3;
+export const LIST_LIMIT:number = 100;
 
 export enum SearchType {
     NONE = 'NONE',
     USER = 'USER',
+    CONTACT = 'CONTACT',
     CIRCLE = 'CIRCLE',
     CONTENT_ARCHIVE = 'CONTENT_ARCHIVE',
   }
@@ -90,6 +92,10 @@ export enum SearchType {
                                                 getID:(item:ProfileListItem) => item.userID, IDProperty:'userID', cacheAvailable:true,
                                                 searchRefineList: [...Object.values(UserSearchRefineEnum)]
                                                 }),
+
+    [SearchType.CONTACT]: new SearchTypeInfo<ProfileListItem>({ searchType:SearchType.CONTACT, displayTitle:'Contact Search', roleList:Object.values(RoleEnum), itemType:ListItemTypesEnum.USER, 
+                                                  getID:(item:ProfileListItem) => item.userID, IDProperty:'userID', cacheAvailable:true,
+                                                  }),
   
     [SearchType.CIRCLE]: new SearchTypeInfo<CircleListItem>({ searchType:SearchType.CIRCLE, displayTitle:'Circle Search', roleList:Object.values(RoleEnum), itemType:ListItemTypesEnum.CIRCLE, 
                                                 getID:(item:CircleListItem) => item.circleID, IDProperty:'circleID', searchFilterList:Object.values(CircleStatusEnum), cacheAvailable:true,

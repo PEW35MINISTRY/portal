@@ -1,8 +1,8 @@
 /********* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *********/
 
 import { PrayerRequestTagEnum } from '../input-config-sync/prayer-request-field-config.js'
-import { ProfileListItem } from './profile-types.js'
 import { CircleListItem } from './circle-types.js'
+import { ProfileListItem } from './profile-types.js'
 
 /****************************************************************************************
 *                   PRAYER REQUEST TYPES                                                *

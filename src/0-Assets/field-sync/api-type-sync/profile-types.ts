@@ -1,6 +1,6 @@
 /************* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *************/
 
-import { GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
+import { ModelSourceEnvironmentEnum, GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
 import { CircleAnnouncementListItem, CircleListItem } from './circle-types.js'
 import { ContentListItem } from './content-types.js';
 import { PrayerRequestListItem } from './prayer-request-types.js'
@@ -12,16 +12,6 @@ import { PrayerRequestListItem } from './prayer-request-types.js'
 * Portal:                                                                 *
 * Mobile:                                                                 *
 ***************************************************************************/
-
-
-/* [TEMPORARY] Credentials fetched for Debugging */
-export type CredentialProfile = { 
-    userID: number,
-    displayName: string,
-    userRole: RoleEnum,
-    email: string,
-    passwordHash: string,
-}
 
 export interface ProfileListItem {
     userID: number,
@@ -63,15 +53,16 @@ export interface ProfilePublicResponse extends ProfileListItem {
 };
 
 export const PROFILE_PROPERTY_LIST = [ //Sync to ProfileResponse
-    'userID', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'isActive', 'maxPartners', 'walkLevel', 'notes', 'image',
+    'userID', 'modelSourceEnvironment', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'isActive', 'maxPartners', 'walkLevel', 'notes', 'image',
     'userRole', 'userRoleList',
     'circleList', 'circleInviteList', 'circleRequestList', 'circleAnnouncementList',
     'partnerList', 'partnerPendingUserList', 'partnerPendingPartnerList',
-    'newPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
+    'newPrayerRequestList', 'ownedPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
 ];
 
 export interface ProfileResponse {
     userID: number, 
+    modelSourceEnvironment: ModelSourceEnvironmentEnum,
     userRole: RoleEnum,
     displayName: string,
     firstName: string,    
@@ -94,6 +85,7 @@ export interface ProfileResponse {
     partnerPendingUserList?: PartnerListItem[],
     partnerPendingPartnerList?: PartnerListItem[],
     newPrayerRequestList?: PrayerRequestListItem[], //Recipient for dashboard
+    ownedPrayerRequestList?: PrayerRequestListItem[], //Not resolved (pending) for which user is the Requestor
     recommendedContentList?: ContentListItem[],
     contactList?: ProfileListItem[],
     profileAccessList?: ProfileListItem[], //Leaders
@@ -114,5 +106,6 @@ export interface ProfileEditRequestBody {
     walkLevel?: number,
     image?: string,
     notes?: string,
+    modelSourceEnvironmentEnum?: string,
     userRoleTokenList?: [{role: RoleEnum, token: string}]
 }
