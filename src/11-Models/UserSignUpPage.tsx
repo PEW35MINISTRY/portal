@@ -1,8 +1,8 @@
 import axios from 'axios';
-import React, { ReactElement, forwardRef, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { assembleRequestBody } from '../1-Utilities/utilities';
-import { SIGNUP_PROFILE_FIELDS } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { RoleEnum, SIGNUP_PROFILE_FIELDS } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { assembleRequestBody, getHighestRole } from '../1-Utilities/utilities';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
 import { AccountState, logoutAccount, setAccount } from '../100-App/redux-store';
@@ -11,6 +11,7 @@ import { ImageDefaultEnum, ImageWidget } from '../2-Widgets/ImageWidgets';
 
 import '../2-Widgets/Form/form.scss';
 import './user.scss';
+import { ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
 
 
 const SignUpPage = () => {
@@ -19,6 +20,7 @@ const SignUpPage = () => {
     const JWT:string = useAppSelector((state) => state.account.jwt);
 
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
+    const [populateDemoProfile, setPopulateDemoProfile] = useState<boolean>(false); //USER Role Only
 
     //componentDidMount
     useEffect(() => { //Auto logout current User
@@ -32,7 +34,7 @@ const SignUpPage = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeNewProfileRequest = async(resultMap:Map<string, string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup`, assembleRequestBody(resultMap))
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(resultMap))
             .then((response:{data:AccountState}) => { //AUTO LOGIN               
                 const account:AccountState = {
                     jwt: response.data.jwt,
@@ -50,8 +52,16 @@ const SignUpPage = () => {
 
             }).catch((error) => { processAJAXError(error); });
 
-    const getInputField = (field:string):any|undefined => inputMap.get(field);
+    const getInputField = (field:string):any|undefined => 
+        (field === 'userRole') ? getHighestRole(Array.from((getInputField('userRoleTokenList') as Map<RoleEnum, string>)?.keys() || []))
+        : inputMap.get(field);
+
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
+
+
+    /* Local Utilities */
+    const isUserRole:boolean = useMemo(() => ((getInputField('userRoleTokenList') === undefined) || getInputField('userRoleTokenList').has(RoleEnum.USER)), [getInputField('userRoleTokenList')]);
+
 
     /*********************
      *   RENDER DISPLAY 
@@ -76,6 +86,13 @@ const SignUpPage = () => {
                     onSubmitCallback={makeNewProfileRequest}
                     onAlternativeText='Already have an account?'
                     onAlternativeCallback={()=>navigate('/login')}
+                    footerChildren={
+                        (isUserRole && (process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)) ? [
+                            <div id='populateDemoProfile' key='populateDemoProfile' className='inputWrapper'>
+                                <label htmlFor='populateDemoProfile'>Populate Demo Profile</label>
+                                <input name='populateDemoProfile' type='checkbox' className='inputCheckbox' onChange={(e)=>setPopulateDemoProfile(e.target.checked)} />
+                            </div>
+                        ] : []}
                 />
             </div>
 

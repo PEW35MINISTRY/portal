@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { Range, getTrackBackground } from 'react-range';
 import { IThumbProps, ITrackProps } from 'react-range/lib/types';
-import React, { ReactElement, ReactNode, forwardRef, useEffect, useRef, useState } from 'react';
-import InputField, { InputRangeField, InputSelectionField, InputType, makeDisplayList } from '../../0-Assets/field-sync/input-config-sync/inputField';
+import React, { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
+import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify } from '../../1-Utilities/hooks';
 import { ToastStyle } from '../../100-App/app-types';
@@ -10,8 +10,10 @@ import { getInputHighestRole, testAccountAvailable } from './form-utilities';
 
 import './form.scss';
 
-const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
+const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
     const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
+
+    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => field.environmentList.includes(ENVIRONMENT_TYPE[(process.env.REACT_APP_ENVIRONMENT ?? '') as ENVIRONMENT_TYPE])) ?? [], [props.FIELDS]);
 
     /***************************
      *   UNIQUE FIELD HANDLING
@@ -20,28 +22,30 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
     const [uniqueFieldAvailableCache, setUniqueFieldAvailableCache] = useState<Map<string, boolean>>(new Map());
 
     useEffect(() => {
-        props.FIELDS.forEach(f => {
+        FIELD_LIST.forEach(f => {
             const currentValue = props.getInputField(f.field);
             //Assume current values are unique and cache immediately
             if(f.unique && currentValue !== undefined) 
                 setUniqueFieldAvailableCache(map => new Map(map.set(currentValue, true)));
 
             // Assign Default Values | Selection Types must show a value
-            if(f.required && currentValue === undefined) {
-                if(f instanceof InputSelectionField)
+            if(currentValue === undefined) {
+                if(f.value !== undefined)
+                    props.setInputField(f.field, f.value);
+
+                else if(f.required && f instanceof InputSelectionField)
                     props.setInputField(f.field, f.selectOptionList[0]);
 
-                else if(f instanceof InputRangeField) {
+                else if(f.required && f instanceof InputRangeField) {
                     props.setInputField(f.field, f.minValue);
 
                     if(f.maxField !== undefined)
                         props.setInputField(f.maxField, f.maxValue);
                     
-                } else if(f.value !== undefined)
-                    props.setInputField(f.field, f.value);
+                }
             }
         });
-    }, [props.FIELDS]);
+    }, [FIELD_LIST]);
 
     //Called onBlur of <input>
     const onUniqueField = async(event:React.ChangeEvent<HTMLInputElement>):Promise<void> => {
@@ -49,7 +53,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
         if(props.validateUniqueFields !== true || currentValue === undefined || uniqueFieldAvailableCache.has(currentValue)) 
             return;
         /* Call Server if valid */
-        const field:InputField|undefined = props.FIELDS.find(f => f['field'] === event.target.name);
+        const field:InputField|undefined = FIELD_LIST.find(f => f['field'] === event.target.name);
         if(field !== undefined && field.unique && new RegExp(field.validationRegex).test(currentValue)) {
             const modelID:{modelIDField:string, modelID:number} = props.getIDField();
             const available:boolean|undefined = await testAccountAvailable(new Map([[field.field, currentValue], [modelID.modelIDField, modelID.modelID.toString()]])); //Bad request is 400=>undefined; inconclusive result
@@ -103,12 +107,12 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
             const currentRole:RoleEnum = getInputHighestRole(props.getInputField);
 
-            if(currentDate < getDOBMinDate(currentRole)) {
-                notify(`Must be younger than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRole', currentRole)} account`);
+            if(currentDate > getDOBMinDate(currentRole)) {
+                notify(`Must be older than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account`);
                 return false;
 
-            } else if(currentDate > getDOBMaxDate(currentRole)) {
-                notify(`Must be older than ${getAgeFromDate(getDOBMaxDate(currentRole))} for a ${getSelectDisplayValue('userRole', currentRole)} account.`);
+            } else if(currentDate < getDOBMaxDate(currentRole)) {
+                notify(`Must be younger than ${getAgeFromDate(getDOBMaxDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account.`);
                 return false
             }
 
@@ -131,7 +135,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
         const modelID:{modelIDField:string, modelID:number} = props.getIDField();
         const uniqueFields:Map<string, string> = new Map([[modelID.modelIDField, modelID.modelID.toString()]]);
-        props.FIELDS.forEach(f => {
+        FIELD_LIST.forEach(f => {
             //Add all fields to list (force validations)
             if(props.getInputField(f.field) === undefined && f.required) {
                 if((f instanceof InputSelectionField) && (f.type === InputType.SELECT_LIST))
@@ -154,7 +158,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             notify(`Account already exists with: ${Array.from(uniqueFields.values()).map(v=>v).join(', ')}.`);
 
         //Re-validate input prior to Submit    
-        else if(props.FIELDS.every(f => validateInput(f, undefined, true)))
+        else if(FIELD_LIST.every(f => validateInput(f, undefined, true) || (console.error('Invalid Input:', f.field, props.getInputField(f.field)), false)))
             props.onSubmitCallback();
 
         else  
@@ -167,7 +171,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
         //Only add touched fields to list (makes validations more natural)
         const fieldName = event.target.name;
-        const field = props.FIELDS.find(f => f['field'] === fieldName);
+        const field = FIELD_LIST.find(f => f['field'] === fieldName);
         let currentValue:any = event.target.value;
 
         //Exception date is ISO format and HTML input is 'YYYY-MM-DD'
@@ -184,7 +188,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             props.setInputField(fieldName, currentValue);
         
         } else {
-            console.error('Invalid Field Name: ', fieldName, props.FIELDS);
+            console.error('Invalid Field Name: ', fieldName, FIELD_LIST);
         }
     }
     
@@ -199,7 +203,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
     //Finds matching displayOptionList value from selectOptionList input
     const getSelectDisplayValue = (fieldField:string, value:string):string => {
-        const field:InputSelectionField|undefined = props.FIELDS.find(f => (f.field === fieldField) && (field instanceof InputSelectionField)) as InputSelectionField;
+        const field:InputSelectionField|undefined = FIELD_LIST.find(f => (f.field === fieldField) && (f instanceof InputSelectionField)) as InputSelectionField;
         const index:number = (field?.selectOptionList || []).indexOf(value);
 
         if(field !== undefined && index >= 0 && field.selectOptionList.length === field.displayOptionList.length) 
@@ -215,9 +219,9 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
      * *******************/
     return (
         <form key={props.key} id={props.onSubmitText} >
-            {props.headerChildren}
+            {props.headerChildren ?? <></>}
 
-            {props.FIELDS.filter(field => !field.hide).map((f, index) => 
+            {FIELD_LIST.filter(field => !field.hide).map((f, index) => 
                     <div id={f.field} key={f.field} className='inputWrapper'>
                         <label htmlFor={f.field}>{f.title}</label>
 
@@ -293,11 +297,12 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                     </div>
                 )
             }
+
+            {props.footerChildren ?? <></>}
             
             <button className='submit-button' type='submit' onClick={onSubmit}>{props.onSubmitText}</button>
             { props.onAlternativeText && <button className='alternative-button'  type='button' onClick={props.onAlternativeCallback}>{props.onAlternativeText}</button> }
 
-            {props.footerChildren}
         </form>
     );
 }
@@ -313,7 +318,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
         if(event)
             event.preventDefault();
         //Token required for all user roles; except USER Role
-        if(roleSelected !== 'defaultValue' && tokenInput.length > 0 || roleSelected === 'USER') {
+        if((roleSelected !== 'defaultValue' && tokenInput.length > 0) || roleSelected === 'USER') {
             props.setInputField('userRoleTokenList', new Map(props.getInputField(props.field.field)).set(roleSelected, tokenInput));
             setRoleSelected('defaultValue');
             setTokenInput('');
@@ -336,7 +341,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
 
     return (
         <div id='edit-role-section'>
-            { Array.from((props.getInputField(props.field.field) as Map<string, string>)?.keys() || []).map((item, i)=>
+            { Array.from((props.getInputField(props.field.field) as Map<RoleEnum, string>)?.keys() || []).map((item, i)=>
                     <span key={item} id='role-listing'>
                         <h5>{getDisplayOption(item)}</h5>
                         <button  type='button' onClick={()=>onRemove(item)} >X</button>
