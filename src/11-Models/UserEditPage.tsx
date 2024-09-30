@@ -318,7 +318,7 @@ const UserEditPage = () => {
                 onSubmitCallback={makeEditRequest}
                 onAlternativeText='Delete Profile'
                 onAlternativeCallback={()=>navigate(`/portal/edit/profile/${editingUserID}/delete`)}
-                headerChildren={
+                headerChildren={[
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('firstName')} {getInputField('lastName')}</h1>
@@ -336,7 +336,7 @@ const UserEditPage = () => {
                                 <button type='button' className='alternative-button form-header-button' onClick={() => {if(userHasAnyRole([RoleEnum.ADMIN])) fetchAvailablePartners(); else fetchNewRandomPartner();  dispatch(setLastNewPartnerRequest()); }}>New Partner</button>}
                         </div>
                         <h2>{`Edit Profile`}</h2>
-                    </div>}
+                    </div>]}
             />
         }
 

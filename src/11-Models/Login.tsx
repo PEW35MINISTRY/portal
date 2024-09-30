@@ -1,7 +1,6 @@
 import axios from 'axios';
 import React, { ReactElement, forwardRef, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CredentialProfile } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { LOGIN_PROFILE_FIELDS, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
@@ -22,27 +21,6 @@ const Login = () => {
     const location = useLocation();
     const [inputMap, setInputMap] = useState<Map<string, string>>(new Map());
 
-
-    /************************************************** //TODO Remove for Production
-     *  [TEMPORARY] Credentials fetched for Debugging
-     * ************************************************/
-    const [credentialList, setCredentialList] = useState<CredentialProfile[]>([]);
-
-    //componentDidMount
-    useEffect(() => {
-        axios.get(`${process.env.REACT_APP_DOMAIN}/login/credentials`)
-            .then(response => setCredentialList(response.data))
-            .catch((error) => processAJAXError(error));
-    }, []);
-
-    const onCredentialSelect = (e:any) => {
-        if(e)
-            e.preventDefault();
-        const user:CredentialProfile = credentialList[e.target.value];
-
-        console.info('Attempting to Login in:', user);
-        makeLoginRequest(new Map([['email', user.email], ['password', user.passwordHash]]));        
-    }
 
     /*******************************************
      *          SEND REQUEST TO SEVER
@@ -81,20 +59,6 @@ const Login = () => {
                     <ImageWidget defaultImage={ImageDefaultEnum.LOGO} />
                     <h1>Encouraging Prayer</h1>
                 </div>
-
-                <form id='credentialSelectWrapper' >
-                    <div className='inputWrapper'>
-                        <label htmlFor='credentialSelect'>Debug User</label>
-                        <select name='credentialSelect' onChange={onCredentialSelect} defaultValue='default'>
-                        <option value='default' disabled hidden>Login as:</option>
-                            {credentialList.length > 0 && credentialList.map((user,i)=>
-                                <option key={`${i}-${user.userID}`} value={i}>{user.userID} | {user.displayName} | {user.userRole}</option>
-                            )}
-                        </select>
-                    </div>
-                </form>
-
-                <hr/>
 
                 <FormInput
                     key={'Login'}

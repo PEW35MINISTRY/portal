@@ -292,7 +292,7 @@ const ContentArchivePage = () => {
                 onSubmitCallback={(editingContentID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
                 onAlternativeCallback={() => navigate(`/portal/edit/content-archive/${editingContentID}/delete`)}
-                headerChildren={
+                headerChildren={[
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{'Content Archive'}</h1>
@@ -312,7 +312,7 @@ const ContentArchivePage = () => {
                             {(editingContentID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Thumbnail</button>}
                             {(allowMetaDataFetch()) && <button className='alternative-button form-header-button' onClick={(event) => {event.preventDefault(); fetchMetaData();}}>Fetch Metadata</button>}
                         </div>
-                    </div>}
+                    </div>]}
             />
         }
 

@@ -13,7 +13,7 @@ import './searchList.scss';
 import './searchListItemCards.scss';
 
 
-const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
+const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const ignoreCache:boolean = useAppSelector((state) => state.settings.ignoreCache);
 
@@ -144,7 +144,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
 
     return (
         <div key={props.key} id='search-side-component' >
-            {props.headerChildren}
+            {props.headerChildren ?? <></>}
 
             <div id='search-header'>
                 <select id='search-header-menu' className='title' onChange={({ target: { value } }) => onOptionSelection(value)} value={selectedKeyTitle} >
@@ -196,7 +196,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                 )}
             </div>            
 
-            {props.footerChildren}
+            {props.footerChildren ?? <></>}
         </div>
     );
 }

@@ -281,7 +281,7 @@ const CircleEditPage = () => {
                 onSubmitCallback={getDisplayNew() ? makePostRequest : makeEditRequest}
                 onAlternativeText={getDisplayNew() ? undefined : 'Delete Circle'}
                 onAlternativeCallback={() => navigate(`/portal/edit/circle/${editingCircleID}/delete`)}
-                headerChildren={
+                headerChildren={[
                 <div className='form-header-vertical'>
                     <div className='form-header-detail-box'>
                         <h1 className='name'>{getInputField('name') || 'New Circle'}</h1>
@@ -301,7 +301,7 @@ const CircleEditPage = () => {
                         {(editingCircleID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowAnnouncement(true)}>New Announcement</button>}
                     </div>
                     <h2 className='sub-header'>{getDisplayNew() ? 'Create Details' : `Edit Details`}</h2>
-                </div>}
+                </div>]}
             />
         }
 

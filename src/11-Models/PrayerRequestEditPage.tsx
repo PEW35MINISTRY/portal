@@ -352,7 +352,7 @@ const PrayerRequestEditPage = () => {
                 onSubmitCallback={(editingPrayerRequestID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
                 onAlternativeCallback={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`)}
-                headerChildren={
+                headerChildren={[
                     <div className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('topic') || 'New Prayer Request'}</h1>
@@ -372,7 +372,7 @@ const PrayerRequestEditPage = () => {
                             {(editingPrayerRequestID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/comment`)}>New Comment</button>}
                         </div>
                         {(editingPrayerRequestID > 0) && <h2 className='sub-header'>Edit Details</h2>}
-                    </div>}
+                    </div>]}
             />
         }
 
