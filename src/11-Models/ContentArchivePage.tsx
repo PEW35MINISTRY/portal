@@ -293,7 +293,7 @@ const ContentArchivePage = () => {
                 onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
                 onAlternativeCallback={() => navigate(`/portal/edit/content-archive/${editingContentID}/delete`)}
                 headerChildren={[
-                    <div className='form-header-vertical'>
+                    <div key='content-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{'Content Archive'}</h1>
                         </div>

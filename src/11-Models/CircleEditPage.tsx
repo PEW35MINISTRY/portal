@@ -282,7 +282,7 @@ const CircleEditPage = () => {
                 onAlternativeText={getDisplayNew() ? undefined : 'Delete Circle'}
                 onAlternativeCallback={() => navigate(`/portal/edit/circle/${editingCircleID}/delete`)}
                 headerChildren={[
-                <div className='form-header-vertical'>
+                <div key='circle-header' className='form-header-vertical'>
                     <div className='form-header-detail-box'>
                         <h1 className='name'>{getInputField('name') || 'New Circle'}</h1>
                         <span>

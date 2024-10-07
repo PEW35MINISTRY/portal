@@ -353,7 +353,7 @@ const PrayerRequestEditPage = () => {
                 onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
                 onAlternativeCallback={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`)}
                 headerChildren={[
-                    <div className='form-header-vertical'>
+                    <div key='prayer-request-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('topic') || 'New Prayer Request'}</h1>
                             <span>

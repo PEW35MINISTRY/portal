@@ -319,7 +319,7 @@ const UserEditPage = () => {
                 onAlternativeText='Delete Profile'
                 onAlternativeCallback={()=>navigate(`/portal/edit/profile/${editingUserID}/delete`)}
                 headerChildren={[
-                    <div className='form-header-vertical'>
+                    <div key='user-edit-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
                             <h1 className='name'>{getInputField('firstName')} {getInputField('lastName')}</h1>
                             <label className='title id-left'>{getInputField('displayName')}</label>
