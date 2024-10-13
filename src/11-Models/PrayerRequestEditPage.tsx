@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatchRequestBody, PrayerRequestResponseBody } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
@@ -23,6 +23,7 @@ import '../2-Widgets/Form/form.scss';
 
 const PrayerRequestEditPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
@@ -86,6 +87,8 @@ const PrayerRequestEditPage = () => {
 
     //Triggers | (delays fetchPrayerRequest until after Redux auto login)
     useLayoutEffect(() => {
+        if(userID <= 0 || jwt.length === 0) return;
+
         if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
         else if(editingPrayerRequestID === -1)
@@ -98,22 +101,33 @@ const PrayerRequestEditPage = () => {
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
         }
         
-        //setEditingPrayerRequestID
-        if(userID > 0 && jwt.length > 0) {
-            if(isNaN(id as any)) { //new
-                navigate(`/portal/edit/prayer-request/new`);
-                setEditingPrayerRequestID(-1);
+        const targetID:number = parseInt(id as string);
+        let selectedTargetID:number = -1;
+        let targetPath:string = '';
 
-            } else if((ownedPrayerRequestList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
-                navigate(`/portal/edit/prayer-request/${ownedPrayerRequestList[0].prayerRequestID}`);
-                setEditingPrayerRequestID(ownedPrayerRequestList[0].prayerRequestID);
+        //New Prayer Request
+        if (isNaN(targetID)) {
+            targetPath = `/portal/edit/prayer-request/new`;
 
-            } else if(parseInt(id as string) < 1) { //new
-                navigate(`/portal/edit/prayer-request/new`);
-                setEditingPrayerRequestID(-1);
+        //Edit Specific Prayer Request
+        } else if(targetID > 0) {
+            selectedTargetID = targetID;
+            targetPath = `/portal/edit/prayer-request/${selectedTargetID}`;
 
-            } else if(parseInt(id as string) > 0) //edit
-                setEditingPrayerRequestID(parseInt(id as string));
+        //Select First Prayer Request if applicable
+        } else if(ownedPrayerRequestList.length > 0) {
+            selectedTargetID = ownedPrayerRequestList[0].prayerRequestID;
+            targetPath = `/portal/edit/prayer-request/${selectedTargetID}`;
+
+        //New Prayer Request (No ID) 
+        } else {
+            targetPath = `/portal/edit/prayer-request/new`;
+        } 
+
+        // Limit State Updates
+        if (selectedTargetID !== editingPrayerRequestID || location.pathname !== targetPath) {
+            setEditingPrayerRequestID(selectedTargetID);
+            navigate(targetPath);
         }
 
         /* Sync state change to URL action */
@@ -121,7 +135,7 @@ const PrayerRequestEditPage = () => {
         setShowDeleteConfirmation(action === 'delete');
         setShowNewComment(action === 'comment');
 
-    }, [jwt, userID, id, action, ownedPrayerRequestList]);
+    }, [jwt, userID, id, action, ownedPrayerRequestList, location.pathname]);
 
     useEffect(() => {
         if(showNotFound) {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CircleAnnouncementListItem, CircleEditRequestBody, CircleEventListItem, CircleLeaderResponse, CircleListItem, CircleResponse } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
@@ -63,27 +63,36 @@ const CircleEditPage = () => {
 
     //Triggers | (delays fetchCircle until after Redux auto login)
     useLayoutEffect(() => {
+        if(userID <= 0 || jwt.length === 0) return;
+
         if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(CIRCLE_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(CIRCLE_FIELDS);
 
-        //setEditingCircleID
-        if(userID > 0 && jwt.length > 0) {
-            if(isNaN(id as any)) { //new
-                navigate(`/portal/edit/circle/new`);
-                setEditingCircleID(-1);
+        const targetID = parseInt(id as string);
+        let selectedTargetID:number = -1;
+        let targetPath:string = '';
 
-            } else if((userLeaderCircleList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
-                navigate(`/portal/edit/circle/${userLeaderCircleList[0].circleID}`);
-                setEditingCircleID(userLeaderCircleList[0].circleID);
+        //New Circle
+        if (isNaN(id as any)) {
+            targetPath = `/portal/edit/circle/new`;
+        }
+        //Edit Circle
+        else if (targetID > 0) {
+            selectedTargetID = targetID;
+            targetPath = `/portal/edit/circle/${selectedTargetID}`;
+        }
+        //Redirect to first circle if available
+        else if (targetID < 1 && userLeaderCircleList.length > 0) {
+            selectedTargetID = userLeaderCircleList[0].circleID;
+            targetPath = `/portal/edit/circle/${selectedTargetID}`;
+        } 
 
-            } else if(parseInt(id as string) < 1) { //new
-                navigate(`/portal/edit/circle/new`);
-                setEditingCircleID(-1);
-
-            } else if(parseInt(id as string) > 0) //edit
-                setEditingCircleID(parseInt(id as string));
+        //Limit State Updates
+        if (selectedTargetID !== editingCircleID || location.pathname !== targetPath) {
+            setEditingCircleID(selectedTargetID);
+            navigate(targetPath);
         }
 
         /* Sync state change to URL action */
@@ -92,7 +101,7 @@ const CircleEditPage = () => {
         setShowAnnouncement(action === 'announcement')
         setShowImageUpload(action === 'image');
 
-    }, [jwt, userID, id, action, userLeaderCircleList]);
+    }, [jwt, userID, id, action, userLeaderCircleList, location.pathname]);
 
     useEffect(() => {
         if(showNotFound) {
@@ -106,7 +115,7 @@ const CircleEditPage = () => {
     /*******************************************
      *     RETRIEVE CIRCLE BEING EDITED
      * *****************************************/
-    useLayoutEffect(() => { 
+    useLayoutEffect(() => {
         if(editingCircleID > 0) {
             navigate(`/portal/edit/circle/${editingCircleID}/${action || ''}`, {replace: (id.toString() === '-1')});
             fetchCircle(editingCircleID); 

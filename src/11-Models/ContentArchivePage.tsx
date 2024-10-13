@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import InputField, { checkFieldName, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
@@ -33,6 +33,7 @@ export const getDefaultThumbnail = (contentSource:ContentSourceEnum) =>
 
 const ContentArchivePage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
@@ -77,34 +78,46 @@ const ContentArchivePage = () => {
 
     //Triggers | (delays fetchCircle until after Redux auto login)
     useLayoutEffect(() => {
+        if(userID <= 0 || jwt.length === 0) return;
+
         if(userRole === RoleEnum.ADMIN)
             setEDIT_FIELDS(EDIT_CONTENT_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(EDIT_CONTENT_FIELDS);
 
-        //setEditingContentID
-        if(userID > 0 && jwt.length > 0) {
-            if(isNaN(id as any)) { //new
-                navigate(`/portal/edit/content-archive/new`);
-                setEditingContentID(-1);
+        const targetID:number = parseInt(id as string);
+        let selectedTargetID:number = -1;
+        let targetPath:string = '';
+        
+        //New Content
+        if (isNaN(targetID)) {
+            targetPath = `/portal/edit/content-archive/new`;
 
-            } else if((ownedContentList.length > 0) && (parseInt(id as string) < 1)) { //redirect to first circle
-                navigate(`/portal/edit/content-archive/${ownedContentList[0].contentID}`);
-                setEditingContentID(ownedContentList[0].contentID);
+        // Edit Specific Content
+        } else if (targetID > 0) {
+            selectedTargetID = targetID;
 
-            } else if(parseInt(id as string) < 1) { //new
-                navigate(`/portal/edit/content-archive/new`);
-                setEditingContentID(-1);
+        //Redirect to First Content if Available
+        } else if (targetID < 1 && ownedContentList.length > 0) {
+            selectedTargetID = ownedContentList[0].contentID;
+            targetPath = `/portal/edit/content-archive/${selectedTargetID}`;
 
-            } else if(parseInt(id as string) > 0) //edit
-                setEditingContentID(parseInt(id as string));
+        //New Content (No ID) 
+        } else {
+            targetPath = `/portal/edit/content-archive/new`;
+        } 
+
+        //Limit State Updates
+        if (selectedTargetID !== editingContentID || location.pathname !== targetPath) {
+            setEditingContentID(selectedTargetID);
+            navigate(targetPath);
         }
 
         /* Sync state change to URL action */
         setShowNotFound(false);
         setShowDeleteConfirmation(action === 'delete');
 
-    }, [jwt, userID, userRole, id, action, ownedContentList]);
+    }, [jwt, userID, userRole, id, action, ownedContentList, location.pathname]);
     
     useEffect(() => {
         if(showNotFound) {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { NewPartnerListItem, PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
@@ -76,19 +76,28 @@ const UserEditPage = () => {
 
     //Triggers | (delays fetchProfile until after Redux auto login)
     useLayoutEffect(() => {
+        if(userID <= 0 || jwt.length === 0) return;
+
         if(userHasAnyRole([RoleEnum.ADMIN]))
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS); 
 
-        //setEditingUserID
-        if(userID > 0 && jwt.length > 0) {
-            if(isNaN(id as any) || (parseInt(id as string) < 1)) { //new
-                navigate(`/portal/edit/profile/${userID}`);
-                setEditingUserID(userID);
+        //Default to current user
+        const targetID: number = parseInt(id as string);
+        let selectedTargetID:number = userID;
+        let targetPath:string = `/portal/edit/profile/${userID}`;
+        
+        //Edit Specific User
+        if(!isNaN(targetID) && targetID >= 1) {
+            selectedTargetID = targetID; // Valid user ID
+            targetPath = `/portal/edit/profile/${selectedTargetID}`;
+        }
 
-            } else //edit
-                setEditingUserID(parseInt(id as string));
+        //Limit State Updates and Navigate
+        if(location.pathname !== targetPath || selectedTargetID !== editingUserID) {
+            setEditingUserID(selectedTargetID);
+            navigate(targetPath);
         }
 
         /* Sync state change to URL action */
