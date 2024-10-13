@@ -19,7 +19,7 @@ export enum FlowPage {
     IMAGE = 'IMAGE',
 }
 
-const PopupPageFlow = ({ flowPages = [FlowPage.IMAGE], allowEscape = true, redirectRoute = '/portal/dashboard/animation' }: { flowPages?:FlowPage[], allowEscape?:boolean, redirectRoute?:string }) => {
+const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true, redirectRoute = '/portal/dashboard/animation' }: { flowPages?:FlowPage[], allowEscape?:boolean, redirectRoute?:string }) => {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
