@@ -8,17 +8,22 @@ import PROFILE_DEFAULT from '../0-Assets/default-images/profile-default.png';
 import CIRCLE_DEFAULT from '../0-Assets/default-images/circle-default.png';
 import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
 import NOT_FOUND from '../0-Assets/icons/404-icon-black.png';
+import EMPTY_TOMB from '../0-Assets/images/404-empty-tomb.png';
 
 export enum ImageDefaultEnum {
+    NONE = 'NONE',
     LOGO = 'LOGO',
     PROFILE = 'PROFILE',
     CIRCLE = 'CIRCLE',
     MEDIA = 'MEDIA',
-    NOT_FOUND = 'NOT_FOUND'
+    NOT_FOUND = 'NOT_FOUND',
+    EMPTY_TOMB = 'EMPTY_TOMB',
 }
 
 export const getDefaultImage = (type?:ImageDefaultEnum):string|undefined => {
     switch (type) {
+        case ImageDefaultEnum.NONE:
+            return undefined;
         case ImageDefaultEnum.LOGO:
             return LOGO;
         case ImageDefaultEnum.PROFILE:
@@ -27,6 +32,8 @@ export const getDefaultImage = (type?:ImageDefaultEnum):string|undefined => {
             return CIRCLE_DEFAULT;
         case ImageDefaultEnum.MEDIA:
             return MEDIA_DEFAULT;
+        case ImageDefaultEnum.EMPTY_TOMB:
+            return EMPTY_TOMB;
         default:
             return NOT_FOUND;
     }

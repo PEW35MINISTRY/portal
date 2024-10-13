@@ -16,7 +16,7 @@ import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { ProfileImage } from '../2-Widgets/ImageWidgets';
-import PageNotFound from '../2-Widgets/NotFoundPage';
+import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 
 import '../2-Widgets/Form/form.scss';
 

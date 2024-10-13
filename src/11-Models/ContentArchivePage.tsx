@@ -13,7 +13,7 @@ import { ContentSourceEnum, ContentTypeEnum, EDIT_CONTENT_FIELDS, EDIT_CONTENT_F
 import { ContentListItem, ContentMetaDataResponseBody, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
-import PageNotFound from '../2-Widgets/NotFoundPage';
+import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 import { ContentThumbnailImage, ImageDefaultEnum, ImageUpload } from '../2-Widgets/ImageWidgets';
 
 import './contentArchive.scss';

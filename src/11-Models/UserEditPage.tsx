@@ -16,13 +16,14 @@ import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchLi
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { ImageDefaultEnum, ImageUpload, ProfileImage } from '../2-Widgets/ImageWidgets';
 import { PartnershipContract, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
-import PageNotFound from '../2-Widgets/NotFoundPage';
+import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 
 import '../2-Widgets/Form/form.scss';
 
 
 const UserEditPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
@@ -105,7 +106,7 @@ const UserEditPage = () => {
         setShowDeleteConfirmation(action === 'delete');
         setShowImageUpload(action === 'image');
 
-    }, [jwt, userID, id, action]);
+    }, [jwt, userID, id, action, location.pathname]);
 
     useEffect(() => {
         if(showNotFound) {
@@ -277,7 +278,7 @@ const UserEditPage = () => {
         (editingUserHasAnyRole([RoleEnum.USER])) 
         && (userHasAnyRole([RoleEnum.ADMIN]) 
             || ((getInputField('maxPartners') > (partnerList.length + userPartnerPendingPartnerList.length + partnerPendingPartnerList.length))
-                && (Date.now() - userLastNewPartnerRequest) >= 60 * 60 * 1000));
+                && (Date.now() - userLastNewPartnerRequest) >= parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10)));
 
 
     /*****************************

@@ -16,13 +16,14 @@ import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { CircleImage, ImageDefaultEnum, ImageUpload, ProfileImage } from '../2-Widgets/ImageWidgets';
-import PageNotFound from '../2-Widgets/NotFoundPage';
+import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 
 import '../2-Widgets/Form/form.scss';
 
 
 const CircleEditPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt) || '';
     const userID:number = useAppSelector((state) => state.account.userID) || -1;
