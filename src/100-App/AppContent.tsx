@@ -1,16 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { makeDisplayText } from '../1-Utilities/utilities';
 import { logoutAccount } from './redux-store';
 import { ImageDefaultEnum, ImageWidget, ProfileImage } from '../2-Widgets/ImageWidgets';
+import { ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 
 import './App.scss';
 
 //Components
 import Dashboard from '../10-Dashboard/Dashboard';
-import AnimationPage from '../12-Features/AnimationPage';
+import AnimationPage from '../12-Features/Utility-Pages/AnimationPage';
 import SupportPage from '../10-Dashboard/SupportPage';
 import CircleEditPage from '../11-Models/CircleEditPage';
 import PrayerRequestEditPage from '../11-Models/PrayerRequestEditPage';
@@ -20,7 +21,8 @@ import ContentArchivePage from '../11-Models/ContentArchivePage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
 import Log from '../12-Features/Log';
-import PageNotFound from '../2-Widgets/NotFoundPage';
+import FullImagePage, { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
+import PopupPageFlow, { FlowPage } from '../12-Features/PopupPageFlow';
 
 
 //Assets
@@ -46,7 +48,6 @@ import PREFERENCES_ICON from '../0-Assets/icons/settings-icon-blue.png';
 import PREFERENCES_ICON_ACTIVE from '../0-Assets/icons/settings-icon-white.png';
 import LOGOUT_ICON from '../0-Assets/icons/logout-icon-blue.png';
 import LOGOUT_ICON_ACTIVE from '../0-Assets/icons/logout-icon-white.png';
-import PopupPageFlow, { FlowPage } from '../12-Features/PopupPageFlow';
 
 
 type MenuPageListing = {
@@ -72,11 +73,25 @@ const AppContent = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const location = useLocation();
+    const skipAnimation = useAppSelector((state) => state.settings.skipAnimation);
+    const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:RoleEnum = useAppSelector((state) => state.account.userProfile.userRole);
     const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
     const displayName:string = useAppSelector((state) => state.account.userProfile.displayName);
     const profileImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
+    const userProfile:ProfileResponse|undefined = useAppSelector((state) => state.account.userProfile);
+
+    const accountIsValid = () => 
+      !!jwt && jwt.length > 0
+      && userID > 0
+      && !!userRole && Object.values(RoleEnum).includes(userRole)
+      && !!userProfile;
+
+    useEffect(() => {
+      if(!skipAnimation && !location.pathname.includes('redirect') && !location.pathname.startsWith('/portal/dashboard/animation'))
+        navigate(`/portal/dashboard/animation?redirect=${encodeURIComponent(location.pathname)}`);
+    }, []);
 
     //Initial default pages:
     const defaultCircleID: number = useAppSelector((state) => state.account.userProfile.circleList?.[0]?.circleID ?? -1);
@@ -144,11 +159,18 @@ const AppContent = () => {
       {label: 'Logout', route: '/login', onClick: ()=>dispatch(() => logoutAccount(dispatch)), activeIcon: LOGOUT_ICON_ACTIVE, inactiveIcon: LOGOUT_ICON},
     ];
 
-    return (
-        <div id='app'>
+    return (<>
+      {location.pathname.startsWith('/portal/dashboard/animation') && <AnimationPage/>}
 
-          {location.pathname === '/portal/dashboard/animation' && <AnimationPage/>}
-  
+      {!accountIsValid() ? 
+        <FullImagePage
+          fullPage={true}
+          imageType={skipAnimation ? undefined : ImageDefaultEnum.NONE}
+          alternativeButtonText={skipAnimation ? 'Login' : undefined}
+          onAlternativeButtonClick={skipAnimation ? () => navigate('/login') : undefined}
+        />
+
+      : <div id='app'>  
           <div id='app-navigation' className={showMenu ? '' : 'collapse'} ref={menuRef} onClick={(event)=>{if(event.currentTarget === event.target) setShowMenu(current => !current)}}>
             <Link to='/portal/dashboard' style={{ textDecoration: 'none' }}>
               <div id='logo-box' className='page' >
@@ -264,6 +286,7 @@ const AppContent = () => {
                 <Route path='/dashboard/new-partnership' element={<PopupPageFlow flowPages={[FlowPage.WALK_LEVEL, FlowPage.PARTNER]} redirectRoute='/portal/dashboard' />}/>
             </Routes>
         </div>
+      }</>
     );
   }
 

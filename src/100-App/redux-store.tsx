@@ -1,8 +1,7 @@
-import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { configureStore, createSlice, Middleware, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { JwtResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types.js';
+import { LoginResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-types.js';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
-import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { AXIOSError, ToastStyle } from './app-types';
 import { notify } from '../1-Utilities/hooks';
@@ -64,6 +63,16 @@ export const { setAccount, resetAccount, updateJWT, updateProfile, updateProfile
         addContact, removeContact
     } = accountSlice.actions;
 
+export const saveJWTMiddleware:Middleware = store => next => action => {
+    const result = next(action);
+
+    if(action.type === setAccount.type || action.type === updateJWT.type) {
+      localStorage.setItem('jwt', store.getState().account.jwt);
+    }
+
+    return result;
+};
+
 //List Utilities
 const addListItem = <T, K extends keyof ProfileResponse>(state:AccountState, action:PayloadAction<T>, listKey:K):AccountState => ({
   ...state, userProfile: { ...state.userProfile,
@@ -81,35 +90,35 @@ const removeListItem = <T, K extends keyof ProfileResponse>(state:AccountState, 
  **********************************************************/
 
 //Custom Redux (Static) Middleware: https://redux.js.org/tutorials/fundamentals/part-6-async-logic
-//Called directly in index.tsx: store.dispatch(loadCacheLogin); 
-export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; type: 'account/setAccount'; }|{type: 'account/resetAccount'; }|{ payload: string; type: 'account/updateJWT'; }) => void, getState: AccountState) => {
-  if(!window.location.pathname.includes('login')) {
+//Called directly in index.tsx: store.dispatch(initializeAccountState); 
+export const initializeAccountState = async(dispatch: (arg0: { payload: AccountState; type: 'account/setAccount'; }|{type: 'account/resetAccount'; }|{ payload: string; type: 'account/updateJWT'; }) => void, getState: AccountState) => {
+  if(window.location.pathname.includes('portal')) {
     try {
-      if(window.localStorage.getItem('user') === null || !window.localStorage.getItem('user')?.length) //Set in Login.tsx
-        throw 'No Cached Credentials';
+      const jwt:string = window.localStorage.getItem('jwt') || '';
 
-      const user = JSON.parse(window.localStorage.getItem('user') || '');
-      const jwt = user.jwt;
-      const userProfile = user.userProfile;
+      if(!jwt || !jwt.length)
+        throw 'Invalid Cached Authentication';
 
-      if(!jwt || !userProfile) 
-        throw 'Invalid Cached Credentials';
+      //Login via JWT
+      await axios.post(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, { }, { headers: { jwt }
+      }).then((response:{ data:LoginResponseBody }) => {
+        const account:AccountState = {
+            jwt: response.data.jwt,
+            userID: response.data.userID,
+            userRole: RoleEnum[response.data.userRole],
+            userProfile: response.data.userProfile,
+        };
+        //Save to Redux for current session
+        dispatch(setAccount(account));
 
-      //Re-authenticate JWT
-      await axios.get(`${process.env.REACT_APP_DOMAIN}/api/authenticate`, {
-        headers: {
-          jwt: jwt
-        }
-      }).then((response:{ data: JwtResponseBody }) => { 
-        dispatch(setAccount({userID: response.data.userID, userRole: response.data.userRole, jwt: response.data.jwt, userProfile: userProfile}));
-        notify(`Welcome ${userProfile?.firstName}`, ToastStyle.INFO);
+        notify(`Welcome ${account.userProfile?.firstName}`, ToastStyle.INFO);
         
       }).catch((response:AXIOSError) => {
         throw response.response?.data.action || 'Invalid JWT Token';
       });
 
     } catch(error) {
-      console.error('Auto attempt failed to Re-login with cached credentials', error);
+      console.error('Auto attempt failed to Re-login with cached authentication', error);
 
       logoutAccount(dispatch, `/login?redirect=${encodeURIComponent(window.location.pathname)}`);
 
@@ -120,11 +129,14 @@ export const loadCacheLogin = async(dispatch: (arg0: { payload: AccountState; ty
 
 export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount'; }) => void, redirect?:string) => {
   console.warn('REDUX Account & localStorage cleared: logoutAccount | redirect: ', redirect);
-  window.localStorage.setItem('user', '');
-  if(redirect && redirect.startsWith('/portal'))
+  window.localStorage.clear();
+
+  if(redirect)
       window.location.assign(redirect);
+
   dispatch(resetAccount());
   store.dispatch(resetLastNewPartnerRequest());
+
   notify('Logging Out', ToastStyle.INFO);
 }
 
@@ -145,32 +157,65 @@ export type SettingsState = {
 const initialSettingsState:SettingsState = {
   ignoreCache: false,
   skipAnimation: false,
-  lastNewPartnerRequest: Date.now() - 60 * 60 * 1000, //1 hour ago
+  lastNewPartnerRequest: Date.now() - parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10), //1 hour ago
 }; 
  
 const settingsSlice = createSlice({
   name: 'settings',
   initialState: initialSettingsState,
   reducers: {
+    setSettings: (state, action:PayloadAction<SettingsState>) => state = {...action.payload},
+    resetSettings: () => initialSettingsState,
     setIgnoreCache: (state, action:PayloadAction<boolean>) => state = {...state, ignoreCache: action.payload},
     setSkipAnimation: (state, action:PayloadAction<boolean>) => state = {...state, skipAnimation: action.payload},
     setLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: Date.now()},
-    resetLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: initialSettingsState.lastNewPartnerRequest},
-    resetSettings: () => initialSettingsState,
+    resetLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: initialSettingsState.lastNewPartnerRequest},    
   },
 });
 
 //Export Dispatch Actions
-export const { setIgnoreCache, setSkipAnimation, 
+export const { setSettings, resetSettings,
+    setIgnoreCache, setSkipAnimation, 
     setLastNewPartnerRequest, resetLastNewPartnerRequest,
-    resetSettings } = settingsSlice.actions;
+} = settingsSlice.actions;
 
+
+export const initializeSettingsState = () => (dispatch:(arg0: any) => void) => {
+    try {
+        const localStorageSettings:string|null = localStorage.getItem('settings');
+        const savedSettings:SettingsState = localStorageSettings ? JSON.parse(localStorageSettings) : initialSettingsState;
+        dispatch({ type: 'setSettings', payload: { ...initialSettingsState, ...savedSettings }});
+
+    } catch (error) {
+        console.error('REDUX Settings | localStorage initialization failed: ', error);
+        dispatch(resetSettings());
+    }
+};
+
+
+export const saveSettingsMiddleware:Middleware = store => next => action => {
+  const result = next(action);
+
+  if(Object.values(settingsSlice.actions).map(action => action.type) && action.type !== resetSettings.type) {
+    const settingsState: RootState['settings'] = store.getState().settings;
+    localStorage.setItem('settings', JSON.stringify(settingsState));
+  }
+  return result;
+};
+  
+
+/************************************
+*          REDUX STORE              *     
+*************************************/
 const store = configureStore({
   reducer: {
     account: accountSlice.reducer,
     settings: settingsSlice.reducer,
   },
+  
   //Note: May Define Middleware; however w/o defining types: return and types are automatic: https://v1-2-5--redux-starter-kit-docs.netlify.app/api/getDefaultMiddleware
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(saveJWTMiddleware, saveSettingsMiddleware),
 });
 
 export default store;

@@ -44,8 +44,6 @@ const SignUpPage = () => {
                 };
                 //Save to Redux for current session
                 dispatch(setAccount(account));
-                //Save to Cache for reauthenticate if JWT is still valid in redux-store.tsx
-                window.localStorage.setItem('user', JSON.stringify(account));
 
                 notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
                 navigate(`/signup/initial-account-flow`);
