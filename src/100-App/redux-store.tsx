@@ -45,8 +45,12 @@ const accountSlice = createSlice({
     removeCircleInvite: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'circleInviteList', 'circleID'),
     addCircleRequest: (state, action: PayloadAction<CircleListItem>) => state = addListItem(state, action, 'circleRequestList'),
     removeCircleRequest: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'circleRequestList', 'circleID'),
-    addPartner: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerList'),
-    removePartner: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'partnerList', 'userID'),
+    addPartner: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(
+                                                                              addListItem(state, action as PayloadAction<ProfileListItem>, 'contactList'),
+                                                                              action, 'partnerList'),
+    removePartner: (state, action: PayloadAction<number>) => state = removeListItem(
+                                                                        removeListItem(state, action, 'contactList', 'userID'),
+                                                                        action, 'partnerList', 'userID'),
     addPartnerPendingUser: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerPendingUserList'),
     removePartnerPendingUser: (state, action: PayloadAction<number>) => state = removeListItem(state, action, 'partnerPendingUserList', 'userID'),
     addPartnerPendingPartner: (state, action: PayloadAction<PartnerListItem>) => state = addListItem(state, action, 'partnerPendingPartnerList'),
@@ -91,7 +95,7 @@ const removeListItem = <T, K extends keyof ProfileResponse>(state:AccountState, 
 
 //Custom Redux (Static) Middleware: https://redux.js.org/tutorials/fundamentals/part-6-async-logic
 //Called directly in index.tsx: store.dispatch(initializeAccountState); 
-export const initializeAccountState = async(dispatch: (arg0: { payload: AccountState; type: 'account/setAccount'; }|{type: 'account/resetAccount'; }|{ payload: string; type: 'account/updateJWT'; }) => void, getState: AccountState) => {
+export const initializeAccountState = async(dispatch: (arg0: { payload: AccountState; type: 'account/setAccount'; }|{type: 'account/resetAccount'; }) => void, getState: AccountState) => { 
   if(window.location.pathname.includes('portal')) {
     try {
       const jwt:string = window.localStorage.getItem('jwt') || '';
@@ -149,16 +153,21 @@ export const logoutAccount = async(dispatch: (arg0: {type: 'account/resetAccount
 ******************************************/
 
 export type SettingsState = {
-  ignoreCache: boolean,
-  skipAnimation: boolean,
-  lastNewPartnerRequest: number, //timestamp
+  version:number, //Settings version to indicate local storage reset
+  ignoreCache:boolean,
+  skipAnimation:boolean,
+  lastNewPartnerRequest:number|undefined, //timestamp
 }
 
 const initialSettingsState:SettingsState = {
+  version: parseInt(process.env.REACT_APP_SETTINGS_VERSION ?? '1', 10),
   ignoreCache: false,
   skipAnimation: false,
-  lastNewPartnerRequest: Date.now() - parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10), //1 hour ago
-}; 
+  lastNewPartnerRequest: undefined,
+};
+
+//Use as default; but don't save to local storage
+export const DEFAULT_LAST_NEW_PARTNER_REQUEST:number = Date.now() - parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10);  //1 hour ago
  
 const settingsSlice = createSlice({
   name: 'settings',
@@ -169,7 +178,7 @@ const settingsSlice = createSlice({
     setIgnoreCache: (state, action:PayloadAction<boolean>) => state = {...state, ignoreCache: action.payload},
     setSkipAnimation: (state, action:PayloadAction<boolean>) => state = {...state, skipAnimation: action.payload},
     setLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: Date.now()},
-    resetLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: initialSettingsState.lastNewPartnerRequest},    
+    resetLastNewPartnerRequest: (state) => state = {...state, lastNewPartnerRequest: undefined},    
   },
 });
 
@@ -180,11 +189,15 @@ export const { setSettings, resetSettings,
 } = settingsSlice.actions;
 
 
-export const initializeSettingsState = () => (dispatch:(arg0: any) => void) => {
+export const initializeSettingsState = async(dispatch: (arg0: { payload: SettingsState; type: 'settings/setSettings'; }|{type: 'settings/resetSettings'; }) => void, getState: AccountState) => {
     try {
         const localStorageSettings:string|null = localStorage.getItem('settings');
         const savedSettings:SettingsState = localStorageSettings ? JSON.parse(localStorageSettings) : initialSettingsState;
-        dispatch({ type: 'setSettings', payload: { ...initialSettingsState, ...savedSettings }});
+        if(!isNaN(savedSettings.version) && (savedSettings.version == parseInt(process.env.REACT_APP_SETTINGS_VERSION ?? '1', 10)))
+          dispatch(setSettings({ ...initialSettingsState, ...savedSettings }));
+
+        else
+          throw new Error('Invalid Settings');
 
     } catch (error) {
         console.error('REDUX Settings | localStorage initialization failed: ', error);
@@ -196,9 +209,12 @@ export const initializeSettingsState = () => (dispatch:(arg0: any) => void) => {
 export const saveSettingsMiddleware:Middleware = store => next => action => {
   const result = next(action);
 
-  if(Object.values(settingsSlice.actions).map(action => action.type) && action.type !== resetSettings.type) {
+  if(Object.values(settingsSlice.actions).map(action => action.type).includes(action.type) && action.type !== resetSettings.type) {
     const settingsState: RootState['settings'] = store.getState().settings;
     localStorage.setItem('settings', JSON.stringify(settingsState));
+
+  } else if(action.type === resetSettings.type) {
+    localStorage.removeItem('settings');
   }
   return result;
 };
