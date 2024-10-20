@@ -28,7 +28,6 @@ const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true
     const userProfileImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
 
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
-    // const [pageList, setPageList] = useState<JSX.Element[]>([]);
     const [newPartner, setNewPartner] = useState<PartnerListItem|undefined>(undefined); 
 
 
