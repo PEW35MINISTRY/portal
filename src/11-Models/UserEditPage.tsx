@@ -1,22 +1,22 @@
 import axios from 'axios';
-import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { PrayerRequestListItem } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { NewPartnerListItem, PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import InputField, { checkFieldName, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { checkFieldName, ENVIRONMENT_TYPE, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody } from '../1-Utilities/utilities';
-import { ToastStyle } from '../100-App/app-types';
-import { addCircle, addCircleRequest, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, setLastNewPartnerRequest, updateProfile, updateProfileImage } from '../100-App/redux-store';
+import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
+import { addCircle, addCircleRequest, DEFAULT_LAST_NEW_PARTNER_REQUEST, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, setLastNewPartnerRequest, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { ImageDefaultEnum, ImageUpload, ProfileImage } from '../2-Widgets/ImageWidgets';
 import { PartnershipContract, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
-import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
+import FullImagePage, { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -27,31 +27,38 @@ const UserEditPage = () => {
     const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
-    const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);
-    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList);
-    const userLastNewPartnerRequest:number = useAppSelector((state) => state.settings.lastNewPartnerRequest);
+    const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);  
+    const userLastNewPartnerRequest:number = useAppSelector((state) => state.settings.lastNewPartnerRequest) || DEFAULT_LAST_NEW_PARTNER_REQUEST;
+    const { id = -1, action } = useParams();
+
+    //Redux Profile
+    const userProfile:ProfileResponse = useAppSelector((state) => state.account.userProfile);
+    const userRoleList:RoleEnum[] = useAppSelector((state) => state.account.userProfile.userRoleList) || [];
+    const userImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
     const userAccessProfileList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.profileAccessList) || [];
+    const userContactList:ProfileListItem[] = useAppSelector((state) => state.account.userProfile.contactList) || [];
     const userCircleList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleList) || [];
     const userCircleInviteList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleInviteList) || [];
     const userCircleRequestList:CircleListItem[] = useAppSelector((state) => state.account.userProfile.circleRequestList) || [];
     const userPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerList) || [];
     const userPartnerPendingUserList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingUserList) || [];
     const userPartnerPendingPartnerList:PartnerListItem[] = useAppSelector((state) => state.account.userProfile.partnerPendingPartnerList) || [];
-    const { id = -1, action } = useParams();
+    const userPrayerRequestList:PrayerRequestListItem[] = useAppSelector((state) => state.account.userProfile.ownedPrayerRequestList) || []; //Owned & Pending
 
     const [EDIT_FIELDS, setEDIT_FIELDS] = useState<InputField[]>([]);
     const [inputMap, setInputMap] = useState<Map<string, any>>(new Map());
     const [image, setImage] = useState<string|undefined>(undefined); //Read Only
 
     const [editingUserID, setEditingUserID] = useState<number>(-1);
-    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
-    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
-    const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
     const [newPartner, setNewPartner] = useState<PartnerListItem|undefined>(undefined); //undefined hides new partnership popup
+    const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
+    const SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = [ModelPopUpAction.IMAGE, ModelPopUpAction.DELETE, ModelPopUpAction.NONE];
 
     //SearchList Cache unique for editingUserID
     const DEFAULT_DISPLAY_TITLE_LIST:string[] = ['Pending Partner Acceptance', 'New Circles', 'Partners', 'Circles', 'Prayer Request'];
     const [defaultDisplayTitleList, setDefaultDisplayTitleList] = useState<string[]>(DEFAULT_DISPLAY_TITLE_LIST);
+    const [contactList, setContactList] = useState<ProfileListItem[]>([]);
     const [memberCircleList, setMemberCircleList] = useState<CircleListItem[]>([]);
     const [circleInviteList, setCircleInviteList] = useState<CircleListItem[]>([]);
     const [circleRequestList, setCircleRequestList] = useState<CircleListItem[]>([]);
@@ -62,21 +69,8 @@ const UserEditPage = () => {
     const [prayerRequestList, setPrayerRequestList] = useState<PrayerRequestListItem[]>([]);
 
 
-    /* Sync Redux State */
-    useEffect(() => {
-        if(userID === editingUserID) {
-            setMemberCircleList(userCircleList);
-            setCircleInviteList(userCircleInviteList);
-            setCircleRequestList(userCircleRequestList);
-            setPartnerList(userPartnerList);
-            setPartnerPendingUserList(userPartnerPendingUserList);
-            setPartnerPendingPartnerList(userPartnerPendingPartnerList)
-        }
-    }, [ userCircleList, userCircleInviteList, userCircleRequestList, userPartnerList, userPartnerPendingUserList, userPartnerPendingPartnerList ]);
-
-
     //Triggers | (delays fetchProfile until after Redux auto login)
-    useLayoutEffect(() => {
+    useEffect(() => {
         if(userID <= 0 || jwt.length === 0) return;
 
         if(userHasAnyRole([RoleEnum.ADMIN]))
@@ -84,51 +78,85 @@ const UserEditPage = () => {
         else
             setEDIT_FIELDS(EDIT_PROFILE_FIELDS); 
 
-        //Default to current user
-        const targetID: number = parseInt(id as string);
-        let selectedTargetID:number = userID;
-        let targetPath:string = `/portal/edit/profile/${userID}`;
+        let targetID:number = parseInt(id as string);
+        let targetPath:string = `/portal/edit/profile/${userID}`; //Default to current user
+        let targetAction:ModelPopUpAction = popUpAction;
         
         //Edit Specific User
-        if(!isNaN(targetID) && targetID >= 1) {
-            selectedTargetID = targetID; // Valid user ID
-            targetPath = `/portal/edit/profile/${selectedTargetID}`;
+        if(!isNaN(targetID) && targetID > 0) {
+            targetAction = SUPPORTED_POP_UP_ACTIONS.includes(action?.toLowerCase() as ModelPopUpAction)
+                ? (action?.toLowerCase() as ModelPopUpAction)
+                : ModelPopUpAction.NONE;
+            targetPath = `/portal/edit/profile/${targetID}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
+
+            if(userAccessProfileList.length > 0) setDefaultDisplayTitleList(['Profiles']);
         }
 
         //Limit State Updates and Navigate
-        if(location.pathname !== targetPath || selectedTargetID !== editingUserID) {
-            setEditingUserID(selectedTargetID);
-            navigate(targetPath);
+        if(targetID !== editingUserID) setEditingUserID(targetID);
+        if(targetPath !== location.pathname) navigate(targetPath);
+        if(targetAction !== popUpAction) setPopUpAction(targetAction);
+
+    }, [jwt, id]);
+
+
+    const updatePopUpAction = (newAction:ModelPopUpAction) => {
+        if(SUPPORTED_POP_UP_ACTIONS.includes(newAction) && popUpAction !== newAction) {
+            navigate(`/portal/edit/profile/${editingUserID}${newAction.length > 0 ? `/${newAction}` : ''}`, {replace: true});
+            setPopUpAction(newAction);
         }
-
-        /* Sync state change to URL action */
-        setShowNotFound(false);
-        setShowDeleteConfirmation(action === 'delete');
-        setShowImageUpload(action === 'image');
-
-    }, [jwt, userID, id, action, location.pathname]);
-
-    useEffect(() => {
-        if(showNotFound) {
-            setShowDeleteConfirmation(false);
-            setShowImageUpload(false);
-        }
-    }, [showNotFound]);
+    }
             
 
     /*******************************************
      *     RETRIEVE PROFILE BEING EDITED
      * *****************************************/
-    useLayoutEffect (() => { 
-        if(editingUserID > 0 && userID > 0) {
-            navigate(`/portal/edit/profile/${editingUserID}/${action || ''}`, {replace: (id.toString() === '-1')}); //Should not re-render: https://stackoverflow.com/questions/56053810/url-change-without-re-rendering-in-react-router
+    useEffect(() => { 
+        //Optimize by using Redux Profile
+        if(editingUserID === userID && userRole !== RoleEnum.ADMIN) {
+            navigate(`/portal/edit/profile/${userID}${popUpAction.length > 0 ? `/${popUpAction}` : ''}`, {replace: true});
+            setContactList(userContactList);
+            setMemberCircleList(userCircleList);
+            setCircleInviteList(userCircleInviteList);
+            setCircleRequestList(userCircleRequestList);
+            setPartnerList(userPartnerList);
+            setPartnerPendingUserList(userPartnerPendingUserList);
+            setPartnerPendingPartnerList(userPartnerPendingPartnerList);
+            setPrayerRequestList(userPrayerRequestList);
+            setImage(userImage);
+
+            const valueMap:Map<string, any> = new Map([['userID', userID as unknown as string], ['userRole', userRole]]);    
+            valueMap.set('userRoleTokenList', new Map(Array.from(userRoleList).map((role) => ([role, '']))));
+            [...Object.entries(userProfile)].filter(([field, value]) => !field.endsWith('List')).forEach(([field, value]) => {
+                if(checkFieldName(EDIT_FIELDS, field))
+                    valueMap.set(field, value);
+                else    
+                    console.log(`EditProfile-skipping field: ${field}`, value);
+            });
+            setInputMap(new Map(valueMap));            
+            setAvailablePartnerList([]);
+            setViewState(PageState.VIEW);
+
+        } else if(editingUserID > 0 && userID > 0) {
+            setViewState(PageState.LOADING);
+            navigate(`/portal/edit/profile/${editingUserID}${popUpAction.length > 0 ? `/${popUpAction}` : ''}`, {replace: true});
             fetchProfile(editingUserID); 
-            setShowNotFound(false);
 
         } else { //(id === -1)
-            setShowNotFound(true);  
+            setInputMap(new Map());
+            setContactList([]);
+            setMemberCircleList([]);
+            setCircleInviteList([]);
+            setCircleRequestList([]);
+            setPartnerList([]);
+            setPartnerPendingUserList([]);
+            setPartnerPendingPartnerList([]);
+
+            setImage(undefined);
+            setAvailablePartnerList([]);
+            updatePopUpAction(ModelPopUpAction.NONE);
         }  
-    }, [userID, editingUserID]);
+    }, [editingUserID]);
 
 
     const fetchProfile = async(fetchUserID:string|number) => {
@@ -138,6 +166,7 @@ const UserEditPage = () => {
                 const fields:ProfileResponse = response.data;
                 const valueMap:Map<string, any> = new Map([['userID', fields.userID as unknown as string], ['userRole', fields.userRole]]);
                 //Clear Lists, not returned if empty
+                setContactList([]);
                 setMemberCircleList([]);
                 setCircleInviteList([]);
                 setCircleRequestList([]);
@@ -170,8 +199,11 @@ const UserEditPage = () => {
                     } else if(field === 'partnerPendingPartnerList') {
                         setPartnerPendingPartnerList([...value]);
 
-                    } else if(field === 'prayerRequestList') {
+                    } else if(field === 'ownedPrayerRequestList') {
                         setPrayerRequestList([...value]);
+
+                    } else if(field === 'contactList') {
+                        setContactList([...value]);
 
                     } else if(field === 'image') {
                         setImage(value);
@@ -179,22 +211,14 @@ const UserEditPage = () => {
 
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
-                    else    
+                        
+                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)
                         console.log(`EditProfile-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));
+                setViewState(PageState.VIEW);
             })
-            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
-
-        //Must Fetch by user, since can't search prayer requests
-        setPrayerRequestList([]);
-        await axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}/prayer-request-list`, { headers: { jwt: jwt }})
-            .then(response => {
-                setPrayerRequestList([]);
-                const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
-                setPrayerRequestList(resultList);
-
-            }).catch((error) => processAJAXError(error));
+            .catch((error) => { processAJAXError(error); setViewState(PageState.NOT_FOUND); });
     }
 
 
@@ -249,7 +273,7 @@ const UserEditPage = () => {
     /***************************
      *   Edit Field Handlers
      * *************************/
-    const getInputField = (field:string):any|undefined => inputMap.get(field) || EDIT_FIELDS.find(f => f.field === field)?.value;
+    const getInputField = (field:string):any|undefined => inputMap.get(field) ?? EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
 
@@ -266,21 +290,29 @@ const UserEditPage = () => {
         .catch((error) => processAJAXError(error));
 
 
-    const fetchNewRandomPartner = (fetchUserID:string|number = editingUserID) => axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}/new-partner`, { }, { headers: { jwt: jwt }})
-        .then((response:{ data:PartnerListItem }) => {
-            setNewPartner(response.data);
-            notify('New Partner Found', ToastStyle.SUCCESS);
-        })
-        .catch((error) => processAJAXError(error));
+    const fetchNewRandomPartner = (fetchUserID:string|number = editingUserID) =>  {
+        //Calculate timeout period
+        const remainingHours = Math.ceil((parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10)
+                 - (Date.now() - userLastNewPartnerRequest)) / (1000 * 60 * 60));
+
+        if(getInputField('maxPartners') >= (partnerList.length + userPartnerPendingPartnerList.length + partnerPendingPartnerList.length))
+            notify(`${getInputField('maxPartners')} Max Partners Reached`, ToastStyle.WARN);
+
+        else if(!userHasAnyRole([RoleEnum.ADMIN]) && remainingHours > 0)
+            notify(`Please try again in ${remainingHours} hours`, ToastStyle.WARN);
+
+        else {       
+            dispatch(setLastNewPartnerRequest()); 
+            axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${fetchUserID}/new-partner`, { }, { headers: { jwt }})
+                .then((response:{ data:PartnerListItem }) => {
+                    setNewPartner(response.data);
+                    notify('New Partner Found', ToastStyle.SUCCESS);
+                })
+                .catch((error) => processAJAXError(error));
+        }
+    }
 
     
-    const showNewPartnerButton = ():boolean => 
-        (editingUserHasAnyRole([RoleEnum.USER])) 
-        && (userHasAnyRole([RoleEnum.ADMIN]) 
-            || ((getInputField('maxPartners') > (partnerList.length + userPartnerPendingPartnerList.length + partnerPendingPartnerList.length))
-                && (Date.now() - userLastNewPartnerRequest) >= parseInt(process.env.REACT_APP_NEW_PARTNER_TIMEOUT ?? '3600000', 10)));
-
-
     /*****************************
      * REDIRECT LINKED UTILITIES *
      *****************************/
@@ -314,10 +346,14 @@ const UserEditPage = () => {
     return (
         <div id='edit-profile'  className='form-page form-page-stretch'>
 
-        {showNotFound ?
-           <PageNotFound primaryButtonText={'New User'} onPrimaryButtonClick={()=>navigate('/signup')} />
+        {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
+                                                            alternativeButtonText='Return to my Account' onAlternativeButtonClick={()=>navigate(`/portal/edit/profile/${userID}`)}/>
+           : (viewState === PageState.NOT_FOUND) ? <PageNotFound primaryButtonText={'New User'} onPrimaryButtonClick={()=>navigate('/signup')} />
+           : <></>
+        }
            
-           : <FormInput
+        {(viewState === PageState.VIEW) &&
+            <FormInput
                 key={editingUserID}
                 getIDField={()=>({modelIDField: 'userID', modelID: editingUserID})}
                 validateUniqueFields={true}
@@ -342,17 +378,16 @@ const UserEditPage = () => {
                         <ProfileImage className='form-header-image' src={image} />
                         <div className='form-header-horizontal'>
                             <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/profile/${editingUserID}/image`)}>Edit Image</button>
-                            {showNewPartnerButton() &&
-                                <button type='button' className='alternative-button form-header-button' onClick={() => {if(userHasAnyRole([RoleEnum.ADMIN])) fetchAvailablePartners(); else fetchNewRandomPartner();  dispatch(setLastNewPartnerRequest()); }}>New Partner</button>}
+                            {editingUserHasAnyRole([RoleEnum.USER]) && <button type='button' className='alternative-button form-header-button' onClick={() => {if(userHasAnyRole([RoleEnum.ADMIN])) fetchAvailablePartners(); else fetchNewRandomPartner(); }}>New Partner</button>}
                         </div>
                         <h2>{`Edit Profile`}</h2>
                     </div>]}
-            />
-        }
+            />}
 
+            {(viewState === PageState.VIEW) &&
             <SearchList
                 key={'UserEdit-'+editingUserID}
-                defaultDisplayTitleKeySearch='Profiles'
+                defaultDisplayTitleKeySearch={(userRoleList.includes(RoleEnum.ADMIN) || userRoleList.includes(RoleEnum.CIRCLE_LEADER)) ? 'Profiles' : 'Contacts'}
                 defaultDisplayTitleList={defaultDisplayTitleList}
                 displayMap={new Map([
                         [
@@ -360,6 +395,14 @@ const UserEditPage = () => {
                                 onSearchClick: (id:number) => redirectToProfile(id),
                             }),
                             [...userAccessProfileList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                                onClick: (id:number) => redirectToProfile(id),
+                            }))
+                        ], 
+                        [
+                            new SearchListKey({displayTitle:'Contacts', searchType: SearchType.CONTACT,
+                                onSearchClick: (id:number) => redirectToProfile(id),
+                            }),
+                            [...userContactList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
                                 onClick: (id:number) => redirectToProfile(id),
                             }))
                         ], 
@@ -503,9 +546,9 @@ const UserEditPage = () => {
                             }))
                         ], 
                     ])}
-            />
+            />}
 
-            {(showDeleteConfirmation) &&
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.DELETE) &&
                 <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>navigate(`/portal/edit/profile/${editingUserID}`)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
@@ -532,7 +575,7 @@ const UserEditPage = () => {
                     </div>
                 </div>}
 
-                {newPartner && (
+                {newPartner && (viewState === PageState.VIEW) && (
                     <>
                         {userRole === RoleEnum.ADMIN ? (
                             <PartnershipStatusADMIN
@@ -553,7 +596,7 @@ const UserEditPage = () => {
                     </>
                 )}
 
-                {(showImageUpload) &&
+                {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.IMAGE) &&
                     <ImageUpload
                         key={'profile-image-'+editingUserID}
                         title='Upload Profile Image'

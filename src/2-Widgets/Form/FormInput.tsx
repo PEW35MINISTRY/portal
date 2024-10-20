@@ -68,7 +68,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
      *    VALIDATION HANDLING 
      * *************************/
     const validateInput = (field:InputField, value?:any, validateRequired?:boolean):boolean => {
-        const currentValue:string|undefined = value || props.getInputField(field.field);
+        const currentValue:string|number|undefined = value || props.getInputField(field.field);
 
         /* Required Fields */
         if(currentValue === undefined && field.required && (submitAttempted || validateRequired)) {
@@ -91,7 +91,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             return !Array.isArray(currentValue) || currentValue.some((v:string) => !(new RegExp(field.validationRegex).test(v)));
 
         /* Validate general validationRegex from config */
-        } else if(!(new RegExp(field.validationRegex).test(currentValue))){
+        } else if(!(new RegExp(field.validationRegex).test(String(currentValue)))){
             return false;
 
         /* SELECT_LIST */
@@ -107,14 +107,18 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
             const currentRole:RoleEnum = getInputHighestRole(props.getInputField);
 
-            if(currentDate > getDOBMinDate(currentRole)) {
-                notify(`Must be older than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account`);
+            if(currentDate > getDOBMaxDate(currentRole)) {
+                notify(`Must be older than ${getAgeFromDate(getDOBMaxDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account`);
                 return false;
 
-            } else if(currentDate < getDOBMaxDate(currentRole)) {
-                notify(`Must be younger than ${getAgeFromDate(getDOBMaxDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account.`);
+            } else if(currentDate < getDOBMinDate(currentRole)) {
+                notify(`Must be younger than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account.`);
                 return false
             }
+
+        /* RANGE_SLIDER */
+        } else if((field instanceof InputRangeField) && (field.type === InputType.RANGE_SLIDER) && (isNaN(Number(currentValue)) || Number(currentValue) < Number(field.minValue) || Number(currentValue) > Number(field.maxValue))) {
+            return false;
 
         /* UNIQUE FIELDS */ 
         } else if(props.validateUniqueFields === true && field.unique && (uniqueFieldAvailableCache.get(field.field) === false)) {

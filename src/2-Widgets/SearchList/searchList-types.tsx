@@ -5,8 +5,9 @@ import { DisplayItemType, ListItemTypesEnum, SearchType } from '../../0-Assets/f
  * SEARCH LIST TYPES
  * ******************/
 
-//Won't hide empty list to allow searching | Universal list, SearchListKey must still be specified
-export const SHOW_TITLE_OPTIONS:string[] = ['Profiles', 'Circles', 'Members', 'Events', 'Content'];
+//SearchListKey.displayTitle | Won't hide empty list to allow searching | Universal list, SearchListKey must still be specified
+export const SHOW_TITLE_OPTIONS:string[] = ['Members', 'Content', 'Shared Contacts', 'Shared Circles'];
+export const SHOW_TITLE_OPTIONS_ADMIN:string[] = [...SHOW_TITLE_OPTIONS, 'Profiles', 'Circles'];
 
 export class SearchListKey { 
     displayTitle:string;

@@ -2,19 +2,19 @@ import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
-import InputField, { checkFieldName, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { checkFieldName, ENVIRONMENT_TYPE, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody, makeDisplayText } from '../1-Utilities/utilities';
-import { ToastStyle } from '../100-App/app-types';
+import { blueColor, PageState, ModelPopUpAction, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { ContentSourceEnum, ContentTypeEnum, EDIT_CONTENT_FIELDS, EDIT_CONTENT_FIELDS_ADMIN, MOBILE_CONTENT_SUPPORTED_TYPES_MAP } from '../0-Assets/field-sync/input-config-sync/content-field-config';
 import { ContentListItem, ContentMetaDataResponseBody, ContentResponseBody } from '../0-Assets/field-sync/api-type-sync/content-types';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
 import SearchDetail, { ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
-import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
-import { ContentThumbnailImage, ImageDefaultEnum, ImageUpload } from '../2-Widgets/ImageWidgets';
+import FullImagePage, { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
+import { ContentThumbnailImage, ImageDefaultEnum, ImageUpload, getDefaultImage } from '../2-Widgets/ImageWidgets';
 
 import './contentArchive.scss';
 
@@ -23,6 +23,7 @@ import MEDIA_DEFAULT from '../0-Assets/default-images/media-blue.png';
 import GOT_QUESTIONS from '../0-Assets/default-images/got-questions.png';
 import BIBLE_PROJECT from '../0-Assets/default-images/bible-project.png';
 import THROUGH_THE_WORD from '../0-Assets/default-images/through-the-word.png';
+import ErrorRenderWrapper from '../1-Utilities/ErrorRenderWrapper';
 
 export const getDefaultThumbnail = (contentSource:ContentSourceEnum) =>
         contentSource === ContentSourceEnum.GOT_QUESTIONS ? GOT_QUESTIONS
@@ -44,24 +45,17 @@ const ContentArchivePage = () => {
     const [showURLPreview, setShowURLPreview] = useState<boolean>(false); //false shows thumbnail
 
     const [editingContentID, setEditingContentID] = useState<number>(-1);
-    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
-    const [showImageUpload, setShowImageUpload] = useState<Boolean>(false);
-    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
+    const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
+    const SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = [ModelPopUpAction.IMAGE, ModelPopUpAction.DELETE, ModelPopUpAction.NONE];
 
     //SearchList Cache
     const [searchUserID, setSearchUserID] = useState<number>(userID);
     const [ownedContentList, setOwnedContentList] = useState<ContentListItem[]>([]);
 
-    //Sync userID on initial load
-    useEffect(() => {
-        if(userID > 0) {
-            setSearchUserID(userID);
-        }
-    },[userID]);
-
 
     /* Search for Content by ID */
-    useLayoutEffect (() => {
+    useEffect(() => {
         if(searchUserID <= 0)
             return;
        
@@ -76,70 +70,77 @@ const ContentArchivePage = () => {
     }, [searchUserID]);
 
 
-    //Triggers | (delays fetchCircle until after Redux auto login)
-    useLayoutEffect(() => {
+    //Update state to reflect URL as source of truth
+    useEffect(() => {
         if(userID <= 0 || jwt.length === 0) return;
+
+        if(userID > 0) {
+            setSearchUserID(userID);
+        }
 
         if(userRole === RoleEnum.ADMIN)
             setEDIT_FIELDS(EDIT_CONTENT_FIELDS_ADMIN);
         else
             setEDIT_FIELDS(EDIT_CONTENT_FIELDS);
 
-        const targetID:number = parseInt(id as string);
-        let selectedTargetID:number = -1;
-        let targetPath:string = '';
+        let targetID:number = parseInt(id as string);
+        let targetPath:string = location.pathname;
+        let targetView:PageState = viewState;
+        let targetAction:ModelPopUpAction = popUpAction;
         
         //New Content
-        if (isNaN(targetID)) {
+        if(isNaN(targetID)) {
+            targetID = -1;
             targetPath = `/portal/edit/content-archive/new`;
+            targetView = PageState.NEW;
+            targetAction = ModelPopUpAction.NONE;
 
-        // Edit Specific Content
-        } else if (targetID > 0) {
-            selectedTargetID = targetID;
+        //Edit Specific Content
+        } else if(targetID > 0) {
+            targetAction = SUPPORTED_POP_UP_ACTIONS.includes(action?.toLowerCase() as ModelPopUpAction)
+                ? (action?.toLowerCase() as ModelPopUpAction)
+                : ModelPopUpAction.NONE;
+            targetPath = `/portal/edit/content-archive/${targetID}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
 
         //Redirect to First Content if Available
-        } else if (targetID < 1 && ownedContentList.length > 0) {
-            selectedTargetID = ownedContentList[0].contentID;
-            targetPath = `/portal/edit/content-archive/${selectedTargetID}`;
-
-        //New Content (No ID) 
-        } else {
-            targetPath = `/portal/edit/content-archive/new`;
-        } 
+        } else if(targetID < 1 && ownedContentList.length > 0) {
+            targetID = ownedContentList[0].contentID;
+            targetPath = `/portal/edit/content-archive/${targetID}`;
+            targetAction = ModelPopUpAction.NONE;
+        }
 
         //Limit State Updates
-        if (selectedTargetID !== editingContentID || location.pathname !== targetPath) {
-            setEditingContentID(selectedTargetID);
-            navigate(targetPath);
+        if(targetID !== editingContentID) setEditingContentID(targetID);
+        if(targetPath !== location.pathname) navigate(targetPath);
+        if(targetView !== viewState) setViewState(targetView);
+        if(targetAction !== popUpAction) setPopUpAction(targetAction);
+
+    }, [jwt, id, (editingContentID < 1 && ownedContentList.length > 0)]);
+
+
+    const updatePopUpAction = (newAction:ModelPopUpAction) => {
+        if(SUPPORTED_POP_UP_ACTIONS.includes(newAction) && popUpAction !== newAction) {
+            navigate(`/portal/edit/content-archive/${editingContentID}${newAction.length > 0 ? `/${newAction}` : ''}`, {replace: true});
+            setPopUpAction(newAction);
         }
-
-        /* Sync state change to URL action */
-        setShowNotFound(false);
-        setShowDeleteConfirmation(action === 'delete');
-
-    }, [jwt, userID, userRole, id, action, ownedContentList, location.pathname]);
-    
-    useEffect(() => {
-        if(showNotFound) {
-            setShowDeleteConfirmation(false);
-        }
-    }, [showNotFound]);
-
+    }
 
 
     /*******************************************
      *   RETRIEVE CONTENT ARCHIVE BEING EDITED
      * *****************************************/
-    useLayoutEffect (() => { 
+    useEffect(() => { 
         if(editingContentID > 0) {
-            navigate(`/portal/edit/content-archive/${editingContentID}/${action || ''}`, {replace: (id.toString() === '-1')});
+            setViewState(PageState.LOADING);
+            navigate(`/portal/edit/content-archive/${editingContentID}${popUpAction.length > 0 ? `/${popUpAction}` : ''}`, {replace: true});
             fetchContentArchive(editingContentID);
 
         } else { //(id === -1)
             setInputMap(new Map());
             setShowURLPreview(false);
+            updatePopUpAction(ModelPopUpAction.NONE);
         }
-    }, [editingContentID, jwt]);
+    }, [editingContentID]);
 
     const fetchContentArchive = (fetchContentID:string|number) => 
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${fetchContentID}`,{headers: { jwt: jwt }})
@@ -155,13 +156,13 @@ const ContentArchivePage = () => {
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                         
-                    else    
+                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)  
                         console.log(`EditContentArchiveRequest-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));
-
+                setViewState(PageState.VIEW);
             })
-            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
+            .catch((error) => { processAJAXError(error); setViewState(PageState.NOT_FOUND); });
 
 
     /*********************************************
@@ -252,7 +253,7 @@ const ContentArchivePage = () => {
     /***************************
      *   Edit Field Handlers
      * *************************/
-    const getInputField = (field:string):any|undefined =>  inputMap.get(field);
+    const getInputField = (field:string):any|undefined => inputMap.get(field) ?? EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
    
@@ -292,10 +293,14 @@ const ContentArchivePage = () => {
     return (
         <div id='edit-content-archive'  className='form-page form-page-stretch'>
 
-    {showNotFound ?
-           <PageNotFound primaryButtonText={'New Content Archive'} onPrimaryButtonClick={()=>navigate('/portal/edit/circle/new')} />
-           
-           : <FormInput
+        {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
+                                                            alternativeButtonText={'New Content'} onAlternativeButtonClick={()=>navigate('/portal/edit/content-archive/new')} />
+           : (viewState === PageState.NOT_FOUND) ? <PageNotFound primaryButtonText={'New Content'} onPrimaryButtonClick={()=>navigate('/portal/edit/content-archive/new')} />
+           : <></>
+        }
+
+        {[PageState.NEW, PageState.VIEW].includes(viewState) &&  
+           <FormInput
                 key={editingContentID}
                 getIDField={()=>({modelIDField: 'contentID', modelID: editingContentID})}
                 getInputField={getInputField}
@@ -304,7 +309,7 @@ const ContentArchivePage = () => {
                 onSubmitText={(editingContentID > 0) ? 'Save Content' : 'Create Content'}              
                 onSubmitCallback={(editingContentID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
-                onAlternativeCallback={() => navigate(`/portal/edit/content-archive/${editingContentID}/delete`)}
+                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
                 headerChildren={[
                     <div key='content-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -322,12 +327,11 @@ const ContentArchivePage = () => {
                         <div className='form-header-horizontal'>
                             {getInputField('url') && getInputField('image')
                                 && <button className='alternative-button form-header-button' onClick={(event) => {event.preventDefault(); setShowURLPreview(current => !current);}}>Show {showURLPreview ? 'Thumbnail' : 'Content'} Preview</button>}
-                            {(editingContentID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => setShowImageUpload(true)}>Edit Thumbnail</button>}
+                            {(editingContentID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => updatePopUpAction(ModelPopUpAction.IMAGE)}>Edit Thumbnail</button>}
                             {(allowMetaDataFetch()) && <button className='alternative-button form-header-button' onClick={(event) => {event.preventDefault(); fetchMetaData();}}>Fetch Metadata</button>}
                         </div>
                     </div>]}
-            />
-        }
+            />}
 
             <SearchList
                 key={'ContentArchiveEdit-'+editingContentID}
@@ -345,31 +349,31 @@ const ContentArchivePage = () => {
                     ])}
             />
 
-            {(showImageUpload) &&
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.IMAGE) &&
                 <ImageUpload
                     key={'content-thumbnail-image-'+editingContentID}
                     title='Upload Thumbnail'
                     imageStyle='thumbnail-image'
                     currentImage={ getInputField('image') }
                     defaultImage={ ImageDefaultEnum.MEDIA }
-                    onCancel={()=>setShowImageUpload(false)}
+                    onCancel={()=>updatePopUpAction(ModelPopUpAction.NONE)}
                     onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}/image`, { headers: { jwt: jwt }} )
                         .then(response => {
-                            setShowImageUpload(false);
+                            updatePopUpAction(ModelPopUpAction.NONE);
                             setInputField('image', undefined);
                             notify(`Thumbnail Deleted`, ToastStyle.SUCCESS)})
                         .catch((error) => processAJAXError(error))}
                     onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}/image/${imageFile.name}`, imageFile, { headers: { jwt, 'Content-Type': imageFile.type }} )
                         .then(response => {
-                            setShowImageUpload(false);
+                            updatePopUpAction(ModelPopUpAction.NONE);
                             setInputField('image', response.data);
                             notify(`Thumbnail Uploaded`, ToastStyle.SUCCESS)})
                         .catch((error) => processAJAXError(error))}
                 />
             }
 
-            {(showDeleteConfirmation) &&
-                <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/content-archive/${editingContentID}`)}>
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.DELETE) &&
+                <div key={'ContentArchiveEdit-confirmDelete-'+editingContentID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>
@@ -388,7 +392,7 @@ const ContentArchivePage = () => {
                         )}
                         <hr/>
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={() => navigate(`/portal/edit/content-archive/${editingContentID}`)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>Cancel</button>
                     </div>
                 </div>}
         </div>
@@ -412,40 +416,45 @@ export const ContentArchivePreview = (props:{url?:string, source:string, maxWidt
 
     return (
         <div ref={previewRef} id='content-wrapper' style={props.height ? {height: props.height} : {}} onClick={(e)=>{e.preventDefault(); e.stopPropagation();}} >
-            <div id='content-inner' >
-                {(props.url && props.source === 'FACEBOOK') ?
-                    <FacebookEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'FACEBOOK') ?
-                    <p>Visit Facebook in the browser.  On the post you'd like to embed, select ⋯ › Embed › Advanced settings › Get Code, then use the cite link in the generated blockquote.</p>
-                : (props.url && props.source === 'INSTAGRAM') ?
-                    <InstagramEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'INSTAGRAM') ?
-                    <p>Visit Instagram in the browser.  Open a post in a browser window and copy the URL from the address bar. The URL should be in the format: https://www.instagram.com/p/abc123xyzAB/.</p>
-                : (props.url && props.source === 'PINTEREST') ?
-                    <PinterestEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'PINTEREST') ?
-                    <p>Visit a Pinterest post in the browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
-                : (props.url && props.source === 'TIKTOK') ?
-                    <TikTokEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'TIKTOK') ?
-                    <p>Visit TikTok in the browser. Copy the URL from the address bar. URL format: https://www.tiktok.com/@username/video/1234567890123456789. Short links are not supported.</p>
-                : (props.url && props.source === 'X_TWITTER') ?
-                    <TwitterEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'X_TWITTER') ?
-                    <p>Open X in the browser.  Copy the URL from the address bar. https://twitter.com/username/status/1234567890123456789. Short links are not supported.</p>
-                : (props.url && props.source === 'YOUTUBE') ?
-                    <YouTubeEmbed url={props.url} width={previewWidth} />
-                : (props.source === 'YOUTUBE') ?
-                    <p>May use browser or share within the App.  Video links must be URL format: https://www.youtube.com/watch?v=VIDEO_ID.  Shorts format: https://youtube.com/shorts/VIDEO_ID.</p>
-                : (props.source === 'GOT_QUESTIONS') ?
-                    <img className='form-header-image content-image' src={GOT_QUESTIONS} alt='Got Questions' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
-                : (props.source === 'BIBLE_PROJECT') ?
-                    <img className='form-header-image content-image' src={BIBLE_PROJECT} alt='Bible Project' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
-                : (props.source === 'THROUGH_THE_WORD') ?
-                    <img className='form-header-image content-image' src={THROUGH_THE_WORD} alt='Through the Word' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
-                : 
-                    <img className='form-header-image content-image' src={MEDIA_DEFAULT} alt='Content Preview' style={props.height ? {maxHeight: props.height * 0.95} : {}} /> }
-            </div>
+            <ErrorRenderWrapper
+                description={`ContentArchivePreview - ${props.source} | ${props.url}`}
+                component={<div id='content-inner' >
+                                {(props.url && props.source === 'FACEBOOK') ?
+                                    <FacebookEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'FACEBOOK') ?
+                                    <p>Visit Facebook in the browser.  On the post you'd like to embed, select ⋯ › Embed › Advanced settings › Get Code, then use the cite link in the generated blockquote.</p>
+                                : (props.url && props.source === 'INSTAGRAM') ?
+                                    <InstagramEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'INSTAGRAM') ?
+                                    <p>Visit Instagram in the browser.  Open a post in a browser window and copy the URL from the address bar. The URL should be in the format: https://www.instagram.com/p/abc123xyzAB/.</p>
+                                : (props.url && props.source === 'PINTEREST') ?
+                                    <PinterestEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'PINTEREST') ?
+                                    <p>Visit a Pinterest post in the browser. Copy the URL from the address bar.  The URL must contain the pin ID, in the format pin/1234567890123456789. Short links are not supported.</p>
+                                : (props.url && props.source === 'TIKTOK') ?
+                                    <TikTokEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'TIKTOK') ?
+                                    <p>Visit TikTok in the browser. Copy the URL from the address bar. URL format: https://www.tiktok.com/@username/video/1234567890123456789. Short links are not supported.</p>
+                                : (props.url && props.source === 'X_TWITTER') ?
+                                    <TwitterEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'X_TWITTER') ?
+                                    <p>Open X in the browser.  Copy the URL from the address bar. https://twitter.com/username/status/1234567890123456789. Short links are not supported.</p>
+                                : (props.url && props.source === 'YOUTUBE') ?
+                                    <YouTubeEmbed url={props.url} width={previewWidth} />
+                                : (props.source === 'YOUTUBE') ?
+                                    <p>May use browser or share within the App.  Video links must be URL format: https://www.youtube.com/watch?v=VIDEO_ID.  Shorts format: https://youtube.com/shorts/VIDEO_ID.</p>
+                                : (props.source === 'GOT_QUESTIONS') ?
+                                    <img className='form-header-image content-image' src={GOT_QUESTIONS} alt='Got Questions' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                                : (props.source === 'BIBLE_PROJECT') ?
+                                    <img className='form-header-image content-image' src={BIBLE_PROJECT} alt='Bible Project' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                                : (props.source === 'THROUGH_THE_WORD') ?
+                                    <img className='form-header-image content-image' src={THROUGH_THE_WORD} alt='Through the Word' style={props.height ? {maxHeight: props.height * 0.95} : {}} />
+                                : 
+                                    <img className='form-header-image content-image' src={MEDIA_DEFAULT} alt='Content Preview' style={props.height ? {maxHeight: props.height * 0.95} : {}} /> }
+                            </div>}
+                fallbackComponent={<img src={getDefaultImage(ImageDefaultEnum.NOT_FOUND)} alt='Preview Unavailable' style={{objectFit: 'contain', overflow: 'hidden'}}/>}
+            />
+
         </div>
     );
 }

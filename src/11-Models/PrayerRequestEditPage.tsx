@@ -5,18 +5,18 @@ import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-type
 import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatchRequestBody, PrayerRequestResponseBody } from '../0-Assets/field-sync/api-type-sync/prayer-request-types';
 import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
-import InputField, { checkFieldName } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { checkFieldName, ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { assembleRequestBody, circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
-import { ToastStyle } from '../100-App/app-types';
+import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { DisplayItemType, ListItemTypesEnum, SearchType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
-import { ProfileImage } from '../2-Widgets/ImageWidgets';
-import { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
+import { ImageDefaultEnum, ProfileImage } from '../2-Widgets/ImageWidgets';
+import FullImagePage, { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 
 import '../2-Widgets/Form/form.scss';
 
@@ -24,7 +24,6 @@ import '../2-Widgets/Form/form.scss';
 const PrayerRequestEditPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const dispatch = useAppDispatch();
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
     const userRole:string = useAppSelector((state) => state.account.userProfile.userRole);
@@ -43,12 +42,13 @@ const PrayerRequestEditPage = () => {
 
     const [editingPrayerRequestID, setEditingPrayerRequestID] = useState<number>(-1);
     const [searchUserID, setSearchUserID] = useState<number>(userID);
-    const [showNotFound, setShowNotFound] = useState<Boolean>(false);
-    const [showNewComment, setShowNewComment] = useState<Boolean>(false);
-    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<Boolean>(false);
+    const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
+    const SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = [ModelPopUpAction.COMMENT, ModelPopUpAction.DELETE, ModelPopUpAction.NONE];
 
     //SearchList Cache
     const [ownedPrayerRequestList, setOwnedPrayerRequestList] = useState<PrayerRequestListItem[]>([]);
+    const [ownedResolvedPrayerRequestList, setOwnedResolvedPrayerRequestList] = useState<PrayerRequestListItem[]>([]);
     const [userRecipientList, setUserRecipientList] = useState<ProfileListItem[]>([]);
     const [circleRecipientList, setCircleRecipientList] = useState<CircleListItem[]>([]);
     const [commentList, setCommentList] = useState<PrayerRequestCommentListItem[]>([]);
@@ -69,7 +69,7 @@ const PrayerRequestEditPage = () => {
 
 
     /* Search for Prayer Request by user/requestor */
-    useLayoutEffect (() => {
+    useEffect(() => {
         if(searchUserID <= 0)
             return;
         
@@ -78,85 +78,89 @@ const PrayerRequestEditPage = () => {
             .then(response => {
                 const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
                 setOwnedPrayerRequestList(resultList);
-                if(resultList.length === 0) notify('No Prayer Requests Found', ToastStyle.INFO);
+                if(resultList.length === 0) notify('Make Your First Prayer Request!', ToastStyle.INFO);
+            }).catch((error) => processAJAXError(error));
 
+        axios.get(`${process.env.REACT_APP_DOMAIN}/api/user/${searchUserID}/prayer-request-resolved-list`, { headers: { jwt: jwt }})
+            .then(response => {
+                const resultList:PrayerRequestListItem[] = Array.from(response.data || []);
+                setOwnedResolvedPrayerRequestList(resultList);
             }).catch((error) => processAJAXError(error));
         
     }, [searchUserID]);
 
 
     //Triggers | (delays fetchPrayerRequest until after Redux auto login)
-    useLayoutEffect(() => {
+    useEffect(() => {
         if(userID <= 0 || jwt.length === 0) return;
-
-        if(userHasAnyRole([RoleEnum.ADMIN]))
-            setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
-        else if(editingPrayerRequestID === -1)
-            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
-        else
-            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
 
         if(userID > 0) {
             setSearchUserID(userID);
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
         }
         
-        const targetID:number = parseInt(id as string);
-        let selectedTargetID:number = -1;
-        let targetPath:string = '';
+        let targetID:number = parseInt(id as string);
+        let targetPath:string = location.pathname;
+        let targetView:PageState = viewState;
+        let targetAction:ModelPopUpAction = popUpAction;
 
         //New Prayer Request
-        if (isNaN(targetID)) {
+        if(isNaN(targetID)) {
+            targetID = -1;
             targetPath = `/portal/edit/prayer-request/new`;
+            targetView = PageState.NEW;
+            targetAction = ModelPopUpAction.NONE;
 
         //Edit Specific Prayer Request
-        } else if(targetID > 0) {
-            selectedTargetID = targetID;
-            targetPath = `/portal/edit/prayer-request/${selectedTargetID}`;
+        } else if(targetID > 0) {            
+            targetAction = SUPPORTED_POP_UP_ACTIONS.includes(action?.toLowerCase() as ModelPopUpAction)
+                ? (action?.toLowerCase() as ModelPopUpAction)
+                : ModelPopUpAction.NONE;
+            targetPath = `/portal/edit/prayer-request/${targetID}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
 
-        //Select First Prayer Request if applicable
-        } else if(ownedPrayerRequestList.length > 0) {
-            selectedTargetID = ownedPrayerRequestList[0].prayerRequestID;
-            targetPath = `/portal/edit/prayer-request/${selectedTargetID}`;
-
-        //New Prayer Request (No ID) 
-        } else {
-            targetPath = `/portal/edit/prayer-request/new`;
+        //Redirect to First Prayer Request if applicable
+        } else if(targetID < 1 && ownedPrayerRequestList.length > 0) {
+            targetID = ownedPrayerRequestList[0].prayerRequestID;
+            targetPath = `/portal/edit/prayer-request/${targetID}`;
+            targetAction = ModelPopUpAction.NONE;
         } 
 
-        // Limit State Updates
-        if (selectedTargetID !== editingPrayerRequestID || location.pathname !== targetPath) {
-            setEditingPrayerRequestID(selectedTargetID);
-            navigate(targetPath);
+        //Limit State Updates
+        if(targetID !== editingPrayerRequestID) setEditingPrayerRequestID(targetID);
+        if(targetPath !== location.pathname) navigate(targetPath);
+        if(targetView !== viewState) setViewState(targetView);
+        if(targetAction !== popUpAction) setPopUpAction(targetAction);
+
+        //Set relevant fields
+        if(userHasAnyRole([RoleEnum.ADMIN]))
+            setEDIT_FIELDS(PRAYER_REQUEST_FIELDS_ADMIN);
+        else if(targetView === PageState.NEW)
+            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
+        else
+            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
+
+    }, [jwt, id, (editingPrayerRequestID < 1 && ownedPrayerRequestList.length > 0)]);
+
+
+    const updatePopUpAction = (newAction:ModelPopUpAction) => {
+        if(SUPPORTED_POP_UP_ACTIONS.includes(newAction) && popUpAction !== newAction) {
+            navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}${newAction.length > 0 ? `/${newAction}` : ''}`, {replace: true});
+            setPopUpAction(newAction);
         }
-
-        /* Sync state change to URL action */
-        setShowNotFound(false);
-        setShowDeleteConfirmation(action === 'delete');
-        setShowNewComment(action === 'comment');
-
-    }, [jwt, userID, id, action, ownedPrayerRequestList, location.pathname]);
-
-    useEffect(() => {
-        if(showNotFound) {
-            setShowDeleteConfirmation(false);
-            setShowNewComment(false);
-        }
-    }, [showNotFound]);
+    }
             
-
 
     /*******************************************
      *   RETRIEVE Prayer Request BEING EDITED
      * *****************************************/
-    useLayoutEffect (() => { 
+    useEffect(() => { 
         if(editingPrayerRequestID > 0) {
-            navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: (id.toString() === '-1')});
+            setViewState(PageState.LOADING);
+            navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: true});
             fetchPrayerRequest(editingPrayerRequestID); 
 
         } else { //(id === -1)
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
-            setEditingPrayerRequestID(-1);
             setInputMap(new Map());
             setCommentList([]);
             setUserRecipientList([]);
@@ -165,8 +169,9 @@ const PrayerRequestEditPage = () => {
             setRemoveUserRecipientIDList([]);
             setAddCircleRecipientIDList([]);
             setRemoveCircleRecipientIDList([]);
+            updatePopUpAction(ModelPopUpAction.NONE);
         }
-    }, [editingPrayerRequestID, jwt]);
+    }, [editingPrayerRequestID]);
 
     const fetchPrayerRequest = (fetchPrayerRequestID:string|number) => 
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${fetchPrayerRequestID}`,{headers: { jwt: jwt }})
@@ -198,7 +203,8 @@ const PrayerRequestEditPage = () => {
 
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
-                    else    
+
+                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)  
                         console.log(`EditPrayerRequest-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));
@@ -206,9 +212,9 @@ const PrayerRequestEditPage = () => {
                 setRemoveUserRecipientIDList([]);
                 setAddCircleRecipientIDList([]);
                 setRemoveCircleRecipientIDList([]);
-
+                setViewState(PageState.VIEW);
             })
-            .catch((error) => processAJAXError(error, () => setShowNotFound(true)));
+            .catch((error) => { processAJAXError(error); setViewState(PageState.NOT_FOUND); });
 
     /*******************************************
      *  SAVE PRAYER REQUEST CHANGES TO SEVER
@@ -250,12 +256,11 @@ const PrayerRequestEditPage = () => {
         }
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request`, requestBody, {headers: { jwt: jwt }})
-            .then((response:{ data:PrayerRequestResponseBody }) =>
-                notify(`Prayer Request Created`, ToastStyle.SUCCESS, () => {
-                    setEditingPrayerRequestID(response.data.prayerRequestID);
-                    setDefaultDisplayTitleList(['Prayer Requests']);
-                }))
-            .catch((error) => { processAJAXError(error); });
+            .then((response:{ data:PrayerRequestResponseBody }) => {
+                notify(`Prayer Request Created`, ToastStyle.SUCCESS);
+                navigate(`/portal/edit/prayer-request/${response.data.prayerRequestID}`);
+                setDefaultDisplayTitleList(['Prayer Requests']);
+            }).catch((error) => { processAJAXError(error); });
     }
     
     
@@ -265,9 +270,8 @@ const PrayerRequestEditPage = () => {
     const makeDeleteRequest = async() => 
         axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${editingPrayerRequestID}`, { headers: { jwt: jwt }} )
             .then(response => {
-                notify(`Deleted Prayer Request`, ToastStyle.SUCCESS, () => {
-                    navigate('/portal/edit/prayer-request/-1');
-                });
+                notify(`Deleted Prayer Request`, ToastStyle.SUCCESS);
+                navigate('/portal/edit/prayer-request/-1');
             }).catch((error) => processAJAXError(error));
     
 
@@ -278,7 +282,7 @@ const PrayerRequestEditPage = () => {
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
-                navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`);
+                updatePopUpAction(ModelPopUpAction.NONE);
                 setDefaultDisplayTitleList(['Comments']);
                 setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
             })
@@ -320,7 +324,7 @@ const PrayerRequestEditPage = () => {
     /***************************
      *   Edit Field Handlers
      * *************************/
-    const getInputField = (field:string):any|undefined =>  inputMap.get(field);
+    const getInputField = (field:string):any|undefined => inputMap.get(field) ?? EDIT_FIELDS.find(f => f.field === field)?.value;
 
     const setInputField = (field:string, value:any):void => setInputMap(map => new Map(map.set(field, value)));
    
@@ -353,10 +357,14 @@ const PrayerRequestEditPage = () => {
     return (
         <div id='edit-prayer-request'  className='form-page'>
 
-        {showNotFound ?
-           <PageNotFound primaryButtonText={'New Prayer Request'} onPrimaryButtonClick={()=>navigate('/portal/edit/prayer-request/new')} />
-           
-           : <FormInput
+        {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
+                                                            alternativeButtonText={'New Prayer Request'} onAlternativeButtonClick={()=>navigate('/portal/edit/prayer-request/new')} />
+           : (viewState === PageState.NOT_FOUND) ? <PageNotFound primaryButtonText={'New Prayer Request'} onPrimaryButtonClick={()=>navigate('/portal/edit/prayer-request/new')} />
+           : <></>
+        }
+
+        {[PageState.NEW, PageState.VIEW].includes(viewState) &&   
+            <FormInput
                 key={editingPrayerRequestID}
                 getIDField={()=>({modelIDField: 'prayerRequestID', modelID: editingPrayerRequestID})}
                 getInputField={getInputField}
@@ -365,7 +373,7 @@ const PrayerRequestEditPage = () => {
                 onSubmitText={(editingPrayerRequestID > 0) ? 'Save Changes' : 'Create Prayer Request'}              
                 onSubmitCallback={(editingPrayerRequestID > 0) ? makeEditRequest : makePostRequest}
                 onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
-                onAlternativeCallback={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/delete`)}
+                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
                 headerChildren={[
                     <div key='prayer-request-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -383,12 +391,11 @@ const PrayerRequestEditPage = () => {
                             </span>
                         </div>
                         <div className='form-header-horizontal'>
-                            {(editingPrayerRequestID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/comment`)}>New Comment</button>}
+                            {(editingPrayerRequestID > 0) && <button type='button' className='alternative-button form-header-button' onClick={() => updatePopUpAction(ModelPopUpAction.COMMENT)}>New Comment</button>}
                         </div>
                         {(editingPrayerRequestID > 0) && <h2 className='sub-header'>Edit Details</h2>}
                     </div>]}
-            />
-        }
+            />}
 
             <SearchList
                 key={'PrayerRequestEdit-'+editingPrayerRequestID+defaultDisplayTitleList[0]}
@@ -429,7 +436,7 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Profiles', searchType: (userProfileAccessList.length > 0 || userRole === RoleEnum.ADMIN) ? SearchType.USER : SearchType.NONE,
+                            new SearchListKey({displayTitle:'Shared Contacts', searchType: (userRole === RoleEnum.ADMIN) ? SearchType.USER : SearchType.CONTACT,
                                 onSearchClick: (id:number, item:DisplayItemType)=> {
                                     setSearchUserID(id);
                                     // setRequestorProfile(item as ProfileListItem);
@@ -447,7 +454,7 @@ const PrayerRequestEditPage = () => {
                             }))
                         ], 
                         [
-                            new SearchListKey({displayTitle:'Circles', searchType:SearchType.CIRCLE, searchFilter: userHasAnyRole([RoleEnum.ADMIN]) ? undefined : CircleStatusEnum.MEMBER,
+                            new SearchListKey({displayTitle:'Shared Circles', searchType:SearchType.CIRCLE, searchFilter: userHasAnyRole([RoleEnum.ADMIN]) ? undefined : CircleStatusEnum.MEMBER,
                                 searchPrimaryButtonText: 'Share', 
                                 onSearchPrimaryButtonCallback: (id:number) => shareCircle(id),
                                 searchAlternativeButtonText: 'View Circle',
@@ -459,18 +466,30 @@ const PrayerRequestEditPage = () => {
                                 alternativeButtonText: isCircleRecipientPending(circle.circleID) ? 'Pending' : undefined,   
                             }))
                         ],  
+                        [
+                            new SearchListKey({displayTitle:'Resolved Prayer Requests'}),
+                            [...ownedResolvedPrayerRequestList].map((prayerRequest) => new SearchListValue({displayType: ListItemTypesEnum.PRAYER_REQUEST, displayItem: prayerRequest, 
+                                onClick: (id:number)=>setEditingPrayerRequestID(id),
+                                primaryButtonText: 'Delete', onAlternativeButtonCallback: (id:number) => 
+                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/prayer-request-edit/${id}`, { headers: { jwt: jwt }} )
+                                        .then(response => notify('Prayer Request Deleted', ToastStyle.SUCCESS, () => {
+                                            setOwnedResolvedPrayerRequestList(current => current.filter(prayerRequest => prayerRequest.prayerRequestID !== id));
+                                        }))
+                                        .catch((error) => processAJAXError(error)),
+                            }))
+                        ], 
                     ])}
             />
 
-            {(showNewComment && editingPrayerRequestID > 0) &&
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.COMMENT) && (editingPrayerRequestID > 0) &&
                 <PrayerRequestCommentPage 
                     key={'PrayerRequestEdit-comment-'+editingPrayerRequestID}
                     onSaveCallback={makePrayerCommentRequest}
-                    onCancelCallback={()=>navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}
+                    onCancelCallback={() => updatePopUpAction(ModelPopUpAction.NONE)}
                 />}
 
-            {(showDeleteConfirmation) &&
-                <div key={'PrayerRequestEdit-confirmDelete-'+editingPrayerRequestID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}>
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.DELETE) &&
+                <div key={'PrayerRequestEdit-confirmDelete-'+editingPrayerRequestID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()}>
                         <div className='form-header-detail-box'>
@@ -501,7 +520,7 @@ const PrayerRequestEditPage = () => {
                         {(getInputField('prayerCount')) && <label >{`+ ${getInputField('prayerCount') || 0} Prayers`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={() => navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}`)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>Cancel</button>
                     </div>
                 </div>}
         </div>
