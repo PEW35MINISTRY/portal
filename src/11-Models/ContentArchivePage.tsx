@@ -107,6 +107,12 @@ const ContentArchivePage = () => {
             targetID = ownedContentList[0].contentID;
             targetPath = `/portal/edit/content-archive/${targetID}`;
             targetAction = ModelPopUpAction.NONE;
+
+        } else if(targetID < 1 && ownedContentList.length == 0) {
+            targetID = -1;
+            targetPath = `/portal/edit/content-archive/new`;
+            targetView = PageState.NEW;
+            targetAction = ModelPopUpAction.NONE;
         }
 
         //Limit State Updates

@@ -76,7 +76,7 @@ const CircleEditPage = () => {
         let targetAction:ModelPopUpAction = popUpAction;
 
         //New Circle
-        if(isNaN(targetID)) {
+        if(Number.isNaN(targetID)) {
             targetID = -1;
             targetPath = `/portal/edit/circle/new`;
             targetView = PageState.NEW;
@@ -93,6 +93,12 @@ const CircleEditPage = () => {
         } else if(targetID < 1 && userLeaderCircleList.length > 0) {
             targetID = userLeaderCircleList[0].circleID;
             targetPath = `/portal/edit/circle/${targetID}`;
+            targetAction = ModelPopUpAction.NONE;
+
+        } else if(targetID < 1 && userLeaderCircleList.length == 0) {
+            targetID = -1;
+            targetPath = `/portal/edit/circle/new`;
+            targetView = PageState.NEW;
             targetAction = ModelPopUpAction.NONE;
         } 
 
@@ -328,7 +334,14 @@ const CircleEditPage = () => {
                 </div>]}
             />}
 
-        {[PageState.NEW, PageState.VIEW].includes(viewState) &&          
+            {(viewState === PageState.VIEW) && (
+                userLeaderCircleList.length > 0
+                || requestProfileList.length > 0
+                || announcementList.length > 0
+                || inviteProfileList.length > 0
+                || memberProfileList.length > 0
+                || prayerRequestList.length > 0
+            ) &&
             <SearchList
                 key={'CircleEdit-'+editingCircleID}
                 defaultDisplayTitleKeySearch='Circles'

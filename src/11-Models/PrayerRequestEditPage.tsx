@@ -123,6 +123,12 @@ const PrayerRequestEditPage = () => {
             targetID = ownedPrayerRequestList[0].prayerRequestID;
             targetPath = `/portal/edit/prayer-request/${targetID}`;
             targetAction = ModelPopUpAction.NONE;
+
+        } else if(targetID < 1 && ownedPrayerRequestList.length == 0) {
+            targetID = -1;
+            targetPath = `/portal/edit/prayer-request/new`;
+            targetView = PageState.NEW;
+            targetAction = ModelPopUpAction.NONE;
         } 
 
         //Limit State Updates

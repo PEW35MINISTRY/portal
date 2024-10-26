@@ -384,7 +384,18 @@ const UserEditPage = () => {
                     </div>]}
             />}
 
-            {(viewState === PageState.VIEW) &&
+            {(viewState === PageState.VIEW) && (
+                userAccessProfileList.length > 0
+                || userContactList.length > 0
+                || partnerList.length > 0
+                || partnerPendingUserList.length > 0
+                || partnerPendingPartnerList.length > 0
+                || availablePartnerList.length > 0
+                || memberCircleList.length > 0
+                || circleInviteList.length > 0
+                || circleRequestList.length > 0
+                || prayerRequestList.length > 0
+            ) &&
             <SearchList
                 key={'UserEdit-'+editingUserID}
                 defaultDisplayTitleKeySearch={(userRoleList.includes(RoleEnum.ADMIN) || userRoleList.includes(RoleEnum.CIRCLE_LEADER)) ? 'Profiles' : 'Contacts'}
