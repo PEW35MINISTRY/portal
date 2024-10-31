@@ -194,11 +194,12 @@ export const initializeSettingsState = async(dispatch: (arg0: { payload: Setting
         const localStorageSettings:string|null = localStorage.getItem('settings');
         const savedSettings:SettingsState = localStorageSettings ? JSON.parse(localStorageSettings) : initialSettingsState;
         if(!isNaN(savedSettings.version) && (savedSettings.version == parseInt(process.env.REACT_APP_SETTINGS_VERSION ?? '1', 10)))
-          dispatch(setSettings({ ...initialSettingsState, ...savedSettings }));
+          dispatch(setSettings({ ...savedSettings }));
 
-        else
-          throw new Error('Invalid Settings');
-
+        else {
+          console.warn("Invalid settings configuration, or settings version changed.");
+          dispatch(setSettings({...initialSettingsState, ...savedSettings}));
+        }
     } catch (error) {
         console.error('REDUX Settings | localStorage initialization failed: ', error);
         dispatch(resetSettings());

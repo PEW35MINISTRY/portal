@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { ReactElement, forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoleEnum, SIGNUP_PROFILE_FIELDS } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
-import { assembleRequestBody, getHighestRole } from '../1-Utilities/utilities';
+import { assembleRequestBody, getEnvironment, getHighestRole } from '../1-Utilities/utilities';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
 import { AccountState, logoutAccount, setAccount } from '../100-App/redux-store';
@@ -85,7 +85,7 @@ const SignUpPage = () => {
                     onAlternativeText='Already have an account?'
                     onAlternativeCallback={()=>navigate('/login')}
                     footerChildren={
-                        (isUserRole && (process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)) ? [
+                        (isUserRole && ([ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()))) ? [
                             <div id='populateDemoProfile' key='populateDemoProfile' className='inputWrapper'>
                                 <label htmlFor='populateDemoProfile'>Populate Demo Profile</label>
                                 <input name='populateDemoProfile' type='checkbox' className='inputCheckbox' onChange={(e)=>setPopulateDemoProfile(e.target.checked)} />

@@ -1,7 +1,12 @@
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { ProfileListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
+import { ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 
+
+
+/* Parse Environment | (Don't default to PRODUCTION for security) */
+export const getEnvironment = ():ENVIRONMENT_TYPE => ENVIRONMENT_TYPE[process.env.ENVIRONMENT as keyof typeof ENVIRONMENT_TYPE] || ENVIRONMENT_TYPE.DEVELOPMENT;
 
 
 /* Filter Unique List Items by Type */

@@ -9,7 +9,7 @@ import InputField, { checkFieldName, ENVIRONMENT_TYPE } from '../0-Assets/field-
 import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
-import { assembleRequestBody, circleFilterUnique, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
+import { assembleRequestBody, circleFilterUnique, getEnvironment, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
 import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -210,7 +210,7 @@ const PrayerRequestEditPage = () => {
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
 
-                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)  
+                    else if(getEnvironment() === ENVIRONMENT_TYPE.LOCAL)
                         console.log(`EditPrayerRequest-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));

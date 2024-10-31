@@ -9,11 +9,12 @@ import { ToastStyle } from '../../100-App/app-types';
 import { getInputHighestRole, testAccountAvailable } from './form-utilities';
 
 import './form.scss';
+import { getEnvironment } from '../../1-Utilities/utilities';
 
 const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
     const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
-    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => field.environmentList.includes(ENVIRONMENT_TYPE[(process.env.REACT_APP_ENVIRONMENT ?? '') as ENVIRONMENT_TYPE])) ?? [], [props.FIELDS]);
+    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
 
     /***************************
      *   UNIQUE FIELD HANDLING
@@ -54,14 +55,20 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             return;
         /* Call Server if valid */
         const field:InputField|undefined = FIELD_LIST.find(f => f['field'] === event.target.name);
-        if(field !== undefined && field.unique && new RegExp(field.validationRegex).test(currentValue)) {
-            const modelID:{modelIDField:string, modelID:number} = props.getIDField();
-            const available:boolean|undefined = await testAccountAvailable(new Map([[field.field, currentValue], [modelID.modelIDField, modelID.modelID.toString()]])); //Bad request is 400=>undefined; inconclusive result
-            if(available !== undefined)
-                setUniqueFieldAvailableCache(map => new Map(map.set(currentValue, available)));
-            if(available === false)
-                notify(`Account already exists with: ${currentValue}.`);
-        }
+        if(!field || !field.unique || !(new RegExp(field.validationRegex).test(currentValue))) 
+            return;
+
+        const modelID:{modelIDField:string, modelID:number} = props.getIDField();
+        const uniqueFields = new Map([[field.field, currentValue], [modelID.modelIDField, modelID.modelID.toString()]]);
+
+        if(Array.from(uniqueFields.values()).some(v => (v === undefined) || (v.length === 0)))
+            return;
+
+        const available:boolean|undefined = await testAccountAvailable(new Map([[field.field, currentValue], [modelID.modelIDField, modelID.modelID.toString()]])); //Bad request is 400=>undefined; inconclusive result
+        if(available !== undefined)
+            setUniqueFieldAvailableCache(map => new Map(map.set(currentValue, available)));
+        if(available === false)
+            notify(`Account already exists with: ${currentValue}.`);
     }
 
     /***************************
@@ -157,12 +164,40 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 uniqueFields.set(f.field, props.getInputField(f.field) || '');
         });
 
+        //Verify required fields entered
+        if(FIELD_LIST.some(f => { const value:any = props.getInputField(f.field);
+            if(f.required && (value === undefined || String(value).length === 0)) {
+                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Required field is missing:`, f.field, value);
+                return true;
+            }
+            return false;
+        })){
+            notify(`Please complete required fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
+            return;
+        }
+
         //Re-test unique fields as combination
-        if(props.validateUniqueFields === true && uniqueFields.size > 1 && await testAccountAvailable(uniqueFields) === false)
-            notify(`Account already exists with: ${Array.from(uniqueFields.values()).map(v=>v).join(', ')}.`);
+        if(props.validateUniqueFields === true && uniqueFields.size > 1) {
+            if(Array.from(uniqueFields.values()).some(v => {
+                if(v === undefined || v.length === 0) {
+                    [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Identity field is incomplete:`, v);
+                    return true;
+                }
+                return false;
+            })) {
+                notify(`Please complete identity fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
+                return;
+
+            } else if(await testAccountAvailable(uniqueFields) === false) {
+                notify(`Account Exists`);
+                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Account already exists:`, uniqueFields);
+                return;
+            }
+        }
 
         //Re-validate input prior to Submit    
-        else if(FIELD_LIST.every(f => validateInput(f, undefined, true) || (console.error('Invalid Input:', f.field, props.getInputField(f.field)), false)))
+        if(FIELD_LIST.every(f => validateInput(f, undefined, true) 
+            || ([ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error('Invalid Input:', f.field, props.getInputField(f.field)), false)))
             props.onSubmitCallback();
 
         else  

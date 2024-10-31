@@ -7,7 +7,7 @@ import { NewPartnerListItem, PartnerListItem, ProfileListItem, ProfileResponse }
 import InputField, { checkFieldName, ENVIRONMENT_TYPE, makeDisplayList } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { EDIT_PROFILE_FIELDS, EDIT_PROFILE_FIELDS_ADMIN, PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
-import { assembleRequestBody } from '../1-Utilities/utilities';
+import { assembleRequestBody, getEnvironment } from '../1-Utilities/utilities';
 import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
 import { addCircle, addCircleRequest, DEFAULT_LAST_NEW_PARTNER_REQUEST, removeCircle, removeCircleInvite, removePartner, removePartnerPendingPartner, removePartnerPendingUser, resetAccount, setLastNewPartnerRequest, updateProfile, updateProfileImage } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
@@ -212,7 +212,7 @@ const UserEditPage = () => {
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                         
-                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)
+                    else if(getEnvironment() === ENVIRONMENT_TYPE.LOCAL)
                         console.log(`EditProfile-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));
@@ -363,7 +363,7 @@ const UserEditPage = () => {
                 onSubmitText='Save Changes'              
                 onSubmitCallback={makeEditRequest}
                 onAlternativeText='Delete Profile'
-                onAlternativeCallback={()=>navigate(`/portal/edit/profile/${editingUserID}/delete`)}
+                onAlternativeCallback={()=>updatePopUpAction(ModelPopUpAction.DELETE)}
                 headerChildren={[
                     <div key='user-edit-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -377,7 +377,7 @@ const UserEditPage = () => {
                         </div>
                         <ProfileImage className='form-header-image' src={image} />
                         <div className='form-header-horizontal'>
-                            <button type='button' className='alternative-button form-header-button' onClick={() => navigate(`/portal/edit/profile/${editingUserID}/image`)}>Edit Image</button>
+                            <button type='button' className='alternative-button form-header-button' onClick={() => updatePopUpAction(ModelPopUpAction.IMAGE)}>Edit Image</button>
                             {editingUserHasAnyRole([RoleEnum.USER]) && <button type='button' className='alternative-button form-header-button' onClick={() => {if(userHasAnyRole([RoleEnum.ADMIN])) fetchAvailablePartners(); else fetchNewRandomPartner(); }}>New Partner</button>}
                         </div>
                         <h2>{`Edit Profile`}</h2>
@@ -413,7 +413,7 @@ const UserEditPage = () => {
                             new SearchListKey({displayTitle:'Contacts', searchType: SearchType.CONTACT,
                                 onSearchClick: (id:number) => redirectToProfile(id),
                             }),
-                            [...userContactList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
+                            [...contactList].map((profile:ProfileListItem) => new SearchListValue({displayType: ListItemTypesEnum.USER, displayItem: profile, 
                                 onClick: (id:number) => redirectToProfile(id),
                             }))
                         ], 
@@ -560,7 +560,7 @@ const UserEditPage = () => {
             />}
 
             {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.DELETE) &&
-                <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={()=>navigate(`/portal/edit/profile/${editingUserID}`)}>
+                <div key={'UserEdit-confirmDelete-'+editingUserID} id='confirm-delete' className='center-absolute-wrapper' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>
 
                     <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
                         <div className='form-header-detail-box'>
@@ -582,7 +582,7 @@ const UserEditPage = () => {
                         {(prayerRequestList.length > 0) && <label >{`+ ${prayerRequestList.length} Prayer Requests`}</label>}
         
                         <button className='submit-button' type='button' onClick={makeDeleteRequest}>DELETE</button>
-                        <button className='alternative-button'  type='button' onClick={()=>navigate(`/portal/edit/profile/${editingUserID}`)}>Cancel</button>
+                        <button className='alternative-button'  type='button' onClick={() => updatePopUpAction(ModelPopUpAction.NONE)}>Cancel</button>
                     </div>
                 </div>}
 
@@ -614,16 +614,16 @@ const UserEditPage = () => {
                         imageStyle='profile-image'
                         currentImage={ image }
                         defaultImage={ ImageDefaultEnum.PROFILE }
-                        onCancel={() => navigate(`/portal/edit/profile/${editingUserID}`)}
+                        onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
                         onClear={()=>axios.delete(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image`, { headers: { jwt: jwt }} )
                             .then(response => {
-                                navigate(`/portal/edit/profile/${editingUserID}`);
+                                updatePopUpAction(ModelPopUpAction.NONE);
                                 setImage(undefined);
                                 notify(`Profile Image Deleted`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(undefined)))})
                             .catch((error) => processAJAXError(error))}
                         onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
                             .then(response => {
-                                navigate(`/portal/edit/profile/${editingUserID}`);
+                                updatePopUpAction(ModelPopUpAction.NONE);
                                 setImage(response.data);
                                 notify(`Profile Image Uploaded`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(response.data)))})
                             .catch((error) => processAJAXError(error))}

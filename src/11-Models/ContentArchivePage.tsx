@@ -5,7 +5,7 @@ import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbe
 import InputField, { checkFieldName, ENVIRONMENT_TYPE, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
-import { assembleRequestBody, makeDisplayText } from '../1-Utilities/utilities';
+import { assembleRequestBody, getEnvironment, makeDisplayText } from '../1-Utilities/utilities';
 import { blueColor, PageState, ModelPopUpAction, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -162,7 +162,7 @@ const ContentArchivePage = () => {
                     } else if(checkFieldName(EDIT_FIELDS, field))
                         valueMap.set(field, value);
                         
-                    else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)  
+                    else if(getEnvironment() === ENVIRONMENT_TYPE.LOCAL)
                         console.log(`EditContentArchiveRequest-skipping field: ${field}`, value);
                 });
                 setInputMap(new Map(valueMap));

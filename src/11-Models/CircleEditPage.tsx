@@ -9,7 +9,7 @@ import InputField, { checkFieldName, ENVIRONMENT_TYPE } from '../0-Assets/field-
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
-import { assembleRequestBody } from '../1-Utilities/utilities';
+import { assembleRequestBody, getEnvironment } from '../1-Utilities/utilities';
 import { addCircle, removeCircle } from '../100-App/redux-store';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -183,7 +183,7 @@ const CircleEditPage = () => {
                 } else if(checkFieldName(EDIT_FIELDS, field))
                     valueMap.set(field, value);
 
-                else if(process.env.REACT_APP_ENVIRONMENT === ENVIRONMENT_TYPE.DEVELOPMENT)
+                else if(getEnvironment() === ENVIRONMENT_TYPE.LOCAL)
                     console.log(`EditCircle-skipping field: ${field}`, value);
             });
             setInputMap(new Map(valueMap));
