@@ -3,12 +3,13 @@ import ReactDOM from 'react-dom/client';
 import reportWebVitals from './reportWebVitals';
 import App from './100-App/App';
 import type { AppDispatch } from './100-App/redux-store';
-import store, { loadCacheLogin } from './100-App/redux-store';
+import store, { initializeAccountState, initializeSettingsState } from './100-App/redux-store';
 
 import './index.scss';
 
 //Attempt auto login from local storage
-store.dispatch((loadCacheLogin) as AppDispatch);
+store.dispatch((initializeAccountState) as AppDispatch);
+store.dispatch((initializeSettingsState) as AppDispatch);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

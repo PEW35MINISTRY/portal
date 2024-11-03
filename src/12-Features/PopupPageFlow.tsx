@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppDispatch, useAppSelector, notify, processAJAXError } from '../1-Utilities/hooks';
@@ -28,15 +28,12 @@ const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true
     const userProfileImage:string|undefined = useAppSelector((state) => state.account.userProfile.image);
 
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
-    const [pageList, setPageList] = useState<JSX.Element[]>([]);
     const [newPartner, setNewPartner] = useState<PartnerListItem|undefined>(undefined); 
 
 
     //NOTE: These are independent and don't hold state
-    useEffect(() => {
-        setPageList(
-            flowPages.map((pageType) => {
-                switch(pageType) {
+    const pageList: JSX.Element[] = useMemo(() => flowPages.map((pageType) => {
+            switch(pageType) {
                     case FlowPage.WALK_LEVEL:
                         return !(userRoleList && userRoleList.includes(RoleEnum.USER)) ? undefined : 
                             <WalkLevelQuiz
@@ -71,7 +68,7 @@ const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true
                         return undefined;
                 }
 
-            }).filter((p): p is JSX.Element => p !== undefined && p !== null))}, [flowPages, userRoleList, newPartner]);
+        }).filter((p): p is JSX.Element => p !== undefined && p !== null), [flowPages, userRoleList, newPartner]);    
 
 
     /* Utilities */
@@ -92,7 +89,7 @@ const PopupPageFlow = ({ flowPages = Object.values(FlowPage), allowEscape = true
                 setNewPartner(response.data);
                 setSelectedIndex(currentIndex => currentIndex + 1); //Will cause useEffect to re-evaluate adding partnerContract; nextPage wasn't syncing on first click.
             })
-            .catch((error) => { nextPage(); processAJAXError(error); });
+            .catch((error) => { nextPage(); processAJAXError(error, () => notify('Contact support to be eligible for partnerships.')); });
 
 
     /* Render Full Page */

@@ -6,15 +6,17 @@ import { PrayerRequestCommentListItem, PrayerRequestListItem } from '../../0-Ass
 import { PartnerListItem, ProfileListItem } from '../../0-Assets/field-sync/api-type-sync/profile-types';
 import SearchDetail, { ListItemTypesEnum, DisplayItemType, LabelListItem, SearchType, SearchTypeInfo, SEARCH_MIN_CHARS } from '../../0-Assets/field-sync/input-config-sync/search-config';
 import { processAJAXError, useAppSelector } from '../../1-Utilities/hooks';
-import { SHOW_TITLE_OPTIONS, SearchListKey, SearchListValue} from './searchList-types';
+import { SHOW_TITLE_OPTIONS, SHOW_TITLE_OPTIONS_ADMIN, SearchListKey, SearchListValue} from './searchList-types';
 import { ContentListItem } from '../../0-Assets/field-sync/api-type-sync/content-types';
+import { RoleEnum } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 
 import './searchList.scss';
 import './searchListItemCards.scss';
 
 
-const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement, footerChildren?:ReactElement}) => {
+const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchListValue[]>, defaultDisplayTitleKeySearch?:string, defaultDisplayTitleList?:string[], headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
+    const userRole:RoleEnum = useAppSelector((state) => state.account.userRole);
     const ignoreCache:boolean = useAppSelector((state) => state.settings.ignoreCache);
 
     const [displayList, setDisplayList] = useState<SearchListValue[]>([]);
@@ -139,12 +141,13 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const getSearchTypeTitleList = ():string[] => 
         Array.from(props.displayMap.keys() || [])
             .filter(key => Array.from(props.displayMap.get(key) || []).length > 0 
-                    || SHOW_TITLE_OPTIONS.includes(key.displayTitle))
+                    || SHOW_TITLE_OPTIONS.includes(key.displayTitle)
+                    || ((userRole === RoleEnum.ADMIN) && SHOW_TITLE_OPTIONS_ADMIN.includes(key.displayTitle)))
             .map(key => key.displayTitle);
 
     return (
         <div key={props.key} id='search-side-component' >
-            {props.headerChildren}
+            {props.headerChildren ?? <></>}
 
             <div id='search-header'>
                 <select id='search-header-menu' className='title' onChange={({ target: { value } }) => onOptionSelection(value)} value={selectedKeyTitle} >
@@ -196,7 +199,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                 )}
             </div>            
 
-            {props.footerChildren}
+            {props.footerChildren ?? <></>}
         </div>
     );
 }

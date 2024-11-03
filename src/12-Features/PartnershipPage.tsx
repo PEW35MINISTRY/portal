@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PartnerListItem, ProfileListItem, PartnerCountListItem, NewPartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { PartnerItem } from '../2-Widgets/SearchList/SearchListItemCards';
@@ -10,7 +10,9 @@ import { PartnershipDeleteAllADMIN, PartnershipStatusADMIN } from '../2-Widgets/
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
-import { ToastStyle } from '../100-App/app-types';
+import { blueColor, PageState, ToastStyle } from '../100-App/app-types';
+import FullImagePage from './Utility-Pages/FullImagePage';
+import { ImageDefaultEnum } from '../2-Widgets/ImageWidgets';
 
 import './partnership.scss';
 
@@ -24,7 +26,9 @@ export enum PARTNERSHIP_VIEW {
 const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     const navigate = useNavigate();
     const JWT:string = useAppSelector((state) => state.account.jwt);
+    const userID:number = useAppSelector((state) => state.account.userID);
 
+    const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
     const [defaultDisplayTitleList, setDefaultDisplayTitleList] = useState<string[]>(['Unassigned Users']);
     const [dualPartnerList, setDualPartnerList] = useState<[NewPartnerListItem, NewPartnerListItem][]>([]);
     const [statusMap, setStatusMap] = useState<PartnerCountListItem[]>([]);
@@ -41,16 +45,18 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/pending-list`, { headers:{ jwt:JWT } })
                 .then((response:{ data:[NewPartnerListItem, NewPartnerListItem][] }) => {
                     setDualPartnerList(response.data);
+                    setViewState(PageState.VIEW);
 
-                }).catch((error) => { processAJAXError(error); });
+                }).catch((error) => { processAJAXError(error); setViewState(PageState.ERROR); });
 
         /* Status Maps */
         } else if(JWT && props.view === PARTNERSHIP_VIEW.NEW_USERS || props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) {
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/${(props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) ? 'fewer-status-map' : 'status-map'}`, { headers:{ jwt:JWT } })
                 .then((response:{ data:PartnerCountListItem[] }) => {
                     setStatusMap(response.data);
+                    setViewState(PageState.VIEW);
 
-                }).catch((error) => { processAJAXError(error); });
+                }).catch((error) => { processAJAXError(error); setViewState(PageState.ERROR); });
 
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/unassigned-list`, { headers:{ jwt:JWT } })
                 .then((response:{ data:NewPartnerListItem[] }) => {
@@ -75,6 +81,16 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
 
     return (
         <div id='partnership-page'>
+
+            {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
+                                                            alternativeButtonText={'View Profile'} onAlternativeButtonClick={()=>navigate(`/portal/edit/profile/${userID}`)} />
+
+                : (viewState === PageState.ERROR) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} message='Currently Unavailable'
+                                                            alternativeButtonText={'View Profile'} onAlternativeButtonClick={()=>navigate(`/portal/edit/profile/${userID}`)} />
+                : <></>
+            }
+
+            {(viewState === PageState.VIEW) &&
             <div className='main-content'>
             {(props.view === PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) ?
                 <div id='dual-view' className='grid-container'>
@@ -134,9 +150,9 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                     ))}
                 </div>
             }
-        </div>
+        </div>}
 
-        {(props.view !== PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) &&
+        {(viewState === PageState.VIEW) && (props.view !== PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) &&
             <SearchList
                     key={'Partnership'}
                     defaultDisplayTitleList={defaultDisplayTitleList}
@@ -174,7 +190,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                 />
             }
 
-            {(selectedUser !== undefined && selectedPartner !== undefined) &&
+            {(viewState === PageState.VIEW) && (selectedUser !== undefined) && (selectedPartner !== undefined) &&
                 <PartnershipStatusADMIN
                     key={`Partnership-${selectedUser}-${selectedPartner}-ADMIN`}
                     user={selectedUser}
@@ -184,7 +200,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                 />
             }
 
-            {(selectedUser !== undefined && showDelete) &&
+            {(viewState === PageState.VIEW) && showDelete && (selectedUser !== undefined) &&
                 <PartnershipDeleteAllADMIN
                     key={`Partnership-${selectedUser}-ADMIN`}
                     user={selectedUser}
