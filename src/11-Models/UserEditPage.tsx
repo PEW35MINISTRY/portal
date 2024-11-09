@@ -532,7 +532,7 @@ const UserEditPage = () => {
                                 onClick: (id:number) => redirectToCircle(id),
                                 primaryButtonText: userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? 'Accept' : '', 
                                 onPrimaryButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/accept`, { headers: { jwt: jwt }} )
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/accept`, { headers: { jwt: jwt }} )
                                         .then((response:{ data: CircleListItem }) => notify(`Joined Circle ${circle.name}`, ToastStyle.SUCCESS, () => setMemberCircleList(list => [circle, ...list])))
                                         .catch((error) => processAJAXError(error)),
 
@@ -551,7 +551,7 @@ const UserEditPage = () => {
                                 onClick: (id:number) => redirectToPrayerRequest(prayerRequest),
                                 primaryButtonText: 'Pray', 
                                 onPrimaryButtonCallback: (id:number) => 
-                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, { headers: { jwt: jwt }} )
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, {}, { headers: { jwt }} )
                                         .then(response => notify(`Prayed`, ToastStyle.SUCCESS, () => setPrayerRequestList(list => list.map((prayerRequest) => (prayerRequest.prayerRequestID === id) ? {...prayerRequest, prayerCount: prayerRequest.prayerCount + 1} : prayerRequest))))
                                         .catch((error) => processAJAXError(error))
                             }))

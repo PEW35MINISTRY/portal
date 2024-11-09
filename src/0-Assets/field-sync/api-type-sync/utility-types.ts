@@ -1,12 +1,14 @@
 
-
 /*********************************
 *    ADDITIONAL UTILITY TYPES    *
 **********************************/
-
-
 /* Server Error | Toast Display: ServerErrorResponse.notification */
-export type ServerErrorResponse = {
+export interface ServerErrorResponse {
+    status: number,
+    notification: string,
+};
+
+export interface ServerDebugErrorResponse extends ServerErrorResponse {
     status: number,
     notification: string,
     message: string,
