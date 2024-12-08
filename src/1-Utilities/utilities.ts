@@ -6,7 +6,7 @@ import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field
 
 
 /* Parse Environment | (Don't default to PRODUCTION for security) */
-export const getEnvironment = ():ENVIRONMENT_TYPE => ENVIRONMENT_TYPE[process.env.ENVIRONMENT as keyof typeof ENVIRONMENT_TYPE] || ENVIRONMENT_TYPE.DEVELOPMENT;
+export const getEnvironment = ():ENVIRONMENT_TYPE => ENVIRONMENT_TYPE[process.env.REACT_APP_ENVIRONMENT as keyof typeof ENVIRONMENT_TYPE] || ENVIRONMENT_TYPE.DEVELOPMENT;
 
 
 /* Filter Unique List Items by Type */

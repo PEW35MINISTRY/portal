@@ -5,7 +5,10 @@
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    margin: 5vh 5vw;
+    padding: 5vh 5vw;
+    box-sizing: border-box;
+    height: 100%;
+    overflow-y: auto;
 
     .logo-image {
         max-height: 20vh;

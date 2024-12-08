@@ -11,6 +11,11 @@ $radius: 4px;
 
 $page-height: 100vh;
 
+$screen-mobile-width: 576px;
+$screen-tablet-width: 768px;
+$screen-laptop-width: 991px;
+$screen-desktop-width: 1200px;
+
 html {
   font-size: 22px;
   color: black;
@@ -22,15 +27,15 @@ html {
   scroll-behavior: smooth;
   overflow-x: hidden;
 
-  @media screen and (max-width: 1200px) {
+  @media screen and (max-width: $screen-desktop-width) {
     font-size: 15px;
   }
 
-  @media screen and (max-width: 991px) {
+  @media screen and (max-width: $screen-laptop-width) {
     font-size: 14px;
   }
 
-  @media screen and (max-width: 576px) {
+  @media screen and (max-width: $screen-mobile-width) {
     font-size: 12px;
   }
 }
@@ -41,13 +46,22 @@ body {
 }
 
 
-.none {
+.none, .hide {
   display: none;
   height: 0;
   width: 0;
   margin: 0;
   padding: 0;
+}
 
+.hide-mobile {
+  @media screen and (max-width: $screen-mobile-width) {
+    display: none;
+    height: 0;
+    width: 0;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 div,
@@ -155,6 +169,37 @@ textarea {
   height: 5.0rem;
 }
 
+/* Popup */
+.center-absolute-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed; /* Stay in place */
+  z-index: 15; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: $t-black;
+
+  .center-absolute-inside {
+    background-color: white;
+    padding: 2.0rem;
+    border-radius: calc(2 * $radius);
+    box-shadow: calc(3 * $radius) calc(4 * $radius) $t-black;
+    min-width: 40vw;
+    max-width: min(700px, 80vw);
+    max-height: 80vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    @media screen and (max-width: $screen-mobile-width) {
+      min-width: none;
+      max-width: 90vw;
+    }
+  }
+}
+
 .validation {
   color: $red;
   font-family: 'Roboto';
@@ -174,6 +219,38 @@ textarea {
       color: white;
       background-color: $blue;
       border: 1px solid $blue;
+  }
+}
+
+.icon-button {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: baseline;
+  color: $blue;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0.3rem 1.0rem;
+
+  .icon-button-icon {
+    @extend .title;
+    font-size: 1.5rem;
+    max-width: 1.5rem;    
+  }
+
+  .icon-button-label {
+    @extend .title;
+    @extend .hide-mobile;
+    margin-left: 0.5rem;    
+  }
+
+  &:hover {
+    background: $blue;
+    cursor: pointer;
+
+    .icon-button-icon, .icon-button-label {
+      color: white;
+    }
   }
 }
 
