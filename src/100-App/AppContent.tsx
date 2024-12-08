@@ -20,7 +20,7 @@ import PartnershipPage, { PARTNERSHIP_VIEW } from '../12-Features/PartnershipPag
 import ContentArchivePage from '../11-Models/ContentArchivePage';
 import CircleChat from '../12-Features/Chat-Circle-Demo/Chat';
 import DirectChat from '../12-Features/Chat-Direct-Demo/Chat';
-import Log from '../12-Features/Log';
+import LogPage from '../12-Features/Log/LogPage';
 import FullImagePage, { PageNotFound } from '../12-Features/Utility-Pages/FullImagePage';
 import PopupPageFlow, { FlowPage } from '../12-Features/PopupPageFlow';
 
@@ -276,7 +276,8 @@ const AppContent = () => {
                   {isPageAccessible('/edit/prayer-request') && <Route path='/edit/prayer-request/:id/*' element={<PrayerRequestEditPage/>}/>}
                   {isPageAccessible('/chat/direct') && <Route path='/chat/direct/*' element={<DirectChat/>}/>}
                   {isPageAccessible('/chat/circle') && <Route path='/chat/circle/*' element={<CircleChat/>}/>}
-                  {isPageAccessible('/logs') && <Route path='/logs/*' element={<Log/>}/>}
+                  {isPageAccessible('/logs') && <Route path='/logs/:kind/:action' element={<LogPage/>}/>}
+                  {isPageAccessible('/logs') && <Route path='/logs/*' element={<LogPage/>}/>}
                   <Route path='*' element={<PageNotFound primaryButtonText={'Return to Dashboard'} onPrimaryButtonClick={()=>navigate('/portal/dashboard')} />} />
                 </Routes>
             </div>

@@ -1,0 +1,290 @@
+import axios, { AxiosResponse } from 'axios';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { LogType, LogLocation, SUPPORTED_LOG_TYPES, LogListItem } from '../../0-Assets/field-sync/api-type-sync/utility-types';
+import { getDateDaysFuture } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
+import { getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { useAppSelector, notify, processAJAXError } from '../../1-Utilities/hooks';
+import { makeDisplayText } from '../../1-Utilities/utilities';
+import { ToastStyle } from '../../100-App/app-types';
+
+
+
+/****************
+* Filter Search *
+*****************/
+export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, startDate, setStartDate, endDate, setEndDate, combineDuplicates, setCombineDuplicates,
+    onSearch, onCancel }: {
+        type:LogType, location:LogLocation, searchTerm:string, setSearchTerm:(value: string) => void, startDate?: Date, setStartDate: (value:Date) => void, endDate?:Date, setEndDate:(value:Date) => void, combineDuplicates:boolean, setCombineDuplicates:(value:boolean) => void,
+        onSearch: (criteria: { type?:LogType, searchTerm?:string, endTimestamp?:number, cumulativeIndex?:number }) => void, onCancel?:() => void,
+    }) => {
+    const searchRef = useRef<HTMLInputElement | null>(null);
+    const [searchType, setSearchType] = useState<LogType>(type); //Separate to not trigger a search
+    const [searchLocation, setSearchLocation] = useState<LogLocation>(location); //Separate to not trigger a search
+    const [startIndex, setStartIndex] = useState<number>(0); //Not saved to LogPage & requires endTimestamp to also be set
+
+    //Auto select on load
+    useEffect(() => {
+        if(searchRef.current) {
+            searchRef.current?.focus();
+        }
+    }, []);
+
+    const onSearchHandler = () => {
+        onSearch({
+            type: searchType,
+            endTimestamp: endDate?.getTime(),
+            cumulativeIndex: startIndex,
+        });
+    }
+
+
+    return (
+        <div className='center-absolute-wrapper' onClick={() => onCancel && onCancel()}>
+            <div id='search-log-pop-up' className='center-absolute-inside' onClick={(e) => e.stopPropagation()} 
+                onKeyDown={(e) => {
+                    if(e.key === 'Enter') {
+                        onSearchHandler();
+                    } else if(e.key === 'Delete') {
+                        setSearchTerm('');
+                    } else if(e.key === 'Escape') {
+                        onCancel && onCancel();
+                    }
+                }}>
+                <h2>Search</h2>
+
+                <input ref={searchRef} type='text' value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+
+                <div className='log-option-box'>
+                    <label>Start</label>
+                    <input type='date' value={getShortDate(startDate?.toISOString() || getDateDaysFuture(-7).toISOString())} onChange={(e) => setStartDate(new Date(e.target.value))} />
+    
+                    <label>End</label>
+                    <input type='date' value={getShortDate(endDate?.toISOString() || new Date().toISOString())} onChange={(e) => setEndDate(new Date(e.target.value))} />
+
+                    <label>Type</label>
+                    <select value={searchType} onChange={(e) => setSearchType(LogType[e.target.value as keyof typeof LogType])} autoComplete='off'>
+                        {SUPPORTED_LOG_TYPES.map((t) => (
+                            <option key={'type-' + t} value={t}>{makeDisplayText(t)}</option>
+                        ))}
+                    </select>
+
+                    <label>Source</label>
+                    <select value={searchLocation} onChange={(e) => setSearchLocation(LogLocation[e.target.value as keyof typeof LogLocation])} autoComplete='off'>
+                        {Object.values(LogLocation).map((l) => (
+                            <option key={'location-' + l} value={l}>{makeDisplayText(l)}</option>
+                        ))}
+                    </select>
+                
+                    <label>Condense</label>
+                    <select value={combineDuplicates ? 'true' : 'false'} onChange={(e) => setCombineDuplicates(e.target.value === 'true')} autoComplete='off'>
+                        <option key={'duplicate-yes'} value={'true'}>Yes</option>
+                        <option key={'duplicate-no'} value={'false'}>No</option>
+                    </select>
+
+                    {endDate && 
+                        <>
+                            <label>Index</label>
+                            <input type='number' value={startIndex} onChange={(e) => setStartIndex(Number(e.target.value))} min={0} autoComplete='off'/>
+                        </>
+                    }
+                </div>
+
+                <button className='submit-button' type='button' onClick={() => onSearchHandler()}>SEARCH</button>
+                <button className='alternative-button' type='button' onClick={() => onCancel && onCancel()}>Cancel</button>
+            </div>
+        </div>
+    );
+};
+
+
+/**************
+* Add New Log *
+***************/
+export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallback, onCancel }: { type:LogType, setType:Function, location:LogLocation, setLocation:Function, onSaveCallback?:(item:LogListItem) => void, onCancel?:Function }) => {
+    const jwt:string = useAppSelector((state) => state.account.jwt);
+    const inputRef = useRef<HTMLTextAreaElement | null>(null);
+    const [messages, setMessages] = useState<string[]>([]);
+
+    //Auto select on load
+    useEffect(() => {
+        if(inputRef.current) {
+            inputRef.current?.focus();
+        }
+    }, []);
+
+    const saveLogEntry = () => axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}`, messages, { headers: { jwt } })
+        .then((response: { data: LogListItem }) => {
+            notify(`${makeDisplayText(type)} Entry Saved`, ToastStyle.SUCCESS);
+            onSaveCallback && onSaveCallback(response.data);
+        })
+        .catch((error) => processAJAXError(error));
+
+    const onInputHandler = (index: number, line: string) => {
+
+        setMessages((currentList) => {
+            const list = [...currentList]; //Copy for new reference
+            if (index === list.length)
+                list.push(line);
+            else
+                list[index] = line;
+            return list;
+        });
+    }
+
+    return (
+        <div className='center-absolute-wrapper' onClick={() => onCancel && onCancel()}>
+            <div id='new-log-pop-up' className='center-absolute-inside' onClick={(e) => e.stopPropagation()} 
+                onKeyDown={(e) => {
+                    if(e.key === 'Enter') {
+                        saveLogEntry();
+                    } else if(e.key === 'Delete') {
+                        setMessages([]);
+                    } else if(e.key === 'Escape') {
+                        onCancel && onCancel();
+                    }
+                }}>
+                <h2>New Log Entry</h2>
+
+                <div className='log-message-box'>
+                    {[...messages, ''].map((message, index) => (
+                        <textarea ref={(index === messages.length) ? inputRef : undefined} key={'new-log-' + index} className='log-input-line' value={message} onChange={(e) => onInputHandler(index, e.target.value)} placeholder='Add line...' />
+                    ))}
+                </div>
+                    
+                <div className='log-option-box'>
+                    <label>Type</label>
+                    <select value={type} onChange={(e) => setType(LogType[e.target.value as keyof typeof LogType])} autoComplete='off'>
+                    {/* SUPPORTED_LOG_TYPES | Allowed to save as Alert triggering email */}
+                        {Object.values(LogType).map((t) => (
+                            <option key={'type-' + t} value={t}>{makeDisplayText(t)}</option>
+                        ))}
+                    </select>
+
+                    <label>Location</label>
+                    <select value={location} onChange={(e) => setLocation(LogLocation[e.target.value as keyof typeof LogLocation])} autoComplete='off'>
+                        {Object.values(LogLocation).map((l) => (
+                            <option key={'location-' + l} value={l}>{makeDisplayText(l)}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <button className='submit-button' type='button' onClick={saveLogEntry}>SAVE</button>
+                <button className='alternative-button' type='button' onClick={() => onCancel && onCancel()}>Cancel</button>
+            </div>
+        </div>
+    );
+};
+
+
+
+/***********
+* SETTINGS *
+************/
+export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<string, SettingsProperty<any>>, onCancel?: () => void }) => {
+    const jwt:string = useAppSelector((state) => state.account.jwt);
+    const type:string = useMemo(() => String(propertyMap.get('Type')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
+    const location:string = useMemo(() => String(propertyMap.get('Location')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
+
+    /* DOWNLOAD LOG FILE | Server initiates file stream */
+    const downloadLog = (triggerDownload:boolean = true) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/download?location=${location}`, { headers: { jwt }, responseType: 'blob' })
+        .then((response: AxiosResponse<Blob>) => {
+            const fileBlob = response.data;
+            const fileURL = URL.createObjectURL(fileBlob);
+            
+            if(triggerDownload) {
+                notify(`${makeDisplayText(type)} Download Initiated`, ToastStyle.SUCCESS);
+                //Server provides filename
+                const contentDisposition = response.headers['content-disposition'];
+                const matches = /filename='([^']*)'/.exec(contentDisposition ?? '');
+                const filename = (matches && matches[1]) || `${type.toLowerCase()}-log.txt`;
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = fileURL;
+                downloadLink.download = filename;
+                downloadLink.click();
+            
+            //Open file in new tab
+            } else {
+                const newTab = window.open(fileURL, '_blank');
+                if(newTab) notify(`${makeDisplayText(type)} Opened in New Tab`, ToastStyle.SUCCESS);
+                else notify(`Unable to Open ${makeDisplayText(type)} File`, ToastStyle.ERROR);
+            }
+            onCancel && onCancel();
+        })
+        .catch((error) => processAJAXError(error));
+
+
+    return (
+        <div className='center-absolute-wrapper' onClick={() => onCancel && onCancel()}>
+            <div id='settings-log-pop-up' className='center-absolute-inside' onClick={(e) => e.stopPropagation()} 
+                onKeyDown={(e) => {
+                    if(e.key === 'Escape') {
+                        onCancel && onCancel();
+                    }
+                }}>
+                <h2>Settings</h2>
+
+                <div className='log-option-box'>
+                    { Array.from(propertyMap.entries()).map(([key, { value, setValue, optionList, displayList }]) =>
+                        <React.Fragment key={key}>
+                            <label>{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+                            <select value={optionList.includes(value) ? String(value) : undefined} onChange={(e) => setValue(e.target.value)} autoComplete='off'>
+                                <option value='' hidden>Select</option>
+                                {optionList.map((option:string, index:number) => (
+                                    <option key={key + '-' + option} value={String(option)}>{displayList[index]}</option>
+                                ))}
+                            </select>
+                        </React.Fragment>
+                    )}
+                </div>
+
+
+                {/* RESET LOG FILE | To latest Entries to reduce Size  */}
+                <button className='alternative-button' type='button' onClick={() => 
+                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/reset?location=${location}`, {}, { headers: { jwt } })
+                    .then((response: { data: LogListItem }) => {
+                        notify(`${makeDisplayText(type)} Reset`, ToastStyle.SUCCESS);
+                        onCancel && onCancel();
+                    })
+                    .catch((error) => processAJAXError(error))
+                    }>Reset ↺</button>
+
+                <button className='alternative-button' type='button' onClick={() => downloadLog(false)}>View ⇒</button>
+
+                <button className='alternative-button' type='button' onClick={() => downloadLog(true)}>Download ⭳</button>
+
+                <button className='alternative-button' type='button' onClick={() => 
+                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/report?location=${location}`, {}, { headers: { jwt } })
+                        .then((response: { data: LogListItem }) => {
+                            notify(`${makeDisplayText(type)} Report Emailed`, ToastStyle.SUCCESS);
+                            onCancel && onCancel();
+                        })
+                        .catch((error) => processAJAXError(error))
+                    }>Send Report 📃</button>
+
+                <button className='alternative-button cancel-button' type='button' onClick={() => onCancel && onCancel()}>Cancel</button>
+            </div>
+        </div>
+    );
+};
+
+
+/* Align Properties for Settings Popup */
+export class SettingsProperty<T> { 
+    value:T; 
+    setValue:(value:T) => void; 
+    optionList:T[];
+    displayList:string[];
+
+    constructor(value:T, setValue:(value: T) => void, optionList:T[], displayList?:string[]) {
+        this.value = value;
+        this.setValue = setValue;
+        this.optionList = optionList;
+        this.displayList = displayList ?? optionList.map(o => makeDisplayText(String(o)));
+
+        if(this.optionList.length !== this.displayList.length) {
+            console.error('Log Page -> Settings: Unmatched propertyList:', this.optionList, this.displayList);
+            this.displayList = optionList.map(o => makeDisplayText(String(o)));
+        }
+    }
+}
