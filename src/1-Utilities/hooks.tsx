@@ -47,11 +47,14 @@ export const notify = (text:string, type:ToastStyle = ToastStyle.INFO, callback?
 }
 
 
-export const processAJAXError = (error: AXIOSError, callback?:Function) => {
+export const processAJAXError = (error:AXIOSError, callback?:Function) => {
   const status:number = error?.response?.status || 500;
-  console.error(error.message, error.response?.data.action);
+  if (error?.response?.data && 'action' in error?.response?.data)
+    console.error(error.message, error?.response?.data.action);
+  else
+    console.error(error.message, error?.response?.data.notification);
 
-  notify(error.response?.data.notification || '', 
+  notify(error?.response?.data.notification || '', 
       (status < 300) ? ToastStyle.SUCCESS
       : (status < 400) ? ToastStyle.INFO
       : (status < 500) ? ToastStyle.WARN
@@ -66,3 +69,45 @@ export const useQuery = () => {
 
   return useMemo(() => new URLSearchParams(search), [search]);
 }
+
+
+/*************************************
+ *         INTERVAL HOOK             *
+ * * Restart on Interval Change      *
+ * * Optional cancelInterval() check *
+ *************************************/
+export const useInterval = ({ interval, callback, cancelInterval }:{interval:number, callback:() => void, cancelInterval?:() => boolean}) => {
+    const [currentInterval, setCurrentInterval] = useState<number>(interval);
+
+    useEffect(() => {
+        let timer:NodeJS.Timeout|undefined = undefined;
+
+        const startInterval = () => {
+            timer = setInterval(() => {
+                if(cancelInterval?.()) {
+                    if(timer) {
+                        clearInterval(timer);
+                        timer = undefined;
+                    }
+                } else {
+                    callback();
+                }
+            }, currentInterval);
+        };
+
+        /* Restart Interval */
+        if(interval > 0)
+          startInterval();
+        else if(timer) {
+          clearInterval(timer);
+          timer = undefined;
+        }
+
+        return () => { timer && clearInterval(timer); }
+    }, [currentInterval, callback, cancelInterval]);
+
+    // Update interval duration
+    useEffect(() => {
+        setCurrentInterval(interval);
+    }, [interval]);
+};

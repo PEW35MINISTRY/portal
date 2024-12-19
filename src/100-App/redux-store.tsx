@@ -6,6 +6,7 @@ import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/f
 import { AXIOSError, ToastStyle } from './app-types';
 import { notify } from '../1-Utilities/hooks';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { ServerDebugErrorResponse, ServerErrorResponse } from '../0-Assets/field-sync/api-type-sync/utility-types.js';
 
 
 /**************************************
@@ -117,8 +118,11 @@ export const initializeAccountState = async(dispatch: (arg0: { payload: AccountS
 
         notify(`Welcome ${account.userProfile?.firstName}`, ToastStyle.INFO);
         
-      }).catch((response:AXIOSError) => {
-        throw response.response?.data.action || 'Invalid JWT Token';
+      }).catch((response: { data:ServerDebugErrorResponse | ServerErrorResponse }) => {
+        if('action' in response.data)
+          throw (response.data.action + ' | ' + response.data.message);
+        else
+          throw response.data.notification || 'Invalid JWT Token';
       });
 
     } catch(error) {

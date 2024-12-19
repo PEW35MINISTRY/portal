@@ -1,0 +1,291 @@
+ @import '../../index.scss';
+
+ #log-page {
+     display: flex;
+     flex-direction: column;
+     border-radius: 0;
+     height: 100%;
+
+     #log-header {
+         display: flex;
+         align-items: baseline;
+         justify-content: space-between;
+         padding: 0.5rem;
+         padding-bottom: 0.25rem;
+         background-color: $gray-dark;
+         border-radius: 0;
+
+         .icon-button {
+             padding-top: 0;
+             padding-bottom: 0;
+             margin: 0;
+
+             .icon-button-icon {
+                 padding-bottom: 0;
+                 margin-bottom: 0;
+             }
+
+             .icon-button-label {
+                 padding-bottom: 0;
+                 margin-bottom: 0;
+             }
+         }
+
+         .typeSelection {
+             display: flex;
+             align-items: center;
+
+             .header-label {
+                 @extend .title;
+                 padding-bottom: 0;
+                 margin-right: 0.5rem;
+                 margin-bottom: 0;
+             }
+
+             select {
+                 @extend .title;
+                 padding: 0.1rem 0.5rem;
+                 margin-bottom: 0;
+                 background-color: transparent;
+                 border: 1px solid $blue;
+                 color: $blue;
+
+                 option {
+                     background-color: transparent;
+                     color: $blue;
+                 }
+             }
+         }
+
+         .header-search {
+             display: flex;
+             align-items: center;
+
+             border: 1px solid $blue;
+             border-radius: 2.0rem;
+             padding: 0.05rem 1.0rem;
+
+             .icon-button-icon,
+             .icon-button-label {
+                 margin-top: 0;
+             }
+         }
+     }
+
+     #log-list {
+         display: flex;
+         flex-direction: column;
+         margin: 0;
+         padding: 0 1.0rem 1.0rem 1.0rem;
+         height: 100%;
+         overflow-x: hidden;
+         overflow-y: auto;
+         background-color: white;
+
+
+         .log-entry-item {
+             display: flex;
+             flex-direction: column;
+             margin-top: 0.15rem;
+
+             .log-entry-header {
+                 display: flex;
+                 flex-direction: row;
+                 flex-wrap: nowrap;
+                 align-items: center;
+                 overflow: hidden;
+
+                 .log-entry-type,
+                 .log-entry-date,
+                 .log-entry-link,
+                 .log-entry-indicator,
+                 .log-entry-primary-message,
+                 .log-entry-toggle {
+                     @extend .title;
+                     font-size: 0.8rem;
+                     font-weight: 600;
+                     white-space: nowrap;
+                     margin: 0;
+                 }
+
+                 .log-entry-date {
+                     color: $blue;
+                     margin-left: 0.5rem;
+                 }
+
+                 .log-entry-link {
+                    color: $red;
+                    margin-left: 0.5rem;
+
+                    &:hover {
+                        color: $gray-light;
+                        cursor: pointer;
+                    }
+                    }
+
+                 .log-entry-indicator {
+                     color: $gray-light;
+                     margin-left: 0.5rem;
+                 }
+
+                 .log-entry-primary-message {
+                     margin-left: 0.5rem;
+                     color: black;
+
+                     flex-grow: 1;
+                     overflow: hidden;
+                     text-overflow: ellipsis;
+                 }
+
+                 .log-entry-toggle {
+                     font-weight: 900;
+                     margin: 0 0.5rem;
+                     margin-left: auto;
+                 }
+
+                 &:hover {
+                     cursor: zoom-in;
+
+                     &.log-close {
+                         cursor: zoom-out;
+                     }
+                 }
+             }
+
+             .log-entry-details {
+
+                 .log-entry-message,
+                 .log-entry-duplicate,
+                 .log-entry-trace {
+                     display: flex;
+                     flex-direction: row;
+                     align-items: start;
+                     word-break: break-all;
+
+                     margin-left: 1.0rem;
+                     margin-right: 0.5rem;
+                     font-size: 0.8rem;
+
+                     .log-entry-line-icon {
+                         @extend .text;
+                         font-size: 0.8rem;
+                         color: $blue;
+                         margin: 0 0.3rem 0 0;
+                     }
+
+                     p {
+                         @extend .text;
+                         font-size: 0.8rem;
+                         margin: 0;
+                         word-break: break-all;
+                     }
+                 }
+
+                 .log-entry-duplicate {
+                     p {
+                         color: $gray-dark;
+                     }
+                 }
+
+                 .log-entry-trace {
+                     p {
+                         color: $gray-light;
+                         font-size: 0.7rem;
+                     }
+                 }
+
+                 hr {
+                     border-width: 0;
+                     border-top: 1px solid $gray-light;
+                     border-radius: 0;
+                     height: 0;
+                     width: 100%;
+                     margin: 0.3rem 1.0rem;
+                 }
+             }
+         }
+
+         .next-page-button {
+            width: 100%;
+            margin-bottom: 0;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+     }
+
+     #search-log-pop-up,
+     #new-log-pop-up,
+     #settings-log-pop-up {
+         display: flex;
+         flex-direction: column;
+
+         .log-message-box {
+             display: block;
+             overflow-y: auto;
+             width: 100%;
+
+             .log-input,
+             textarea {
+                 box-sizing: border-box;
+                 resize: none;
+                 width: 100%;
+                 height: 2rem;
+                 overflow-y: auto;
+             }
+         }
+
+         .log-option-box {
+             display: grid;
+             grid-template-columns: 1fr 2fr 1fr 2fr;
+             grid-auto-flow: row;
+             gap: 0.5rem 0.5rem;
+             max-width: 100%;
+             justify-content: space-around;
+             margin: 1rem auto;
+
+             @media screen and (max-width: $screen-mobile-width) {
+                grid-template-columns: 1fr 2fr;
+              }
+
+             label {
+                 text-align: right;
+             }
+
+             select {
+                 margin: 0;
+                 min-width: 10rem;
+                 text-align: center;
+                 color: $blue;
+             }
+
+             input {
+                 width: auto;
+                 min-width: auto;
+             }
+         }
+
+         .submit-button,
+         .alternative-button {
+             margin: 0 auto;
+         }
+
+         .alternative-button {
+            margin-top: 1.0rem;
+        }
+    }
+
+    #settings-log-pop-up {
+        .alternative-button {
+            margin: 0.25rem 0;
+            width: 100%;
+            border: 1px solid $blue;
+        }
+
+        .cancel-button {
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+    }    
+ }

@@ -1,33 +1,6 @@
 @import '../../index.scss';
 
 
-.center-absolute-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed; /* Stay in place */
-    z-index: 15; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: $t-black;
-}
-
-.center-absolute-inside {
-    padding: 2.0rem;
-    border-radius: calc(2 * $radius);
-    box-shadow: calc(3 * $radius) calc(4 * $radius) $t-black;
-    min-width: 40vw;
-    max-width: min(700px, 80vw);
-    overflow-x: hidden;
-
-    form {
-        @extend form;
-        margin: 0 auto;
-    }
-}
-
 .form-page, .form-page-block {
     display: flex;
     flex-direction: row;
@@ -86,7 +59,7 @@
         display: flex;
         flex-direction: column;
 
-        @media only screen and (max-width: 768px) {
+        @media only screen and (max-width: $screen-tablet-width) {
             grid-template-columns: 100%;
         }
 
@@ -105,7 +78,7 @@
                 grid-column: 1;
                 color: black;
     
-                @media only screen and (max-width: 768px) {
+                @media only screen and (max-width: $screen-tablet-width) {
                     text-align: left;
                 }
             }
@@ -145,7 +118,7 @@
             .validation {
                 grid-column: 2;
     
-                @media only screen and (max-width: 768px) {
+                @media only screen and (max-width: $screen-tablet-width) {
                     grid-column: 1;
                 }
             }   
@@ -155,7 +128,7 @@
                 display: flex;
                 flex-direction: column;
 
-                @media only screen and (max-width: 768px) {
+                @media only screen and (max-width: $screen-tablet-width) {
                     grid-column: 1;
                 }
 
@@ -260,7 +233,7 @@
                 display: flex;
                 flex-direction: row;
 
-                @media only screen and (max-width: 768px) {
+                @media only screen and (max-width: $screen-tablet-width) {
                     flex-direction: column;
                 }
 
@@ -276,7 +249,7 @@
                     font-size: 1.0rem;
                     padding: 0.2rem 1.0rem;
 
-                    @media only screen and (max-width: 768px) {
+                    @media only screen and (max-width: $screen-tablet-width) {
                         margin: auto;
                     }
                 }

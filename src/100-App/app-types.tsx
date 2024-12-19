@@ -1,4 +1,4 @@
-import { ServerErrorResponse } from '../0-Assets/field-sync/api-type-sync/utility-types';
+import { ServerDebugErrorResponse, ServerErrorResponse } from '../0-Assets/field-sync/api-type-sync/utility-types';
 
 export const redColor:string = '#B12020';
 export const blueColor:string = '#62D0F5';
@@ -23,13 +23,24 @@ export enum PageState {
   ERROR = 'ERROR'
 }
 
+//Lowercase to match URL
 export enum ModelPopUpAction {
   NONE = '',
+  NEW = 'new',
   DELETE = 'delete',
   IMAGE = 'image',
   COMMENT = 'comment',
   ANNOUNCEMENT = 'announcement',
   EVENT = 'event',
+  SETTINGS = 'settings'
+}
+
+export enum PopUpAction {
+  NONE = '',
+  NEW = 'new',
+  DELETE = 'delete',
+  SEARCH = 'search',
+  SETTINGS = 'settings'
 }
 
 export type AXIOSError = {
@@ -39,7 +50,7 @@ export type AXIOSError = {
     request: XMLHttpRequest,
     //Only available if server responds
     response?: {
-      data: ServerErrorResponse,
+      data: ServerErrorResponse|ServerDebugErrorResponse,
       status: number,
       statusText: string,
     }

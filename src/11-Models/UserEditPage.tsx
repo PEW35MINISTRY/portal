@@ -532,7 +532,7 @@ const UserEditPage = () => {
                                 onClick: (id:number) => redirectToCircle(id),
                                 primaryButtonText: userHasAnyRole([RoleEnum.ADMIN, RoleEnum.CIRCLE_LEADER]) ? 'Accept' : '', 
                                 onPrimaryButtonCallback: (id:number) => 
-                                    axios.delete(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/accept`, { headers: { jwt: jwt }} )
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${id}/client/${editingUserID}/accept`, { headers: { jwt: jwt }} )
                                         .then((response:{ data: CircleListItem }) => notify(`Joined Circle ${circle.name}`, ToastStyle.SUCCESS, () => setMemberCircleList(list => [circle, ...list])))
                                         .catch((error) => processAJAXError(error)),
 
@@ -551,7 +551,7 @@ const UserEditPage = () => {
                                 onClick: (id:number) => redirectToPrayerRequest(prayerRequest),
                                 primaryButtonText: 'Pray', 
                                 onPrimaryButtonCallback: (id:number) => 
-                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, { headers: { jwt: jwt }} )
+                                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${id}/like`, {}, { headers: { jwt }} )
                                         .then(response => notify(`Prayed`, ToastStyle.SUCCESS, () => setPrayerRequestList(list => list.map((prayerRequest) => (prayerRequest.prayerRequestID === id) ? {...prayerRequest, prayerCount: prayerRequest.prayerCount + 1} : prayerRequest))))
                                         .catch((error) => processAJAXError(error))
                             }))
@@ -621,7 +621,7 @@ const UserEditPage = () => {
                                 setImage(undefined);
                                 notify(`Profile Image Deleted`, ToastStyle.SUCCESS, () => (editingUserID === userID) && dispatch(updateProfileImage(undefined)))})
                             .catch((error) => processAJAXError(error))}
-                        onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
+                        onUpload={(imageFile: { name: string; type: string; })=> axios.post(`${process.env.REACT_APP_DOMA}IN/api/user/${editingUserID}/image/${imageFile.name}`, imageFile, { headers: { 'jwt': jwt, 'Content-Type': imageFile.type }} )
                             .then(response => {
                                 updatePopUpAction(ModelPopUpAction.NONE);
                                 setImage(response.data);
