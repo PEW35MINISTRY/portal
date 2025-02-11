@@ -30,16 +30,12 @@ export enum LogLocation {
 }
 
 export enum LogType {
-    ALERT = 'ALERT', 
     ERROR = 'ERROR', 
     WARN = 'WARN', 
     DB = 'DB', 
     AUTH = 'AUTH', 
     EVENT = 'EVENT',
 }
-
-//Alert are saved as Error, but also send email
-export const SUPPORTED_LOG_TYPES:LogType[] = Object.values(LogType).filter(t => t !== LogType.ALERT);
 
 //JSON form of LOG_ENTRY
 export type LogListItem = { 

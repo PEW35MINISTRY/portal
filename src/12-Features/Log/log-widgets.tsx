@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { LogType, LogLocation, SUPPORTED_LOG_TYPES, LogListItem } from '../../0-Assets/field-sync/api-type-sync/utility-types';
+import { LogType, LogLocation, LogListItem } from '../../0-Assets/field-sync/api-type-sync/utility-types';
 import { getDateDaysFuture } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
 import { getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppSelector, notify, processAJAXError } from '../../1-Utilities/hooks';
@@ -63,7 +63,7 @@ export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, star
 
                     <label>Type</label>
                     <select value={searchType} onChange={(e) => setSearchType(LogType[e.target.value as keyof typeof LogType])} autoComplete='off'>
-                        {SUPPORTED_LOG_TYPES.map((t) => (
+                        {Object.values(LogType).map((t) => (
                             <option key={'type-' + t} value={t}>{makeDisplayText(t)}</option>
                         ))}
                     </select>
@@ -100,10 +100,17 @@ export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, star
 /**************
 * Add New Log *
 ***************/
+type NewLogTypeOptions = LogType|'ALERT';
 export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallback, onCancel }: { type:LogType, setType:Function, location:LogLocation, setLocation:Function, onSaveCallback?:(item:LogListItem) => void, onCancel?:Function }) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const [messages, setMessages] = useState<string[]>([]);
+    const [newLogType, setNewLogType] = useState<NewLogTypeOptions>(type);
+
+    const updateLogType = (t:string) => {
+        setNewLogType(t as NewLogTypeOptions);
+        setType((t === 'ALERT') ? LogType.ERROR : LogType[t as keyof typeof LogType]);
+    }
 
     //Auto select on load
     useEffect(() => {
@@ -112,9 +119,9 @@ export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallba
         }
     }, []);
 
-    const saveLogEntry = () => axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}`, messages, { headers: { jwt } })
+    const saveLogEntry = () => axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${newLogType}`, messages, { headers: { jwt } })
         .then((response: { data: LogListItem }) => {
-            notify(`${makeDisplayText(type)} Entry Saved`, ToastStyle.SUCCESS);
+            notify(`${makeDisplayText(newLogType)} Entry Saved`, ToastStyle.SUCCESS);
             onSaveCallback && onSaveCallback(response.data);
         })
         .catch((error) => processAJAXError(error));
@@ -153,9 +160,8 @@ export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallba
                     
                 <div className='log-option-box'>
                     <label>Type</label>
-                    <select value={type} onChange={(e) => setType(LogType[e.target.value as keyof typeof LogType])} autoComplete='off'>
-                    {/* SUPPORTED_LOG_TYPES | Allowed to save as Alert triggering email */}
-                        {Object.values(LogType).map((t) => (
+                    <select value={newLogType} onChange={(e) => updateLogType(e.target.value)} autoComplete='off'>
+                        {['ALERT', ...Object.values(LogType)].map((t) => (
                             <option key={'type-' + t} value={t}>{makeDisplayText(t)}</option>
                         ))}
                     </select>
@@ -182,8 +188,8 @@ export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallba
 ************/
 export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<string, SettingsProperty<any>>, onCancel?: () => void }) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
-    const type:string = useMemo(() => String(propertyMap.get('Type')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
-    const location:string = useMemo(() => String(propertyMap.get('Location')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
+    const type:LogType = useMemo(() => LogType[propertyMap.get('Location')?.value as keyof typeof LogType] ?? LogType.ERROR, [propertyMap]); //Uses Label Name
+    const location:LogLocation = useMemo(() => LogLocation[propertyMap.get('Location')?.value as keyof typeof LogLocation] ?? LogLocation.LOCAL, [propertyMap]); //Uses Label Name
 
     /* DOWNLOAD LOG FILE | Server initiates file stream */
     const downloadLog = (triggerDownload:boolean = true) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/download?location=${location}`, { headers: { jwt }, responseType: 'blob' })
@@ -240,14 +246,16 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
 
 
                 {/* RESET LOG FILE | To latest Entries to reduce Size  */}
-                <button className='alternative-button' type='button' onClick={() => 
-                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/reset?location=${location}`, {}, { headers: { jwt } })
-                    .then((response: { data: LogListItem }) => {
-                        notify(`${makeDisplayText(type)} Reset`, ToastStyle.SUCCESS);
-                        onCancel && onCancel();
-                    })
-                    .catch((error) => processAJAXError(error))
-                    }>Reset ↺</button>
+                {(location === LogLocation.LOCAL) &&
+                    <button className='alternative-button' type='button' onClick={() => 
+                        axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/reset?location=${location}`, {}, { headers: { jwt } })
+                        .then((response: { data: LogListItem }) => {
+                            notify(`${makeDisplayText(type)} Reset`, ToastStyle.SUCCESS);
+                            onCancel && onCancel();
+                        })
+                        .catch((error) => processAJAXError(error))
+                        }>Reset ↺</button>
+                }
 
                 <button className='alternative-button' type='button' onClick={() => downloadLog(false)}>View ⇒</button>
 

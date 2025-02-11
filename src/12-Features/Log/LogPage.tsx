@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { processAJAXError, useAppSelector, useInterval } from '../../1-Utilities/hooks';
-import { LogListItem, LogLocation, LogType, SUPPORTED_LOG_TYPES } from '../../0-Assets/field-sync/api-type-sync/utility-types';
+import { LogListItem, LogLocation, LogType } from '../../0-Assets/field-sync/api-type-sync/utility-types';
 import { ENVIRONMENT_TYPE, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import FullImagePage from '../Utility-Pages/FullImagePage';
 import { blueColor, blueDarkColor, PageState, PopUpAction, redColor } from '../../100-App/app-types';
@@ -37,7 +37,7 @@ const LogPage = () => {
     useEffect(() => {
         if(jwt.length === 0) return;
 
-        const targetType:LogType|undefined = SUPPORTED_LOG_TYPES.find((t) => t === kind?.toUpperCase());
+        const targetType:LogType|undefined = Object.values(LogType).find((t) => t === kind?.toUpperCase());
         const targetAction:PopUpAction|undefined = SUPPORTED_POP_UP_ACTIONS.find((a) => a === action?.toLowerCase());     
         
         if(targetType) {
@@ -68,7 +68,7 @@ const LogPage = () => {
 
     /* Update State and Fetch Default */
     const updateLogType = (newType:LogType, reset:boolean = true) => {
-        if(SUPPORTED_LOG_TYPES.includes(newType) && type !== newType) {
+        if(Object.values(LogType).includes(newType) && type !== newType) {
             navigate(`/portal/logs/${newType.toLowerCase()}${reset ? '' : `/${popUpAction}`}`, { replace: true });
             setType(newType);
 
@@ -76,6 +76,7 @@ const LogPage = () => {
                 executeSearch({ type: newType, searchTerm: ''});
                 setPopUpAction(PopUpAction.NONE);
                 setSearchTerm('');
+                setCumulativeIndex(0);
             }            
         }
     }
@@ -154,7 +155,7 @@ const LogPage = () => {
                         executeSearch({ type: LogType[e.target.value as keyof typeof LogType] });
                     }}>
                         <option value='DEFAULT' disabled hidden>Default</option>
-                        {SUPPORTED_LOG_TYPES.map((logType) => (
+                        {Object.values(LogType).map((logType) => (
                             <option key={logType} value={logType}>
                                 {makeDisplayText(logType)}
                             </option>
@@ -220,7 +221,7 @@ const LogPage = () => {
                 <SettingsLogPopup
                 propertyMap={new Map<string, SettingsProperty<any>>([
                     [
-                        'Type', new SettingsProperty<LogType>(type, updateLogType, SUPPORTED_LOG_TYPES)
+                        'Type', new SettingsProperty<LogType>(type, updateLogType, Object.values(LogType))
                     ],
                     [
                         'Location', new SettingsProperty<LogLocation>(location, updateLogLocation, Object.values(LogLocation))
@@ -312,7 +313,6 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
 
 /* UTILITIES */
 const LOG_TYPE_COLORS: { [key in LogType]:string } = {
-    [LogType.ALERT]: redColor,
     [LogType.ERROR]: redColor,
     [LogType.WARN]: '#daa520', //goldenrod
     [LogType.DB]: '#470047', //Purple

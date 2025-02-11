@@ -49,12 +49,12 @@ export const notify = (text:string, type:ToastStyle = ToastStyle.INFO, callback?
 
 export const processAJAXError = (error:AXIOSError, callback?:Function) => {
   const status:number = error?.response?.status || 500;
-  if (error?.response?.data && 'action' in error?.response?.data)
+  if(error?.response?.data && 'action' in error?.response?.data)
     console.error(error.message, error?.response?.data.action);
   else
     console.error(error.message, error?.response?.data.notification);
 
-  notify(error?.response?.data.notification || '', 
+  notify(error?.response?.data.notification || 'Server is Offline', 
       (status < 300) ? ToastStyle.SUCCESS
       : (status < 400) ? ToastStyle.INFO
       : (status < 500) ? ToastStyle.WARN
