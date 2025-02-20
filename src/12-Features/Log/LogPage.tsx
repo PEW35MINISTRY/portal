@@ -357,10 +357,10 @@ const LOG_TYPE_COLORS: { [key in LogType]:string } = {
 const getLogColor = (type:LogType):string => LOG_TYPE_COLORS[type] || 'black';
 
 const calculateDays = (date:Date, days:number):Date => {
-    const previousDate:Date = new Date(date);
-    previousDate.setHours(0, 0, 0, 0);
-    previousDate.setDate(previousDate.getDate() + days);
-    return previousDate;
+    const d:Date = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + days);
+    return d;
 }
 
 const formatLogDate = (date:Date, longForm:boolean = false):string => (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
