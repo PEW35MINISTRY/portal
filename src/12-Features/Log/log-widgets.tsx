@@ -15,7 +15,7 @@ import { ToastStyle } from '../../100-App/app-types';
 export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, startDate, setStartDate, endDate, setEndDate, combineDuplicates, setCombineDuplicates,
     onSearch, onCancel }: {
         type:LogType, location:LogLocation, searchTerm:string, setSearchTerm:(value: string) => void, startDate?: Date, setStartDate: (value:Date) => void, endDate?:Date, setEndDate:(value:Date) => void, combineDuplicates:boolean, setCombineDuplicates:(value:boolean) => void,
-        onSearch: (criteria: { type?:LogType, searchTerm?:string, endTimestamp?:number, cumulativeIndex?:number }) => void, onCancel?:() => void,
+        onSearch: (criteria: { type?:LogType, searchTerm?:string, location?:LogLocation, endTimestamp?:number, cumulativeIndex?:number }) => void, onCancel?:() => void,
     }) => {
     const searchRef = useRef<HTMLInputElement | null>(null);
     const [searchType, setSearchType] = useState<LogType>(type); //Separate to not trigger a search
@@ -32,6 +32,8 @@ export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, star
     const onSearchHandler = () => {
         onSearch({
             type: searchType,
+            location: searchLocation,
+            //searchTerm is provided with LogState.searchTerm
             endTimestamp: endDate?.getTime(),
             cumulativeIndex: startIndex,
         });
