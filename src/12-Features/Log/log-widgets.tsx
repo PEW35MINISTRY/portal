@@ -259,6 +259,18 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
                         }>Reset ↺</button>
                 }
 
+                {/* Update Athena Partitions for S3 Log Search */}
+                {(location === LogLocation.S3) &&
+                    <button className='alternative-button' type='button' onClick={() => 
+                        axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/athena-partition`, {}, { headers: { jwt } })
+                        .then((response) => {
+                            notify('Athena Partitioned', ToastStyle.SUCCESS);
+                            onCancel && onCancel();
+                        })
+                        .catch((error) => processAJAXError(error))
+                        }>Update Partitions ↺</button>
+                }
+
                 <button className='alternative-button' type='button' onClick={() => downloadLog(false)}>View ⇒</button>
 
                 <button className='alternative-button' type='button' onClick={() => downloadLog(true)}>Download ⭳</button>
