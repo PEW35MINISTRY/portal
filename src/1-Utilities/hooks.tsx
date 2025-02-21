@@ -107,18 +107,20 @@ export const useInterval = ({ interval, callback, cancelInterval }:{interval:num
 
 
 export const useStatusInterval = ({interval, callback, statusInterval, statusCallback, cancelInterval}: {interval:number, callback:() => void, statusInterval:number, statusCallback:(timeLeft:number) => void, cancelInterval?:() => boolean}) => {
-	const nextCompletionTimestamp = useRef<number>(new Date().getTime() + interval);
+	const nextCompletionTimestamp = useRef<number>(0);
     const timerRef = useRef<NodeJS.Timeout|undefined>(undefined);
 
     useEffect(() => {
-        if(interval <= 0 || interval < statusInterval) return;
+        if(interval <= 0 || statusInterval <= 0 || interval < statusInterval) return;
+
+		nextCompletionTimestamp.current = new Date().getTime() + interval;
 
         timerRef.current = setInterval(() => {
             const now:number = new Date().getTime();
             const timeLeft:number = nextCompletionTimestamp.current - now;
 
             //Main Callback
-            if(timeLeft <= interval) {
+            if(timeLeft <= statusInterval) {
                 callback();
                 nextCompletionTimestamp.current = now + interval;
             } else

@@ -9,9 +9,9 @@ import { blueColor, blueDarkColor, PageState, PopUpAction, redColor } from '../.
 import { ImageDefaultEnum } from '../../2-Widgets/ImageWidgets';
 import { getEnvironment } from '../../1-Utilities/utilities';
 import { NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
+import formatRelativeDate from '../../1-Utilities/dateFormat';
 
 import './log.scss';
-import formatRelativeDate from '../../1-Utilities/dateFormat';
 
 
 const LogPage = () => {
@@ -254,7 +254,7 @@ const LogPage = () => {
                     [
                         'Location', new SettingsProperty<LogLocation>(location, updateLogLocation, Object.values(LogLocation))
                     ],
-                    [   'Refresh', new SettingsProperty<number>( refreshInterval, setRefreshInterval,
+                    [   'Refresh', new SettingsProperty<number>( refreshInterval, (value:number)=>setRefreshInterval(Number(value)),
                             [0, 30000, 60000, 150000, 300000, 900000], 
                             [0, 30000, 60000, 150000, 300000, 900000].map(m => formatIntervalTime(m))
                     )]
