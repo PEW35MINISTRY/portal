@@ -40,7 +40,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     /* Select & Modify Partnership Status */
     const [selectedUser, setSelectedUser] = useState<ProfileListItem|undefined>(undefined); //undefined hides popup
     const [selectedPartner, setSelectedPartner] = useState<ProfileListItem|undefined>(undefined);
-    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.EDIT);
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
     const SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = [ModelPopUpAction.EDIT, ModelPopUpAction.DELETE, ModelPopUpAction.NONE];
 
     const viewRoute: string = useMemo(() => (props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) ? 'fewer' 
@@ -69,10 +69,14 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
         let targetAction:ModelPopUpAction = popUpAction;
         
         //Match popUpAction in URL
-        targetAction = SUPPORTED_POP_UP_ACTIONS.includes(action?.toLowerCase() as ModelPopUpAction)
-            ? (action?.toLowerCase() as ModelPopUpAction)
-            : ModelPopUpAction.NONE;
-        targetPath = `/portal/partnership/${viewRoute}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
+        if(action !== undefined) {
+            //DELETE is not supported, because we don't have a userID in the URL
+            const APPLICABLE_SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = SUPPORTED_POP_UP_ACTIONS.filter(p => p !== ModelPopUpAction.DELETE)
+            targetAction = APPLICABLE_SUPPORTED_POP_UP_ACTIONS.includes(action.toLowerCase() as ModelPopUpAction)
+                ? (action?.toLowerCase() as ModelPopUpAction)
+                : ModelPopUpAction.NONE;
+            targetPath = `/portal/partnership/${viewRoute}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
+        }
 
         //Limit State Updates
         if(targetPath !== location.pathname) navigate(targetPath);
@@ -232,7 +236,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                 />
             }
 
-            {/* Triggered to display by setting selectedPartner within page or popUpAction */}
+            {/* Accessible through '+' in Menu, in which case selectedUser and selectedPartner may be undefined */}
             {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.EDIT) &&
                 <PartnershipStatusADMIN
                     key={`Partnership-${selectedUser}-${selectedPartner}-ADMIN`}
