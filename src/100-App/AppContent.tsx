@@ -142,7 +142,7 @@ const AppContent = () => {
       {label: '* HELP * SUPPORT *', route: `/portal/support`, activeIcon: SUPPORT_ICON_ACTIVE, inactiveIcon: SUPPORT_ICON},
       {label: 'Content Archive', route: '/portal/edit/content-archive/-1', activeIcon: CONTENT_ICON_ACTIVE, inactiveIcon: CONTENT_ICON, addRoute: '/portal/edit/content-archive/new', exclusiveRoleList: [RoleEnum.CONTENT_APPROVER, RoleEnum.ADMIN]},
       {label: 'Profile', route: `/portal/edit/profile/${userID}`, activeIcon: PROFILE_ICON_ACTIVE, inactiveIcon: PROFILE_ICON},
-      {label: 'Partnerships', route: `/portal/partnership/recent`, activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, exclusiveRoleList: [RoleEnum.ADMIN],
+      {label: 'Partnerships', route: `/portal/partnership/recent`, activeIcon: PARTNER_ICON_ACTIVE, inactiveIcon: PARTNER_ICON, addRoute: '/portal/partnership/recent/edit', exclusiveRoleList: [RoleEnum.ADMIN],
         subMenu: [{label: 'Fewer', route: `/portal/partnership/fewer`},
                   {label: 'Pending', route: `/portal/partnership/pending`}]
       },
@@ -268,8 +268,11 @@ const AppContent = () => {
                   {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/:action' element={<UserEditPage/>}/>}
                   {isPageAccessible('/edit/profile') && <Route path='/edit/profile/:id/*' element={<UserEditPage/>}/>}
                   {isPageAccessible('/partnership/recent') && <Route path='/partnership/recent' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
+                  {isPageAccessible('/partnership/recent') && <Route path='/partnership/recent/:action' element={<PartnershipPage view={PARTNERSHIP_VIEW.NEW_USERS} />}/>}
                   {isPageAccessible('/partnership/fewer') && <Route path='/partnership/fewer' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/partnership/fewer') && <Route path='/partnership/fewer/:action' element={<PartnershipPage view={PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS} />}/>}
                   {isPageAccessible('/partnership/pending') && <Route path='/partnership/pending' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
+                  {isPageAccessible('/partnership/pending') && <Route path='/partnership/pending/:action' element={<PartnershipPage view={PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS} />}/>}
                   {isPageAccessible('/edit/circle') && <Route path='/edit/circle/:id/:action' element={<CircleEditPage/>}/>}
                   {isPageAccessible('/edit/circle') && <Route path='/edit/circle/:id/*' element={<CircleEditPage/>}/>}
                   {isPageAccessible('/edit/prayer-request') && <Route path='/edit/prayer-request/:id/:action' element={<PrayerRequestEditPage/>}/>}
