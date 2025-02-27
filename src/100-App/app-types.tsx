@@ -27,6 +27,7 @@ export enum PageState {
 export enum ModelPopUpAction {
   NONE = '',
   NEW = 'new',
+  EDIT = 'edit',
   DELETE = 'delete',
   IMAGE = 'image',
   COMMENT = 'comment',
