@@ -96,12 +96,6 @@ export const PartnershipStatusADMIN = ({...props}:{key:string, userID?:number, p
                     <input type='number' value={partnerID} onChange={(event) => setPartnerID(parseInt(event.target.value))} />
                 </div>
 
-                {(partnerID <= userID) && 
-                    <span id='warning-box' >
-                        <p>&#9888; {'Database requires userID < partnerID, values will be auto swapped before assigning.'}</p>
-                    </span>
-                }
-
                 {<button className='submit-button' type='button' onClick={() => assignPartnership()}>Assign</button>}
                 <button className='submit-button alternative-button'  type='button' onClick={()=>props.onCancel()}>Cancel</button>
 

@@ -470,19 +470,6 @@
         }
     }
 
-    #warning-box {
-        display: inline-block;
-        margin: 0.5rem 1.0rem;
-        background-color: goldenrod;
-        border-radius: $radius;
-
-        p {
-            margin: 0;
-            padding: 0.5rem;
-            white-space: wrap;
-        }
-    }
-
     .search-item {
         border: none;
     }
