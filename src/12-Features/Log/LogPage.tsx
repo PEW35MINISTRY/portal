@@ -1,29 +1,29 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { notify, processAJAXError, useAppSelector, useInterval, useStatusInterval } from '../../1-Utilities/hooks';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { notify, processAJAXError, useAppSelector, useStatusInterval } from '../../1-Utilities/hooks';
 import { LogListItem, LogLocation, LogType } from '../../0-Assets/field-sync/api-type-sync/utility-types';
 import { ENVIRONMENT_TYPE, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import FullImagePage from '../Utility-Pages/FullImagePage';
-import { blueColor, blueDarkColor, PageState, PopUpAction, redColor } from '../../100-App/app-types';
+import { blueColor, blueDarkColor, PageState, ModelPopUpAction, redColor } from '../../100-App/app-types';
 import { ImageDefaultEnum } from '../../2-Widgets/ImageWidgets';
 import { getEnvironment } from '../../1-Utilities/utilities';
-import { NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
+import { ExportLogPopup, NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
 import formatRelativeDate from '../../1-Utilities/dateFormat';
-
 import './log.scss';
 
 
 const LogPage = () => {
     const navigate = useNavigate();
+    const routeLocation = useLocation();
     const { kind, action } = useParams();
     const jwt: string = useAppSelector((state) => state.account.jwt);
     const [displayList, setDisplayList] = useState<LogListItem[]>([]);
 
     /* Page Management */
     const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
-    const [popUpAction, setPopUpAction] = useState<PopUpAction>(PopUpAction.NONE);
-    const SUPPORTED_POP_UP_ACTIONS: PopUpAction[] = [PopUpAction.NEW, PopUpAction.SEARCH, PopUpAction.SETTINGS, PopUpAction.NONE];
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
+    const SUPPORTED_POP_UP_ACTIONS: ModelPopUpAction[] = [ModelPopUpAction.SEARCH, ModelPopUpAction.NEW, ModelPopUpAction.EXPORT, ModelPopUpAction.SETTINGS, ModelPopUpAction.NONE];
     const [refreshInterval, setRefreshInterval] = useState<number>(process.env.REACT_APP_LOG_AUTO_UPDATE ? 150000 : 0); //2.5 min
     const [refreshTimeRemaining, setRefreshTimeRemaining] = useState<number>(0);
 
@@ -39,44 +39,44 @@ const LogPage = () => {
     useEffect(() => {
         if(jwt.length === 0) return;
 
+        let targetPath:string = routeLocation.pathname;
         const targetType:LogType|undefined = Object.values(LogType).find((t) => t === kind?.toUpperCase());
-        const targetAction:PopUpAction|undefined = SUPPORTED_POP_UP_ACTIONS.find((a) => a === action?.toLowerCase());     
-        
-        if(targetType) {
-            executeSearch({type: targetType});
+        const targetAction:ModelPopUpAction|undefined = SUPPORTED_POP_UP_ACTIONS.find((a) => a === action?.toLowerCase());  
 
-            if(targetAction) {
-                navigate(`/portal/logs/${targetType.toLowerCase()}/${targetAction}`);
-                setPopUpAction(targetAction);
-            } else
-                navigate(`/portal/logs/${targetType.toLowerCase()}`);
+        if(targetType && targetAction)
+            targetPath = `/portal/logs/${targetType.toLowerCase()}/${targetAction}`;
+        else if(targetType)
+            targetPath = `/portal/logs/${targetType.toLowerCase()}`;
+                   
+        if(targetPath !== routeLocation.pathname) navigate(targetPath);
+        if(targetType && targetType !== type) setType(targetType);
+        if(targetType && targetAction && targetAction !== popUpAction) setPopUpAction(targetAction);
 
-        } else {
-            navigate(`/portal/logs`);
-            executeSearch({type: undefined});
-        }
+        executeSearch({type: targetType}, false); //targetType undefined is default view with combined ERROR and WARN
     }, [jwt]);
 
 
-    const updatePopUpAction = (newAction:PopUpAction) => {
+    const updatePopUpAction = (newAction:ModelPopUpAction) => {
         if(SUPPORTED_POP_UP_ACTIONS.includes(newAction) && popUpAction !== newAction) {
             const targetType:LogType = type ?? LogType.ERROR;
             if(type === undefined) setType(targetType); //Default | Must be initialized for popups
-
+            
             navigate(`/portal/logs/${targetType.toLowerCase()}${newAction.length > 0 ? `/${newAction}` : ''}`, { replace: true });
             setPopUpAction(newAction);            
         }
     }
 
     /* Update State and Fetch Default */
-    const updateLogType = (newType:LogType, reset:boolean = true) => {
+    const updateLogType = (newType:LogType, reset:boolean = true, newAction?:ModelPopUpAction|undefined) => {
         if(Object.values(LogType).includes(newType) && type !== newType) {
-            navigate(`/portal/logs/${newType.toLowerCase()}${reset ? '' : `/${popUpAction}`}`, { replace: true });
+            const targetAction:ModelPopUpAction = (newAction && SUPPORTED_POP_UP_ACTIONS.includes(newAction)) ? newAction : ModelPopUpAction.NONE;
+            if(targetAction != popUpAction) setPopUpAction(targetAction);
             setType(newType);
+            navigate(`/portal/logs/${newType.toLowerCase()}${reset ? '' : `/${targetAction}`}`, { replace: true });
 
             if(reset) {
-                executeSearch({ type: newType, searchTerm: ''});
-                setPopUpAction(PopUpAction.NONE);
+                executeSearch({ type: newType, searchTerm: ''}, false);
+                // setPopUpAction(targetAction);
                 setSearchTerm('');
                 setCumulativeIndex(0);
             }            
@@ -91,8 +91,8 @@ const LogPage = () => {
                 const targetType:LogType = type ?? LogType.ERROR;
                 if(type === undefined) updateLogType(targetType, false); //Default View
 
-                executeSearch({ type: targetType, location: newLocation, searchTerm: '' });
-                setPopUpAction(PopUpAction.NONE);
+                executeSearch({ type: targetType, location: newLocation, searchTerm: '' }, false);
+                setPopUpAction(ModelPopUpAction.NONE);
                 setSearchTerm('');
             }   
         }
@@ -105,7 +105,7 @@ const LogPage = () => {
         startTimestamp:number; //S3: Previous Day
         endTimestamp:number; //Local: Required for cumulativeIndex to take effect
         cumulativeIndex:number;
-    }> = {}) => {
+    }> = {}, syncOverrides:boolean = true) => {
         const targetType:LogType|undefined = override.hasOwnProperty('type') ? override.type : type; //Supports undefined
         await axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log${targetType ? `/${targetType.toLowerCase()}` : '/default'}`, {
             headers: { jwt },
@@ -120,13 +120,13 @@ const LogPage = () => {
         })
         .then((response: { data:LogListItem[] }) => { 
             setDisplayList(response.data); 
-            if(targetType) {
+            if(targetType && syncOverrides) {
                 if(override.type !== undefined && override.type !== type) updateLogType(override.type, false);
                 if(override.location !== undefined && override.location !== location) updateLogLocation(override.location, false);
                 if(override.startTimestamp !== undefined && override.startTimestamp !== startDate?.getTime()) setStartDate(new Date(override.startTimestamp));
                 if(override.endTimestamp !== undefined && override.endTimestamp !== endDate?.getTime()) setEndDate(new Date(override.endTimestamp));
                 if(override.cumulativeIndex !== undefined && override.cumulativeIndex !== cumulativeIndex) setCumulativeIndex(override.cumulativeIndex);
-                if(popUpAction === PopUpAction.SEARCH) updatePopUpAction(PopUpAction.NONE);
+                if(popUpAction === ModelPopUpAction.SEARCH) updatePopUpAction(ModelPopUpAction.NONE);
             }
             setViewState((response.data.length > 0) ? PageState.VIEW : PageState.NOT_FOUND);
             if(response.data.length === 0) setRefreshInterval(0);
@@ -150,21 +150,25 @@ const LogPage = () => {
     /* Update Interval */
     useStatusInterval({interval: Number(refreshInterval), callback: executeSearch, statusInterval:1000,
         statusCallback: (timeLeft:number) => setRefreshTimeRemaining(timeLeft),
-        cancelInterval: () => refreshInterval === 0 || cumulativeIndex !== 0 || startDate !== undefined || endDate !== undefined || popUpAction !== PopUpAction.NONE
+        cancelInterval: () => refreshInterval === 0 || cumulativeIndex !== 0 || startDate !== undefined || endDate !== undefined || popUpAction !== ModelPopUpAction.NONE
     });
 
 
     return (
         <div id='log-page'>
             <div id='log-header'>
-                <button className='icon-button' onClick={() => updatePopUpAction(PopUpAction.SETTINGS)}>
+                <button className='icon-button' onClick={() => updatePopUpAction(ModelPopUpAction.SETTINGS)}>
                     <label className='icon-button-icon'>⚙</label>
                     <label className='icon-button-label'>Settings</label>
                     {(refreshInterval > 0 && refreshTimeRemaining > 0) && <label className='icon-button-label hide-mobile'>({Math.floor(refreshTimeRemaining / 1000)})</label>}
                 </button>
-                <button className='icon-button' onClick={() => updatePopUpAction(PopUpAction.NEW)}>
+                <button className='icon-button' onClick={() => updatePopUpAction(ModelPopUpAction.EXPORT)}>
+                    <label className='icon-button-icon'>⭳</label>
+                    <label className='icon-button-label hide-tablet'>Export</label>
+                </button>
+                <button className='icon-button' onClick={() => updatePopUpAction(ModelPopUpAction.NEW)}>
                     <label className='icon-button-icon'>+</label>
-                    <label className='icon-button-label'>Add</label>
+                    <label className='icon-button-label hide-tablet'>Add</label>
                 </button>
 
                 <div className='typeSelection'>
@@ -182,7 +186,7 @@ const LogPage = () => {
                     </select>
                 </div>
 
-                <button className='header-search icon-button' onClick={() => updatePopUpAction(PopUpAction.SEARCH)}>
+                <button className='header-search icon-button' onClick={() => updatePopUpAction(ModelPopUpAction.SEARCH)}>
                     <label className='icon-button-icon'>⌕</label>
                     <label className='icon-button-label'>Search...</label>
                 </button>
@@ -191,7 +195,7 @@ const LogPage = () => {
             {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
                 alternativeButtonText='Reset to Default Log' onAlternativeButtonClick={() => executeSearch({})} />
                 : (viewState === PageState.NOT_FOUND) ? <FullImagePage imageType={ImageDefaultEnum.EMPTY_TOMB} backgroundColor='transparent' message='No Log Entries Found' messageColor={blueColor}
-                                                            primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(PopUpAction.SEARCH)}
+                                                            primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(ModelPopUpAction.SEARCH)}
                                                             alternativeButtonText={`View Latest ${makeDisplayText(type)} Log`} onAlternativeButtonClick={() => {
                                                                 setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 });
                                                             }} />
@@ -216,17 +220,17 @@ const LogPage = () => {
             }
 
 
-            {(popUpAction === PopUpAction.NEW) && type &&
+            {(popUpAction === ModelPopUpAction.NEW) && type &&
                 <NewLogPopup
                     type={type}
                     setType={(t:LogType) => updateLogType(t, false)}
                     location={location}
                     setLocation={(l:LogLocation) => updateLogLocation(l, false)}
-                    onSaveCallback={(item: LogListItem) => { setDisplayList(list => { list.unshift(item); return list; }); updatePopUpAction(PopUpAction.NONE); }}
-                    onCancel={() => updatePopUpAction(PopUpAction.NONE)}
+                    onSaveCallback={(item: LogListItem) => { setDisplayList(list => { list.unshift(item); return list; }); updatePopUpAction(ModelPopUpAction.NONE); }}
+                    onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
                 />}
 
-            {(popUpAction === PopUpAction.SEARCH) && type &&
+            {(popUpAction === ModelPopUpAction.SEARCH) && type &&
                 <SearchLogPopup
                     type={type}
                     /* setType() omitted to prevent triggered fetch */
@@ -241,11 +245,24 @@ const LogPage = () => {
                     combineDuplicates={combineDuplicates}
                     setCombineDuplicates={setCombineDuplicates}
                     onSearch={(criteria:{ type?:LogType, searchTerm?:string, location?:LogLocation, endTimestamp?:number, cumulativeIndex?:number}) => executeSearch(criteria)}
-                    onCancel={() => updatePopUpAction(PopUpAction.NONE)}
+                    onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
                 />
             }
 
-            {(popUpAction === PopUpAction.SETTINGS) && type &&
+            {(popUpAction === ModelPopUpAction.EXPORT) && type &&
+                <ExportLogPopup
+                    propertyMap={new Map<string, SettingsProperty<any>>([
+                        [
+                            'Type', new SettingsProperty<LogType>(type, updateLogType, Object.values(LogType))
+                        ],
+                        [
+                            'Location', new SettingsProperty<LogLocation>(location, updateLogLocation, Object.values(LogLocation))
+                        ]
+                    ])}
+                    onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
+                />}
+
+            {(popUpAction === ModelPopUpAction.SETTINGS) && type &&
                 <SettingsLogPopup
                 propertyMap={new Map<string, SettingsProperty<any>>([
                     [
@@ -259,7 +276,7 @@ const LogPage = () => {
                             [0, 30000, 60000, 150000, 300000, 900000].map(m => formatIntervalTime(m))
                     )]
                 ])}
-                onCancel={() => updatePopUpAction(PopUpAction.NONE)}
+                onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
             />
             
             }

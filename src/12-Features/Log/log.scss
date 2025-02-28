@@ -29,6 +29,10 @@
                  padding-bottom: 0;
                  margin-bottom: 0;
              }
+
+             .icon-button-label.hide-tablet {
+                @include HIDE-ON-TABLET;
+             }
          }
 
          .typeSelection {
@@ -216,6 +220,7 @@
      }
 
      #search-log-pop-up,
+     #export-log-pop-up,
      #new-log-pop-up,
      #settings-log-pop-up {
          display: flex;
@@ -276,6 +281,7 @@
         }
     }
 
+    #export-log-pop-up,
     #settings-log-pop-up {
         .alternative-button {
             margin: 0.25rem 0;

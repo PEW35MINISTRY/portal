@@ -192,7 +192,7 @@ export const PartnershipContract = ({...props}:{key:string, partner:PartnerListI
                 <div className='form-page-block center-absolute-inside' onClick={(e)=>e.stopPropagation()} >
                     <h1 className='name'>New Partner</h1>
                        
-                    <h6 className='contract' >{PARTNERSHIP_CONTRACT(userName, props.partner.displayName)}</h6>
+                    <p className='contract' >{PARTNERSHIP_CONTRACT(userName, props.partner.displayName)}</p>
     
                     <button className='submit-button' type='button' onClick={onAcceptPartnership}>Accept Partnership</button>
                     <button className='alternative-button'  type='button' onClick={onDeclinePartnership}>Decline</button>

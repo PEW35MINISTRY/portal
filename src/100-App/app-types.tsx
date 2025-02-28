@@ -29,19 +29,15 @@ export enum ModelPopUpAction {
   NEW = 'new',
   EDIT = 'edit',
   DELETE = 'delete',
+
   IMAGE = 'image',
   COMMENT = 'comment',
   ANNOUNCEMENT = 'announcement',
   EVENT = 'event',
-  SETTINGS = 'settings'
-}
 
-export enum PopUpAction {
-  NONE = '',
-  NEW = 'new',
-  DELETE = 'delete',
   SEARCH = 'search',
-  SETTINGS = 'settings'
+  SETTINGS = 'settings',
+  'EXPORT' = 'export',
 }
 
 export type AXIOSError = {

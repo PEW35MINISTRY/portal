@@ -184,6 +184,83 @@ export const NewLogPopup = ({ type, setType, location, setLocation, onSaveCallba
 };
 
 
+export const ExportLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<string, SettingsProperty<any>>, onCancel?: () => void }) => {
+    const jwt:string = useAppSelector((state) => state.account.jwt);
+    const type:string = useMemo(() => String(propertyMap.get('Type')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
+    const location:string = useMemo(() => String(propertyMap.get('Location')?.value ?? LogType.ERROR), [propertyMap]); //Uses Label Name
+
+    /* DOWNLOAD LOG FILE | Server initiates file stream */
+    const downloadLog = (triggerDownload:boolean = true) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/download?location=${location}`, { headers: { jwt }, responseType: 'blob' })
+        .then((response: AxiosResponse<Blob>) => {
+            const fileBlob = response.data;
+            const fileURL = URL.createObjectURL(fileBlob);
+            
+            if(triggerDownload) {
+                notify(`${makeDisplayText(type)} Download Initiated`, ToastStyle.SUCCESS);
+                //Server provides filename
+                const contentDisposition = response.headers['content-disposition'];
+                const matches = /filename='([^']*)'/.exec(contentDisposition ?? '');
+                const filename = (matches && matches[1]) || `${type.toLowerCase()}-log.txt`;
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = fileURL;
+                downloadLink.download = filename;
+                downloadLink.click();
+            
+            //Open file in new tab
+            } else {
+                const newTab = window.open(fileURL, '_blank');
+                if(newTab) notify(`${makeDisplayText(type)} Opened in New Tab`, ToastStyle.SUCCESS);
+                else notify(`Unable to Open ${makeDisplayText(type)} File`, ToastStyle.ERROR);
+            }
+            onCancel && onCancel();
+        })
+        .catch((error) => processAJAXError(error));
+
+
+    return (
+        <div className='center-absolute-wrapper' onClick={() => onCancel && onCancel()}>
+            <div id='export-log-pop-up' className='center-absolute-inside' onClick={(e) => e.stopPropagation()} 
+                onKeyDown={(e) => {
+                    if(e.key === 'Escape') {
+                        onCancel && onCancel();
+                    }
+                }}>
+                <h2>Exports</h2>
+
+                <div className='log-option-box'>
+                    { Array.from(propertyMap.entries()).map(([key, { value, setValue, optionList, displayList }]) =>
+                        <React.Fragment key={key}>
+                            <label>{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+                            <select value={optionList.includes(value) ? String(value) : undefined} onChange={(e) => setValue(e.target.value)} autoComplete='off'>
+                                <option value='' hidden>Select</option>
+                                {optionList.map((option:string, index:number) => (
+                                    <option key={key + '-' + option} value={String(option)}>{displayList[index]}</option>
+                                ))}
+                            </select>
+                        </React.Fragment>
+                    )}
+                </div>
+
+                <button className='alternative-button' type='button' onClick={() => downloadLog(false)}>View ⇒</button>
+
+                <button className='alternative-button' type='button' onClick={() => downloadLog(true)}>Download ⭳</button>
+
+                <button className='alternative-button' type='button' onClick={() => 
+                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/report?location=${location}`, {}, { headers: { jwt } })
+                        .then((response: { data: LogListItem }) => {
+                            notify(`${makeDisplayText(type)} Report Emailed`, ToastStyle.SUCCESS);
+                            onCancel && onCancel();
+                        })
+                        .catch((error) => processAJAXError(error))
+                    }>Send Report 📃</button>
+
+                <button className='alternative-button cancel-button' type='button' onClick={() => onCancel && onCancel()}>Cancel</button>
+            </div>
+        </div>
+    );
+};
+
 
 /***********
 * SETTINGS *

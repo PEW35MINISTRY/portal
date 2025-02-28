@@ -45,8 +45,8 @@ body {
   overflow: hidden;
 }
 
-
-.none, .hide {
+/* DISPLAY CONTROLS */
+@mixin HIDE {
   display: none;
   height: 0;
   width: 0;
@@ -54,16 +54,32 @@ body {
   padding: 0;
 }
 
-.hide-mobile {
+.none, .hide {
+  @include HIDE;
+}
+
+@mixin HIDE-ON-MOBILE {
   @media screen and (max-width: $screen-mobile-width) {
-    display: none;
-    height: 0;
-    width: 0;
-    margin: 0;
-    padding: 0;
+    @include HIDE;
   }
 }
 
+.hide-mobile {
+  @include HIDE-ON-MOBILE;
+}
+
+@mixin HIDE-ON-TABLET {
+  @media screen and (max-width: $screen-tablet-width) {
+    @include HIDE;
+  }
+}
+
+.hide-tablet {
+  @include HIDE-ON-TABLET;
+}
+
+
+/* ELEMENT DEFAULTS */
 div,
 label,
 button,
@@ -72,7 +88,8 @@ h2,
 h3,
 h4,
 h5,
-h6 {
+h6,
+p {
   background-color: transparent;
   border: none;
   border-radius: $radius;
@@ -131,14 +148,26 @@ label,
   color: $blue;
 }
 
+h4, h5 {
+  color: $red;
+}
+
 h5,
 h6,
+p,
 .text {
   font-family: 'Roboto';
   font-weight: 300;
   font-size: 1.0rem;
+  color: black;
 }
 
+h6 {
+  color: $blue;
+}
+
+
+/* INPUT DEFAULTS */
 input, select, textarea {
   text-align: left;
   margin: 0.25rem 0;
@@ -266,7 +295,8 @@ textarea {
   margin: auto;
 }
 
-//Animations
+
+/* ANIMATIONS */
 @keyframes zoom-pulse {
   0%,100% {
     transform: scale(1);
