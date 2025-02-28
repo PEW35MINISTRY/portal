@@ -591,8 +591,8 @@ const UserEditPage = () => {
                         {userRole === RoleEnum.ADMIN ? (
                             <PartnershipStatusADMIN
                                 key={`User-Edit-Partnership-${editingUserID}-${newPartner.userID}-ADMIN`}
-                                user={({userID: editingUserID, image: image, displayName: getInputField('displayName'), firstName: getInputField('firstName')})}
-                                partner={newPartner}
+                                userID={editingUserID}
+                                partnerID={newPartner.userID}
                                 currentStatus={newPartner.status}
                                 onCancel={() => setNewPartner(undefined)}
                             />

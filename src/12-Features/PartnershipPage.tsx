@@ -1,16 +1,16 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PartnerListItem, ProfileListItem, PartnerCountListItem, NewPartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { PartnerItem } from '../2-Widgets/SearchList/SearchListItemCards';
-import { useNavigate } from 'react-router-dom';
 import { makeAbbreviatedText, makeDisplayText } from '../1-Utilities/utilities';
 import { PartnerStatusEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { PartnershipDeleteAllADMIN, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
 import SearchList from '../2-Widgets/SearchList/SearchList';
 import { SearchListKey, SearchListValue } from '../2-Widgets/SearchList/searchList-types';
-import { blueColor, PageState, ToastStyle } from '../100-App/app-types';
+import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
 import FullImagePage from './Utility-Pages/FullImagePage';
 import { ImageDefaultEnum } from '../2-Widgets/ImageWidgets';
 
@@ -25,9 +25,11 @@ export enum PARTNERSHIP_VIEW {
 /* ADMIN ACCESS PAGE */
 const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const JWT:string = useAppSelector((state) => state.account.jwt);
     const userID:number = useAppSelector((state) => state.account.userID);
-
+    const { action } = useParams();
+    
     const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
     const [defaultDisplayTitleList, setDefaultDisplayTitleList] = useState<string[]>(['Unassigned Users']);
     const [dualPartnerList, setDualPartnerList] = useState<[NewPartnerListItem, NewPartnerListItem][]>([]);
@@ -35,11 +37,54 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
     const [unassignedPartnerList, setUnassignedPartnerList] = useState<NewPartnerListItem[]>([]);
     const [availablePartnerList, setAvailablePartnerList] = useState<NewPartnerListItem[]>([]);
 
+    /* Select & Modify Partnership Status */
     const [selectedUser, setSelectedUser] = useState<ProfileListItem|undefined>(undefined); //undefined hides popup
     const [selectedPartner, setSelectedPartner] = useState<ProfileListItem|undefined>(undefined);
-    const [showDelete, setShowDelete] = useState<boolean>(false);
+    const [popUpAction, setPopUpAction] = useState<ModelPopUpAction>(ModelPopUpAction.NONE);
+    const SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = [ModelPopUpAction.EDIT, ModelPopUpAction.DELETE, ModelPopUpAction.NONE];
 
+    const viewRoute: string = useMemo(() => (props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS) ? 'fewer' 
+                                            : (props.view === PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) ? 'pending'
+                                            : 'recent', [props.view]);
+    
 
+    const updatePopUpAction = (newAction:ModelPopUpAction) => {
+        if(SUPPORTED_POP_UP_ACTIONS.includes(newAction) && popUpAction !== newAction) {
+            navigate(`/portal/partnership/${viewRoute}${newAction.length > 0 ? `/${newAction}` : ''}`, {replace: true});
+            setPopUpAction(newAction);
+
+            if(newAction === ModelPopUpAction.NONE) setSelectedPartner(undefined);
+        }
+    }
+
+    /* Trigger PopUp when partner is selected */
+    useEffect(() => { if(selectedUser !== undefined && selectedPartner !== undefined && popUpAction === ModelPopUpAction.NONE) 
+        updatePopUpAction(ModelPopUpAction.EDIT)}, [selectedPartner]);
+
+    /* Update state to reflect URL as source of truth */
+    useEffect(() => {
+        if(userID <= 0 || JWT.length === 0) return;
+
+        let targetPath:string = location.pathname;
+        let targetAction:ModelPopUpAction = popUpAction;
+        
+        //Match popUpAction in URL
+        if(action !== undefined) {
+            //DELETE is not supported, because we don't have a userID in the URL
+            const APPLICABLE_SUPPORTED_POP_UP_ACTIONS:ModelPopUpAction[] = SUPPORTED_POP_UP_ACTIONS.filter(p => p !== ModelPopUpAction.DELETE)
+            targetAction = APPLICABLE_SUPPORTED_POP_UP_ACTIONS.includes(action.toLowerCase() as ModelPopUpAction)
+                ? (action?.toLowerCase() as ModelPopUpAction)
+                : ModelPopUpAction.NONE;
+            targetPath = `/portal/partnership/${viewRoute}${targetAction.length > 0 ? `/${targetAction}` : ''}`;
+        }
+
+        //Limit State Updates
+        if(targetPath !== location.pathname) navigate(targetPath);
+        if(targetAction !== popUpAction) setPopUpAction(targetAction);
+
+    }, [JWT, location.pathname.includes('edit')]);
+
+    /* Fetch relevant data for props.view (Component gets reused) */
     useEffect(() => {
         if(JWT && props.view === PARTNERSHIP_VIEW.PENDING_PARTNERSHIPS) {
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/pending-list`, { headers:{ jwt:JWT } })
@@ -67,8 +112,9 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
 
     },[JWT, props.view]);
 
+    /* Fetch Available & Eligible Partners for selectedUser */
     useEffect(() => {
-        if(selectedUser && !showDelete && (props.view === PARTNERSHIP_VIEW.NEW_USERS || props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS)) 
+        if(selectedUser && (popUpAction === ModelPopUpAction.NONE) && (props.view === PARTNERSHIP_VIEW.NEW_USERS || props.view === PARTNERSHIP_VIEW.FEWER_PARTNERSHIPS)) 
             axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/partnership/client/${selectedUser.userID}/available`, { headers: { jwt: JWT }})
                 .then((response:{ data:NewPartnerListItem[] }) => {
                     setAvailablePartnerList([...response.data]);
@@ -140,7 +186,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                                 primaryButtonText='New Partner'
                                 onPrimaryButtonClick={() => setSelectedUser(partner)}
                                 alternativeButtonText='Clear Status'
-                                onAlternativeButtonClick={() => { setSelectedUser(partner); setShowDelete(true); }}
+                                onAlternativeButtonClick={() => { setSelectedUser(partner); updatePopUpAction(ModelPopUpAction.DELETE); }}
                             />
                             <p key={`status-${index}-max-partners`} className='status-count' >{partner.maxPartners || 0}</p>
                             {[...partner.partnerCountMap].map(([status, count]) => (
@@ -163,7 +209,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                                     searchPrimaryButtonText: (selectedUser) ? 'Assign Partnership' : '', 
                                     onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => setSelectedPartner(item as ProfileListItem),
                                     searchAlternativeButtonText: 'Remove',
-                                    onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); setShowDelete(true); }
+                                    onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); updatePopUpAction(ModelPopUpAction.DELETE); }
                                 }),
                                 [...unassignedPartnerList].map((partner:NewPartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.PARTNER, displayItem: partner, 
                                     onClick: (id:number) => navigate(`/portal/edit/profile/${id}`),
@@ -177,7 +223,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                                     searchPrimaryButtonText: (selectedUser) ? 'Assign Partnership' : '', 
                                     onSearchPrimaryButtonCallback: (id:number, item:DisplayItemType) => setSelectedPartner(item as ProfileListItem),
                                     searchAlternativeButtonText: 'Remove',
-                                    onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); setShowDelete(true); }
+                                    onSearchAlternativeButtonCallback: (id:number, item:DisplayItemType) => { setSelectedUser(item as ProfileListItem); updatePopUpAction(ModelPopUpAction.DELETE); }
                                 }),
 
                                 [...availablePartnerList].map((partner:NewPartnerListItem) => new SearchListValue({displayType: ListItemTypesEnum.PARTNER, displayItem: partner, 
@@ -190,22 +236,23 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
                 />
             }
 
-            {(viewState === PageState.VIEW) && (selectedUser !== undefined) && (selectedPartner !== undefined) &&
+            {/* Accessible through '+' in Menu, in which case selectedUser and selectedPartner may be undefined */}
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.EDIT) &&
                 <PartnershipStatusADMIN
                     key={`Partnership-${selectedUser}-${selectedPartner}-ADMIN`}
-                    user={selectedUser}
-                    partner={selectedPartner}
-                    currentStatus={('status' in selectedUser) ? (selectedUser as PartnerListItem).status : PartnerStatusEnum.PENDING_CONTRACT_BOTH}
-                    onCancel={() => setSelectedPartner(undefined)}
+                    userID={selectedUser?.userID}
+                    partnerID={selectedPartner?.userID}
+                    currentStatus={(selectedUser && 'status' in selectedUser) ? (selectedUser as PartnerListItem).status : undefined}
+                    onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
                 />
             }
 
-            {(viewState === PageState.VIEW) && showDelete && (selectedUser !== undefined) &&
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.DELETE) && (selectedUser !== undefined) &&
                 <PartnershipDeleteAllADMIN
                     key={`Partnership-${selectedUser}-ADMIN`}
                     user={selectedUser}
                     statusMap={new Map(statusMap.filter(profile => profile.userID === selectedUser.userID)[0].partnerCountMap)}
-                    onCancel={() => setShowDelete(false)}
+                    onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
                 />
             }
             
