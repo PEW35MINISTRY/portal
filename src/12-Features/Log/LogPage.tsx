@@ -1,14 +1,15 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { processAJAXError, useAppSelector, useInterval } from '../../1-Utilities/hooks';
-import { LogListItem, LogLocation, LogType, SUPPORTED_LOG_TYPES } from '../../0-Assets/field-sync/api-type-sync/utility-types';
+import { notify, processAJAXError, useAppSelector, useInterval, useStatusInterval } from '../../1-Utilities/hooks';
+import { LogListItem, LogLocation, LogType } from '../../0-Assets/field-sync/api-type-sync/utility-types';
 import { ENVIRONMENT_TYPE, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import FullImagePage from '../Utility-Pages/FullImagePage';
 import { blueColor, blueDarkColor, PageState, PopUpAction, redColor } from '../../100-App/app-types';
 import { ImageDefaultEnum } from '../../2-Widgets/ImageWidgets';
 import { getEnvironment } from '../../1-Utilities/utilities';
 import { NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
+import formatRelativeDate from '../../1-Utilities/dateFormat';
 
 import './log.scss';
 
@@ -23,7 +24,8 @@ const LogPage = () => {
     const [viewState, setViewState] = useState<PageState>(PageState.LOADING);
     const [popUpAction, setPopUpAction] = useState<PopUpAction>(PopUpAction.NONE);
     const SUPPORTED_POP_UP_ACTIONS: PopUpAction[] = [PopUpAction.NEW, PopUpAction.SEARCH, PopUpAction.SETTINGS, PopUpAction.NONE];
-    const [refreshInterval, setRefreshInterval] = useState<number>(150000); //2.5 min
+    const [refreshInterval, setRefreshInterval] = useState<number>(process.env.REACT_APP_LOG_AUTO_UPDATE ? 150000 : 0); //2.5 min
+    const [refreshTimeRemaining, setRefreshTimeRemaining] = useState<number>(0);
 
     /* Search Criteria */
     const [type, setType] = useState<LogType|undefined>(undefined);
@@ -37,7 +39,7 @@ const LogPage = () => {
     useEffect(() => {
         if(jwt.length === 0) return;
 
-        const targetType:LogType|undefined = SUPPORTED_LOG_TYPES.find((t) => t === kind?.toUpperCase());
+        const targetType:LogType|undefined = Object.values(LogType).find((t) => t === kind?.toUpperCase());
         const targetAction:PopUpAction|undefined = SUPPORTED_POP_UP_ACTIONS.find((a) => a === action?.toLowerCase());     
         
         if(targetType) {
@@ -68,7 +70,7 @@ const LogPage = () => {
 
     /* Update State and Fetch Default */
     const updateLogType = (newType:LogType, reset:boolean = true) => {
-        if(SUPPORTED_LOG_TYPES.includes(newType) && type !== newType) {
+        if(Object.values(LogType).includes(newType) && type !== newType) {
             navigate(`/portal/logs/${newType.toLowerCase()}${reset ? '' : `/${popUpAction}`}`, { replace: true });
             setType(newType);
 
@@ -76,6 +78,7 @@ const LogPage = () => {
                 executeSearch({ type: newType, searchTerm: ''});
                 setPopUpAction(PopUpAction.NONE);
                 setSearchTerm('');
+                setCumulativeIndex(0);
             }            
         }
     }
@@ -99,7 +102,8 @@ const LogPage = () => {
         type:LogType|undefined;
         location:LogLocation;
         searchTerm:string;
-        endTimestamp:number; //Required for cumulativeIndex to take effect
+        startTimestamp:number; //S3: Previous Day
+        endTimestamp:number; //Local: Required for cumulativeIndex to take effect
         cumulativeIndex:number;
     }> = {}) => {
         const targetType:LogType|undefined = override.hasOwnProperty('type') ? override.type : type; //Supports undefined
@@ -107,7 +111,7 @@ const LogPage = () => {
             headers: { jwt },
             params: targetType ? {
                 location: override.location || location,
-                startTimestamp: startDate?.getTime(), 
+                startTimestamp: override.startTimestamp ?? startDate?.getTime(), 
                 endTimestamp: override.endTimestamp ?? endDate?.getTime(),
                 search: override.searchTerm ?? searchTerm,
                 cumulativeIndex: override.cumulativeIndex ?? cumulativeIndex,
@@ -119,17 +123,33 @@ const LogPage = () => {
             if(targetType) {
                 if(override.type !== undefined && override.type !== type) updateLogType(override.type, false);
                 if(override.location !== undefined && override.location !== location) updateLogLocation(override.location, false);
+                if(override.startTimestamp !== undefined && override.startTimestamp !== startDate?.getTime()) setStartDate(new Date(override.startTimestamp));
                 if(override.endTimestamp !== undefined && override.endTimestamp !== endDate?.getTime()) setEndDate(new Date(override.endTimestamp));
                 if(override.cumulativeIndex !== undefined && override.cumulativeIndex !== cumulativeIndex) setCumulativeIndex(override.cumulativeIndex);
                 if(popUpAction === PopUpAction.SEARCH) updatePopUpAction(PopUpAction.NONE);
             }
             setViewState((response.data.length > 0) ? PageState.VIEW : PageState.NOT_FOUND);
+            if(response.data.length === 0) setRefreshInterval(0);
         }).catch((error) => processAJAXError(error));
+    }
+
+    const searchPreviousDay = (override:Partial<{
+        type:LogType|undefined;
+        location:LogLocation;
+        timestamp:number;
+    }> = {}) => {
+        const defaultEndDate:Date = new Date();
+        defaultEndDate.setHours(0, 0, 0, 0);
+        const endTimestamp:number = override.timestamp ?? startDate?.getTime() ?? defaultEndDate.getTime();
+        const startTimestamp:number = endTimestamp - (24 * 60 * 60 * 1000);
+
+        return executeSearch({...override, startTimestamp, endTimestamp, type: (type ?? LogType.ERROR)});
     }
 
 
     /* Update Interval */
-    useInterval({interval: refreshInterval, callback: executeSearch,
+    useStatusInterval({interval: Number(refreshInterval), callback: executeSearch, statusInterval:1000,
+        statusCallback: (timeLeft:number) => setRefreshTimeRemaining(timeLeft),
         cancelInterval: () => refreshInterval === 0 || cumulativeIndex !== 0 || startDate !== undefined || endDate !== undefined || popUpAction !== PopUpAction.NONE
     });
 
@@ -140,7 +160,7 @@ const LogPage = () => {
                 <button className='icon-button' onClick={() => updatePopUpAction(PopUpAction.SETTINGS)}>
                     <label className='icon-button-icon'>⚙</label>
                     <label className='icon-button-label'>Settings</label>
-                    {(refreshInterval > 0) && <label className='icon-button-label hide-mobile'>({formatIntervalTime(refreshInterval, false)})</label>}
+                    {(refreshInterval > 0 && refreshTimeRemaining > 0) && <label className='icon-button-label hide-mobile'>({Math.floor(refreshTimeRemaining / 1000)})</label>}
                 </button>
                 <button className='icon-button' onClick={() => updatePopUpAction(PopUpAction.NEW)}>
                     <label className='icon-button-icon'>+</label>
@@ -154,7 +174,7 @@ const LogPage = () => {
                         executeSearch({ type: LogType[e.target.value as keyof typeof LogType] });
                     }}>
                         <option value='DEFAULT' disabled hidden>Default</option>
-                        {SUPPORTED_LOG_TYPES.map((logType) => (
+                        {Object.values(LogType).map((logType) => (
                             <option key={logType} value={logType}>
                                 {makeDisplayText(logType)}
                             </option>
@@ -173,7 +193,7 @@ const LogPage = () => {
                 : (viewState === PageState.NOT_FOUND) ? <FullImagePage imageType={ImageDefaultEnum.EMPTY_TOMB} backgroundColor='transparent' message='No Log Entries Found' messageColor={blueColor}
                                                             primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(PopUpAction.SEARCH)}
                                                             alternativeButtonText={`View Latest ${makeDisplayText(type)} Log`} onAlternativeButtonClick={() => {
-                                                                setSearchTerm(''); executeSearch({ type: undefined });
+                                                                setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 });
                                                             }} />
                 :
                 <div id='log-list'>
@@ -182,7 +202,16 @@ const LogPage = () => {
                     ))}
 
                     {(viewState === PageState.VIEW) && (type !== undefined) && (displayList.length > 0) &&
-                        <button key='previous-page' className='alternative-button next-page-button' type='button' onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex + 1, endTimestamp:displayList[displayList.length - 1].timestamp })}>Previous Page</button>}
+                        (location === LogLocation.LOCAL) ? 
+                            <button key='previous-page' className='alternative-button next-page-button' type='button' 
+                                onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex + 1, endTimestamp:displayList[displayList.length - 1].timestamp, type: (type ?? LogType.ERROR) })}>
+                                    {`See Previous Page | ${makeDisplayText(type ?? LogType.ERROR)} | ${cumulativeIndex + 1}`}
+                            </button>
+                          : <button key='previous-page' className='alternative-button next-page-button' type='button' 
+                            onClick={() => searchPreviousDay()}>
+                                {`See Previous Day | ${makeDisplayText(type ?? LogType.ERROR)} | ${formatRelativeDate(calculateDays(startDate ?? new Date(), -1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
+                            </button>
+                    }
                 </div>
             }
 
@@ -211,7 +240,7 @@ const LogPage = () => {
                     setEndDate={setEndDate}
                     combineDuplicates={combineDuplicates}
                     setCombineDuplicates={setCombineDuplicates}
-                    onSearch={(criteria:{ type?:LogType, searchTerm?:string, cumulativeIndex?:number}) => executeSearch(criteria)}
+                    onSearch={(criteria:{ type?:LogType, searchTerm?:string, location?:LogLocation, endTimestamp?:number, cumulativeIndex?:number}) => executeSearch(criteria)}
                     onCancel={() => updatePopUpAction(PopUpAction.NONE)}
                 />
             }
@@ -220,12 +249,12 @@ const LogPage = () => {
                 <SettingsLogPopup
                 propertyMap={new Map<string, SettingsProperty<any>>([
                     [
-                        'Type', new SettingsProperty<LogType>(type, updateLogType, SUPPORTED_LOG_TYPES)
+                        'Type', new SettingsProperty<LogType>(type, updateLogType, Object.values(LogType))
                     ],
                     [
                         'Location', new SettingsProperty<LogLocation>(location, updateLogLocation, Object.values(LogLocation))
                     ],
-                    [   'Refresh', new SettingsProperty<number>( refreshInterval, setRefreshInterval,
+                    [   'Refresh', new SettingsProperty<number>( refreshInterval, (value:number)=>setRefreshInterval(Number(value)),
                             [0, 30000, 60000, 150000, 300000, 900000], 
                             [0, 30000, 60000, 150000, 300000, 900000].map(m => formatIntervalTime(m))
                     )]
@@ -247,6 +276,10 @@ export default LogPage;
 const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { timestamp, type, messages, stackTrace, duplicateList, fileKey } }) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const [expand, setExpand] = useState<boolean>(false);
+    const [messageList, setMessageList] = useState<string[]>(messages || []);
+    const [stackTraceList, setStackTraceList] = useState<string[]>(stackTrace || []);
+    const [additionalDuplicateList, setAdditionalDuplicateList] = useState<string[]>(duplicateList || []);
+
 
     const primaryMessage = messages && messages[0] ? messages[0] : 'Unknown Error ';
 
@@ -254,9 +287,10 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
         event.stopPropagation();
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log?key=${fileKey}`, { headers: { jwt } })
             .then((response: { data: LogListItem }) => {
-                messages = response.data.messages;
-                stackTrace = response.data.stackTrace;
-                duplicateList = response.data.duplicateList;
+                notify('Acquired full log entry details.');            
+                setMessageList(response.data.messages);
+                setStackTraceList(response.data.stackTrace ?? []);
+                setAdditionalDuplicateList(response.data.duplicateList ?? []);
             })
             .catch((error) => processAJAXError(error));
     }
@@ -266,7 +300,7 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
             <div className={`log-entry-header ${expand ? 'log-close' : ''}`} onClick={() => setExpand(current => !current)}>
                 <label className='log-entry-type' style={{ color: getLogColor(type) }}>{type}</label>
                 <label className='log-entry-date'>{formatLogDate(new Date(timestamp), expand)}</label>
-                {(duplicateList && duplicateList.length > 0) && <label className='log-entry-indicator'>⎘ {duplicateList.length + 1}</label>}
+                {(additionalDuplicateList && additionalDuplicateList.length > 0) && <label className='log-entry-indicator'>⎘ {additionalDuplicateList.length + 1}</label>}
                 {!expand && <label className='log-entry-primary-message'>{makeDisplayText(primaryMessage)}</label>}
                 {expand && fileKey && <label className='log-entry-link' onClick={updateDetails}>More Details</label>}
                 <h3 className='log-entry-toggle'>{expand ? '-' : '+'}</h3>
@@ -274,8 +308,9 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
 
             {expand && (
                 <div className='log-entry-details'>
-                    {messages.length > 0 &&
-                        messages.map((message, index) => (
+                    <div className='log-entry-timestamp'><label className='log-entry-line-icon'>⏱</label>Timestamp: {timestamp} (ms)</div>
+                    {messageList.length > 0 &&
+                        messageList.map((message, index) => (
                             <div key={index} className='log-entry-message'>{message}</div>
                         ))}
 
@@ -291,10 +326,10 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
                         </>
                     )}
 
-                    {stackTrace && stackTrace.length > 0 && (
+                    {stackTraceList && stackTraceList.length > 0 && (
                         <>
                             <hr />
-                            {stackTrace.map((trace, index) => (
+                            {stackTraceList.map((trace, index) => (
                                 <div key={index} className='log-entry-trace'>
                                     <label className='log-entry-line-icon'>{'>'.repeat(index + 1)}</label>
                                     <p>{trace}</p>
@@ -312,7 +347,6 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
 
 /* UTILITIES */
 const LOG_TYPE_COLORS: { [key in LogType]:string } = {
-    [LogType.ALERT]: redColor,
     [LogType.ERROR]: redColor,
     [LogType.WARN]: '#daa520', //goldenrod
     [LogType.DB]: '#470047', //Purple
@@ -322,6 +356,12 @@ const LOG_TYPE_COLORS: { [key in LogType]:string } = {
 
 const getLogColor = (type:LogType):string => LOG_TYPE_COLORS[type] || 'black';
 
+const calculateDays = (date:Date, days:number):Date => {
+    const d:Date = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + days);
+    return d;
+}
 
 const formatLogDate = (date:Date, longForm:boolean = false):string => (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
     '['

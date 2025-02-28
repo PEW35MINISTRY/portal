@@ -9,9 +9,10 @@ const MONTH_SHORT:string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', '
 const MONTH_LONG:string[] = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export const getFutureDate = (date:Date = new Date(), days:number = 0, hours:number = 0):Date => {
-    date.setDate(date.getDate() + days);
-    date.setHours(date.getHours() + hours);
-    return date;
+    const newDate = new Date(date);
+    newDate.setDate(date.getDate() + days);
+    newDate.setHours(date.getHours() + hours, 0, 0, 0);
+    return newDate;
   }
   
 export const formatNumberOrdinal = (n:number):string => 
@@ -25,7 +26,7 @@ export const formatNumberOrdinal = (n:number):string =>
 const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean}):string => {
     options = {shortForm:true, includeHours:true, markPassed:false, ...options}; //Apply defaults & inputted overrides
     const today = new Date();
-    today.setHours(0);
+    today.setHours(0, 0, 0, 0);
     let text = '';
 
     //Handle Date type validations
