@@ -209,14 +209,6 @@
                  }
              }
          }
-
-         .next-page-button {
-            width: 100%;
-            margin-bottom: 0;
-            border-left: none;
-            border-right: none;
-            border-bottom: none;
-        }
      }
 
      #search-log-pop-up,
@@ -296,3 +288,20 @@
         }
     }    
  }
+
+ /* Renders Outside in FullImagePage */
+ #previous-page-button-box {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    margin-top: auto;
+
+    .previous-page-button,
+    .next-page-button {
+        width: 100%;
+        margin-bottom: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+    }
+}

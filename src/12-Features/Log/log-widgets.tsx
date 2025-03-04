@@ -83,7 +83,7 @@ export const SearchLogPopup = ({ type, location, searchTerm, setSearchTerm, star
                         <option key={'duplicate-no'} value={'false'}>No</option>
                     </select>
 
-                    {endDate && 
+                    {(endDate && searchLocation === LogLocation.LOCAL) &&
                         <>
                             <label>Index</label>
                             <input type='number' value={startIndex} onChange={(e) => setStartIndex(Number(e.target.value))} min={0} autoComplete='off'/>
@@ -333,7 +333,7 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
                             onCancel && onCancel();
                         })
                         .catch((error) => processAJAXError(error))
-                        }>Reset ↺</button>
+                        }>Reset File ↺</button>
                 }
 
                 {/* Update Athena Partitions for S3 Log Search */}
@@ -345,21 +345,8 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
                             onCancel && onCancel();
                         })
                         .catch((error) => processAJAXError(error))
-                        }>Update Partitions ↺</button>
+                        }>Update Search Partitions ↺</button>
                 }
-
-                <button className='alternative-button' type='button' onClick={() => downloadLog(false)}>View ⇒</button>
-
-                <button className='alternative-button' type='button' onClick={() => downloadLog(true)}>Download ⭳</button>
-
-                <button className='alternative-button' type='button' onClick={() => 
-                    axios.post(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/report?location=${location}`, {}, { headers: { jwt } })
-                        .then((response: { data: LogListItem }) => {
-                            notify(`${makeDisplayText(type)} Report Emailed`, ToastStyle.SUCCESS);
-                            onCancel && onCancel();
-                        })
-                        .catch((error) => processAJAXError(error))
-                    }>Send Report 📃</button>
 
                 <button className='alternative-button cancel-button' type='button' onClick={() => onCancel && onCancel()}>Cancel</button>
             </div>

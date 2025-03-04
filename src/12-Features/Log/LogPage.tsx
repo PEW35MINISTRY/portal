@@ -137,11 +137,13 @@ const LogPage = () => {
         type:LogType|undefined;
         location:LogLocation;
         timestamp:number;
-    }> = {}) => {
+    }> = {}, nextDay:boolean = false) => {
         const defaultEndDate:Date = new Date();
         defaultEndDate.setHours(0, 0, 0, 0);
-        const endTimestamp:number = override.timestamp ?? startDate?.getTime() ?? defaultEndDate.getTime();
-        const startTimestamp:number = endTimestamp - (24 * 60 * 60 * 1000);
+        const currentTimestamp: number = override.timestamp ?? startDate?.getTime() ?? defaultEndDate.getTime();
+
+        const startTimestamp: number = nextDay ? currentTimestamp : currentTimestamp - (24 * 60 * 60 * 1000);    
+        const endTimestamp: number = nextDay ? currentTimestamp + (24 * 60 * 60 * 1000) : currentTimestamp;
 
         return executeSearch({...override, startTimestamp, endTimestamp, type: (type ?? LogType.ERROR)});
     }
@@ -194,27 +196,42 @@ const LogPage = () => {
 
             {(viewState === PageState.LOADING) ? <FullImagePage imageType={ImageDefaultEnum.LOGO} backgroundColor='transparent' message='Loading...' messageColor={blueColor}
                 alternativeButtonText='Reset to Default Log' onAlternativeButtonClick={() => executeSearch({})} />
-                : (viewState === PageState.NOT_FOUND) ? <FullImagePage imageType={ImageDefaultEnum.EMPTY_TOMB} backgroundColor='transparent' message='No Log Entries Found' messageColor={blueColor}
-                                                            primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(ModelPopUpAction.SEARCH)}
-                                                            alternativeButtonText={`View Latest ${makeDisplayText(type)} Log`} onAlternativeButtonClick={() => {
-                                                                setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 });
-                                                            }} />
+                : (viewState === PageState.NOT_FOUND) ? 
+                    <FullImagePage imageType={ImageDefaultEnum.EMPTY_TOMB} backgroundColor='transparent' message='No Log Entries Found' messageColor={blueColor}
+                        primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(ModelPopUpAction.SEARCH)}
+                        alternativeButtonText={`View Latest ${makeDisplayText(type)} Log`} onAlternativeButtonClick={() => {
+                            setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 });
+                        }}                        
+                        footer={<LogPageNavigationButtons
+                                    location={location}
+                                    type={type}
+                                    showLocalPrevious={(displayList.length > 0)}
+                                    cumulativeIndex={cumulativeIndex}
+                                    lastTimestamp={(displayList.length > 0) ? displayList[displayList.length - 1].timestamp : new Date().getTime()}
+                                    executeSearch={executeSearch}
+                                    searchPreviousDay={searchPreviousDay}
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                />}
+                            />
                 :
                 <div id='log-list'>
                     {[...displayList].map((entry, index) => (
                         <LogEntryItem key={`${index}-${entry.type}-${entry.timestamp}-${JSON.stringify(entry.messages)}`} LogListItem={entry} />
                     ))}
 
-                    {(viewState === PageState.VIEW) && (type !== undefined) && (displayList.length > 0) &&
-                        (location === LogLocation.LOCAL) ? 
-                            <button key='previous-page' className='alternative-button next-page-button' type='button' 
-                                onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex + 1, endTimestamp:displayList[displayList.length - 1].timestamp, type: (type ?? LogType.ERROR) })}>
-                                    {`See Previous Page | ${makeDisplayText(type ?? LogType.ERROR)} | ${cumulativeIndex + 1}`}
-                            </button>
-                          : <button key='previous-page' className='alternative-button next-page-button' type='button' 
-                            onClick={() => searchPreviousDay()}>
-                                {`See Previous Day | ${makeDisplayText(type ?? LogType.ERROR)} | ${formatRelativeDate(calculateDays(startDate ?? new Date(), -1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
-                            </button>
+                    {(viewState === PageState.VIEW) &&
+                        <LogPageNavigationButtons
+                            location={location}
+                            type={type}
+                            showLocalPrevious={(displayList.length > 0)}
+                            cumulativeIndex={cumulativeIndex}
+                            lastTimestamp={(displayList.length > 0) ? displayList[displayList.length - 1].timestamp : new Date().getTime()}
+                            executeSearch={executeSearch}
+                            searchPreviousDay={searchPreviousDay}
+                            startDate={startDate}
+                            endDate={endDate}
+                        />
                     }
                 </div>
             }
@@ -360,6 +377,40 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
         </div>
     );
 };
+
+
+/************************
+ * Previous/Nex Buttons *
+ ************************/
+export const LogPageNavigationButtons = ({ location, type, startDate, endDate, showLocalPrevious, cumulativeIndex, lastTimestamp: latestTimestamp, executeSearch, searchPreviousDay }
+    : { location:LogLocation, type:LogType|undefined, startDate?:Date, endDate?:Date, showLocalPrevious:boolean, cumulativeIndex:number, lastTimestamp:number,
+        executeSearch:({ type, endTimestamp, cumulativeIndex }: { type:LogType, endTimestamp: number, cumulativeIndex: number }) => void, searchPreviousDay:(override?:Object, nextDay?:boolean) => void }) =>
+    (location === LogLocation.LOCAL) ?
+        <div id='previous-page-button-box'>
+            {showLocalPrevious && (
+                <button className='alternative-button previous-page-button' type='button' onClick={() =>
+                        executeSearch({ type: type ?? LogType.ERROR, endTimestamp: latestTimestamp, cumulativeIndex: cumulativeIndex + 1 })}>
+                    {`Previous Index | ${cumulativeIndex + 1}`}
+                </button>
+            )}
+            {cumulativeIndex > 0 && (
+                <button className='alternative-button next-page-button' type='button' onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex - 1, endTimestamp: new Date().getTime(), type: type ?? LogType.ERROR })}>
+                    {`Next Index | ${cumulativeIndex - 1}`}
+                </button>
+            )}
+        </div>
+    :
+        <div id='previous-page-button-box'>
+            <button className='alternative-button previous-page-button' type='button' onClick={() => searchPreviousDay()} >
+                {`Previous Day | ${formatRelativeDate(calculateDays(startDate ?? new Date(), - 1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
+            </button>
+            {endDate && endDate.getTime() < new Date().setHours(0, 0, 0, 0) && (
+                <button className='alternative-button next-page-button' type='button' onClick={() => searchPreviousDay({}, true)} >
+                    {`Next Day | ${formatRelativeDate(calculateDays(endDate, + 1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
+                </button>
+            )}
+        </div>;
+
 
 
 /* UTILITIES */
