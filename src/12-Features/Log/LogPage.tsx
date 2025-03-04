@@ -138,12 +138,15 @@ const LogPage = () => {
         location:LogLocation;
         timestamp:number;
     }> = {}, nextDay:boolean = false) => {
-        const defaultEndDate:Date = new Date();
-        defaultEndDate.setHours(0, 0, 0, 0);
-        const currentTimestamp: number = override.timestamp ?? startDate?.getTime() ?? defaultEndDate.getTime();
+        const currentTimestamp: number = override.timestamp ?? new Date().getTime();
+        
+        //Server is in UTC
+        const currentDateUTC = new Date(currentTimestamp);
+        currentDateUTC.setUTCHours(0, 0, 0, 0);
+        const currentTimestampUTC: number = currentDateUTC.getTime();
 
-        const startTimestamp: number = nextDay ? currentTimestamp : currentTimestamp - (24 * 60 * 60 * 1000);    
-        const endTimestamp: number = nextDay ? currentTimestamp + (24 * 60 * 60 * 1000) : currentTimestamp;
+        const startTimestamp: number = nextDay ? currentTimestampUTC : (currentTimestampUTC - (24 * 60 * 60 * 1000));    
+        const endTimestamp: number = nextDay ? (currentTimestampUTC + (24 * 60 * 60 * 1000)) : currentTimestampUTC;
 
         return executeSearch({...override, startTimestamp, endTimestamp, type: (type ?? LogType.ERROR)});
     }
@@ -207,7 +210,7 @@ const LogPage = () => {
                                     type={type}
                                     showLocalPrevious={(displayList.length > 0)}
                                     cumulativeIndex={cumulativeIndex}
-                                    lastTimestamp={(displayList.length > 0) ? displayList[displayList.length - 1].timestamp : new Date().getTime()}
+                                    lastTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
                                     executeSearch={executeSearch}
                                     searchPreviousDay={searchPreviousDay}
                                     startDate={startDate}
@@ -226,7 +229,7 @@ const LogPage = () => {
                             type={type}
                             showLocalPrevious={(displayList.length > 0)}
                             cumulativeIndex={cumulativeIndex}
-                            lastTimestamp={(displayList.length > 0) ? displayList[displayList.length - 1].timestamp : new Date().getTime()}
+                            lastTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
                             executeSearch={executeSearch}
                             searchPreviousDay={searchPreviousDay}
                             startDate={startDate}
@@ -387,28 +390,28 @@ export const LogPageNavigationButtons = ({ location, type, startDate, endDate, s
         executeSearch:({ type, endTimestamp, cumulativeIndex }: { type:LogType, endTimestamp: number, cumulativeIndex: number }) => void, searchPreviousDay:(override?:Object, nextDay?:boolean) => void }) =>
     (location === LogLocation.LOCAL) ?
         <div id='previous-page-button-box'>
-            {showLocalPrevious && (
+            {showLocalPrevious &&
                 <button className='alternative-button previous-page-button' type='button' onClick={() =>
                         executeSearch({ type: type ?? LogType.ERROR, endTimestamp: latestTimestamp, cumulativeIndex: cumulativeIndex + 1 })}>
                     {`Previous Index | ${cumulativeIndex + 1}`}
                 </button>
-            )}
-            {cumulativeIndex > 0 && (
+            }
+            {cumulativeIndex > 0 &&
                 <button className='alternative-button next-page-button' type='button' onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex - 1, endTimestamp: new Date().getTime(), type: type ?? LogType.ERROR })}>
                     {`Next Index | ${cumulativeIndex - 1}`}
                 </button>
-            )}
+            }
         </div>
     :
         <div id='previous-page-button-box'>
             <button className='alternative-button previous-page-button' type='button' onClick={() => searchPreviousDay()} >
-                {`Previous Day | ${formatRelativeDate(calculateDays(startDate ?? new Date(), - 1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
+                {`Previous Day | ${formatRelativeDate(calculateUTCDays(startDate, - 1), undefined, {shortForm: false, includeHours: false, markPassed: false, timezoneOffset: 6})}`}
             </button>
-            {endDate && endDate.getTime() < new Date().setHours(0, 0, 0, 0) && (
+            {(endDate && (endDate.getTime() < new Date().setUTCHours(0, 0, 0, 0))) &&
                 <button className='alternative-button next-page-button' type='button' onClick={() => searchPreviousDay({}, true)} >
-                    {`Next Day | ${formatRelativeDate(calculateDays(endDate, + 1), undefined, {shortForm: false, includeHours: false, markPassed: false})}`}
+                    {`Next Day | ${formatRelativeDate(calculateUTCDays(endDate, + 1), undefined, {shortForm: false, includeHours: false, markPassed: false, timezoneOffset: -6})}`}
                 </button>
-            )}
+            }
         </div>;
 
 
@@ -424,10 +427,10 @@ const LOG_TYPE_COLORS: { [key in LogType]:string } = {
 
 const getLogColor = (type:LogType):string => LOG_TYPE_COLORS[type] || 'black';
 
-const calculateDays = (date:Date, days:number):Date => {
+const calculateUTCDays = (date:Date = new Date(), days:number):Date => {
     const d:Date = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + days);
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() + days);
     return d;
 }
 

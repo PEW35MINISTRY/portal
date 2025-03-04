@@ -23,8 +23,8 @@ export const formatNumberOrdinal = (n:number):string =>
   
   
   //Relative Date Rules
-const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean}):string => {
-    options = {shortForm:true, includeHours:true, markPassed:false, ...options}; //Apply defaults & inputted overrides
+const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean, timezoneOffset?:number}):string => {
+    options = {shortForm:true, includeHours:true, markPassed:false, timezoneOffset:0, ...options}; //Apply defaults & inputted overrides
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let text = '';
@@ -40,6 +40,10 @@ const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options
 
     const isPassed:boolean = (options.markPassed === true) && (endDate !== undefined) && (endDate > today);
   
+    //Optional: Adjust timezone comparison
+    startDate = new Date(startDate.getTime() + ((options.timezoneOffset || 0) * 60 * 60 * 1000));
+    if(endDate) endDate = new Date(endDate.getTime() + ((options.timezoneOffset || 0) * 60 * 60 * 1000));
+
     //Date is currently onGoing
     let currentlyOnGoing = false;
     if(today > startDate && endDate != undefined && today < endDate) {
