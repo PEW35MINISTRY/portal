@@ -67,16 +67,14 @@ const LogPage = () => {
     }
 
     /* Update State and Fetch Default */
-    const updateLogType = (newType:LogType, reset:boolean = true, newAction?:ModelPopUpAction|undefined) => {
+    const updateLogType = (newType:LogType, reset:boolean = true) => {
         if(Object.values(LogType).includes(newType) && type !== newType) {
-            const targetAction:ModelPopUpAction = (newAction && SUPPORTED_POP_UP_ACTIONS.includes(newAction)) ? newAction : ModelPopUpAction.NONE;
-            if(targetAction != popUpAction) setPopUpAction(targetAction);
+            navigate(`/portal/logs/${newType.toLowerCase()}`, { replace: true });
             setType(newType);
-            navigate(`/portal/logs/${newType.toLowerCase()}${reset ? '' : `/${targetAction}`}`, { replace: true });
+            setPopUpAction(ModelPopUpAction.NONE);            
 
             if(reset) {
                 executeSearch({ type: newType, searchTerm: ''}, false);
-                // setPopUpAction(targetAction);
                 setSearchTerm('');
                 setCumulativeIndex(0);
             }            
