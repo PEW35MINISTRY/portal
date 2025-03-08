@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { notify, processAJAXError, useAppSelector, useStatusInterval } from '../../1-Utilities/hooks';
 import { LogListItem, LogLocation, LogType } from '../../0-Assets/field-sync/api-type-sync/utility-types';
@@ -8,8 +8,8 @@ import FullImagePage from '../Utility-Pages/FullImagePage';
 import { blueColor, blueDarkColor, PageState, ModelPopUpAction, redColor } from '../../100-App/app-types';
 import { ImageDefaultEnum } from '../../2-Widgets/ImageWidgets';
 import { getEnvironment } from '../../1-Utilities/utilities';
-import { ExportLogPopup, NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
-import formatRelativeDate from '../../1-Utilities/dateFormat';
+import { ExportLogPopup, LogPageLocalNavigationButtons, LogPageS3NavigationButtons, NewLogPopup, SearchLogPopup, SettingsLogPopup, SettingsProperty } from './log-widgets';
+import { formatNumberOrdinal } from '../../1-Utilities/dateFormat';
 import './log.scss';
 
 
@@ -26,6 +26,7 @@ const LogPage = () => {
     const SUPPORTED_POP_UP_ACTIONS: ModelPopUpAction[] = [ModelPopUpAction.SEARCH, ModelPopUpAction.NEW, ModelPopUpAction.EXPORT, ModelPopUpAction.SETTINGS, ModelPopUpAction.NONE];
     const [refreshInterval, setRefreshInterval] = useState<number>(process.env.REACT_APP_LOG_AUTO_UPDATE ? 150000 : 0); //2.5 min
     const [refreshTimeRemaining, setRefreshTimeRemaining] = useState<number>(0);
+    const [showLocalTime, setShowLocalTime] = useState<boolean>(false);
 
     /* Search Criteria */
     const [type, setType] = useState<LogType|undefined>(undefined);
@@ -90,7 +91,7 @@ const LogPage = () => {
                 if(type === undefined) updateLogType(targetType, false); //Default View
 
                 executeSearch({ type: targetType, location: newLocation, searchTerm: '' }, false);
-                setPopUpAction(ModelPopUpAction.NONE);
+                updatePopUpAction(ModelPopUpAction.NONE);
                 setSearchTerm('');
             }   
         }
@@ -103,7 +104,7 @@ const LogPage = () => {
         startTimestamp:number; //S3: Previous Day
         endTimestamp:number; //Local: Required for cumulativeIndex to take effect
         cumulativeIndex:number;
-    }> = {}, syncOverrides:boolean = true) => {
+    }> = {}, syncOverrides:boolean = true):Promise<void> => {
         const targetType:LogType|undefined = override.hasOwnProperty('type') ? override.type : type; //Supports undefined
         await axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log${targetType ? `/${targetType.toLowerCase()}` : '/default'}`, {
             headers: { jwt },
@@ -116,7 +117,7 @@ const LogPage = () => {
                 combineDuplicates
             } : {}
         })
-        .then((response: { data:LogListItem[] }) => { 
+        .then((response: { data:LogListItem[] }) => {             
             setDisplayList(response.data); 
             if(targetType && syncOverrides) {
                 if(override.type !== undefined && override.type !== type) updateLogType(override.type, false);
@@ -131,24 +132,42 @@ const LogPage = () => {
         }).catch((error) => processAJAXError(error));
     }
 
-    const searchPreviousDay = (override:Partial<{
-        type:LogType|undefined;
-        location:LogLocation;
-        timestamp:number;
-    }> = {}, nextDay:boolean = false) => {
-        const currentTimestamp: number = override.timestamp ?? new Date().getTime();
-        
-        //Server is in UTC
-        const currentDateUTC = new Date(currentTimestamp);
-        currentDateUTC.setUTCHours(0, 0, 0, 0);
-        const currentTimestampUTC: number = currentDateUTC.getTime();
+    /* Day Orderly Management */
+    useEffect(() => {
+        if(endDate && (!startDate || endDate < startDate))
+            setStartDate((currentStart) => (currentStart && currentStart <= endDate) ? currentStart 
+                : new Date(endDate.getTime() - (24 * 60 * 60 * 1000)))}, [endDate]);
 
-        const startTimestamp: number = nextDay ? currentTimestampUTC : (currentTimestampUTC - (24 * 60 * 60 * 1000));    
-        const endTimestamp: number = nextDay ? (currentTimestampUTC + (24 * 60 * 60 * 1000)) : currentTimestampUTC;
+    useEffect(() => {
+        if(startDate && (!endDate || startDate > endDate))
+            setEndDate((currentEnd) => (currentEnd && currentEnd >= startDate) ? currentEnd 
+                : new Date(startDate.getTime() + (24 * 60 * 60 * 1000)))}, [startDate]);
 
-        return executeSearch({...override, startTimestamp, endTimestamp, type: (type ?? LogType.ERROR)});
-    }
 
+    const searchDay = (direction?:SearchDayDirection, override:Partial<{ type:LogType|undefined; location:LogLocation; timestamp:number; }> = {}):Promise<void> => {
+        const timestampRange:number[] = calculateDayTimestamps(direction, override.timestamp);
+        return executeSearch({
+            ...override,
+            startTimestamp: timestampRange[0],
+            endTimestamp: timestampRange[1],
+            type: (type ?? LogType.ERROR),
+        });
+    }  
+
+    const getStartTimestamp = ():number => 
+        (!type) ? new Date().getTime()
+        : (startDate) ? startDate.getTime() 
+        : (displayList.length > 1) ? displayList[displayList.length - 1].timestamp //Assumed sorted descending
+        : new Date().getTime();
+    
+    const getEndTimestamp = ():number|undefined => 
+        (!type) ? undefined
+        : (endDate) ? endDate.getTime() 
+        : (displayList.length > 1) ? displayList[0].timestamp //Assumed sorted descending
+        : undefined;    
+
+
+    
 
     /* Update Interval */
     useStatusInterval({interval: Number(refreshInterval), callback: executeSearch, statusInterval:1000,
@@ -200,39 +219,58 @@ const LogPage = () => {
                 : (viewState === PageState.NOT_FOUND) ? 
                     <FullImagePage imageType={ImageDefaultEnum.EMPTY_TOMB} backgroundColor='transparent' message='No Log Entries Found' messageColor={blueColor}
                         primaryButtonText={`New ${makeDisplayText(type)} Search`} onPrimaryButtonClick={() => updatePopUpAction(ModelPopUpAction.SEARCH)}
-                        alternativeButtonText={`View Latest ${makeDisplayText(type)} Log`} onAlternativeButtonClick={() => {
-                            setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 });
-                        }}                        
-                        footer={<LogPageNavigationButtons
-                                    location={location}
+                        footer={(location === LogLocation.LOCAL) ?
+                                <LogPageLocalNavigationButtons
                                     type={type}
-                                    showLocalPrevious={(displayList.length > 0)}
+                                    showPreviousIndex={(displayList.length > 0)}
                                     cumulativeIndex={cumulativeIndex}
-                                    lastTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
+                                    latestTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
                                     executeSearch={executeSearch}
-                                    searchPreviousDay={searchPreviousDay}
-                                    startDate={startDate}
-                                    endDate={endDate}
+                                    refreshButtonText={`View Latest ${makeDisplayText(type)} Logs`}
+                                    onRefreshButtonClick={() => { setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 })}}
+                                />
+                            : <LogPageS3NavigationButtons
+                                    previousDayText={'Previous Day: ' + formatUTCDate(calculateDayTimestamps(SearchDayDirection.PREVIOUS, getStartTimestamp())[0])}
+                                    searchPreviousDay={() => searchDay(SearchDayDirection.PREVIOUS, {timestamp: getStartTimestamp()})}
+
+                                    showNextDay={(type && endDate && (endDate < new Date(new Date().setUTCHours(0, 0, 0, 0)))) == true}
+                                    nextDayText={'Next Day: ' + formatUTCDate(calculateDayTimestamps(SearchDayDirection.NEXT, getEndTimestamp())[1])}
+                                    searchNextDay={() => searchDay(SearchDayDirection.NEXT, {timestamp: getEndTimestamp()})}
+
+                                    refreshButtonText={`View Latest ${makeDisplayText(type)} Logs`}
+                                    onRefreshButtonClick={() => { setSearchTerm(''); executeSearch({ searchTerm: '', endTimestamp: new Date().getTime(), cumulativeIndex: 0 })}}
                                 />}
                             />
                 :
                 <div id='log-list'>
                     {[...displayList].map((entry, index) => (
-                        <LogEntryItem key={`${index}-${entry.type}-${entry.timestamp}-${JSON.stringify(entry.messages)}`} LogListItem={entry} />
+                        <LogEntryItem key={`${index}-${entry.type}-${entry.timestamp}-${JSON.stringify(entry.messages)}`} LogListItem={entry} showLocalTime={showLocalTime} />
                     ))}
 
-                    {(viewState === PageState.VIEW) &&
-                        <LogPageNavigationButtons
-                            location={location}
+                    {(viewState === PageState.VIEW && location === LogLocation.LOCAL) ?
+                        <LogPageLocalNavigationButtons
                             type={type}
-                            showLocalPrevious={(displayList.length > 0)}
+                            showPreviousIndex={(displayList.length > 0)}
                             cumulativeIndex={cumulativeIndex}
-                            lastTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
+                            latestTimestamp={(displayList.length > 0) ? displayList[0].timestamp : new Date().getTime()}
                             executeSearch={executeSearch}
-                            searchPreviousDay={searchPreviousDay}
-                            startDate={startDate}
-                            endDate={endDate}
+                            refreshButtonText={`Refresh ${makeDisplayText(type)} Logs`}
+                            onRefreshButtonClick={executeSearch}
                         />
+                    : (viewState === PageState.VIEW && location === LogLocation.S3) ? 
+                        <LogPageS3NavigationButtons
+                            previousDayText={'Previous Day: ' + formatUTCDate(calculateDayTimestamps(SearchDayDirection.PREVIOUS, getStartTimestamp())[0])}
+                            searchPreviousDay={() => searchDay(SearchDayDirection.PREVIOUS, {timestamp: getStartTimestamp()})}
+                            
+                            showNextDay={(type && endDate && (endDate < new Date(new Date().setUTCHours(0, 0, 0, 0)))) == true}
+                            nextDayText={'Next Day: ' + formatUTCDate(calculateDayTimestamps(SearchDayDirection.NEXT, getEndTimestamp())[1])}
+                            searchNextDay={() => searchDay(SearchDayDirection.NEXT, {timestamp: getEndTimestamp()})}
+                            
+                            refreshButtonText={`Refresh ${makeDisplayText(type)} Logs`}
+                            onRefreshButtonClick={executeSearch}
+                        />
+                    :
+                        <></>
                     }
                 </div>
             }
@@ -292,7 +330,10 @@ const LogPage = () => {
                     [   'Refresh', new SettingsProperty<number>( refreshInterval, (value:number)=>setRefreshInterval(Number(value)),
                             [0, 30000, 60000, 150000, 300000, 900000], 
                             [0, 30000, 60000, 150000, 300000, 900000].map(m => formatIntervalTime(m))
-                    )]
+                    )],
+                    [
+                        'Time', new SettingsProperty<boolean>(showLocalTime, (v) => setShowLocalTime((String(v) === 'true')), [true, false], ['Local Time', 'UTC'])
+                    ]
                 ])}
                 onCancel={() => updatePopUpAction(ModelPopUpAction.NONE)}
             />
@@ -308,33 +349,32 @@ export default LogPage;
 /********************
 * Log Entry Listing *
 *********************/
-const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { timestamp, type, messages, stackTrace, duplicateList, fileKey } }) => {
+const LogEntryItem:React.FC<{ LogListItem:LogListItem; showLocalTime?:boolean }> = ({ LogListItem: { timestamp, type, messages, stackTrace, duplicateList, fileKey }, showLocalTime }) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
     const [expand, setExpand] = useState<boolean>(false);
     const [messageList, setMessageList] = useState<string[]>(messages || []);
     const [stackTraceList, setStackTraceList] = useState<string[]>(stackTrace || []);
     const [additionalDuplicateList, setAdditionalDuplicateList] = useState<string[]>(duplicateList || []);
 
-
-    const primaryMessage = messages && messages[0] ? messages[0] : 'Unknown Error ';
-
     const updateDetails = (event:React.MouseEvent<HTMLLabelElement, MouseEvent>) => {
         event.stopPropagation();
         axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log?key=${fileKey}`, { headers: { jwt } })
             .then((response: { data: LogListItem }) => {
                 notify('Acquired full log entry details.');            
-                setMessageList(response.data.messages);
+                setMessageList(response.data.messages ?? []);
                 setStackTraceList(response.data.stackTrace ?? []);
                 setAdditionalDuplicateList(response.data.duplicateList ?? []);
             })
             .catch((error) => processAJAXError(error));
     }
 
+    const primaryMessage = useMemo(() => messages && messages[0] ? messages[0] : 'Unknown Error ', [messages]);
+
     return (
         <div className='log-entry-item'>
             <div className={`log-entry-header ${expand ? 'log-close' : ''}`} onClick={() => setExpand(current => !current)}>
                 <label className='log-entry-type' style={{ color: getLogColor(type) }}>{type}</label>
-                <label className='log-entry-date'>{formatLogDate(new Date(timestamp), expand)}</label>
+                <label className='log-entry-date'>{formatLogDate(new Date(timestamp), expand, showLocalTime)}</label>
                 {(additionalDuplicateList && additionalDuplicateList.length > 0) && <label className='log-entry-indicator'>⎘ {additionalDuplicateList.length + 1}</label>}
                 {!expand && <label className='log-entry-primary-message'>{makeDisplayText(primaryMessage)}</label>}
                 {expand && fileKey && <label className='log-entry-link' onClick={updateDetails}>More Details</label>}
@@ -346,14 +386,14 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
                     <div className='log-entry-timestamp'><label className='log-entry-line-icon'>⏱</label>Timestamp: {timestamp} (ms)</div>
                     {messageList.length > 0 &&
                         messageList.map((message, index) => (
-                            <div key={index} className='log-entry-message'>{message}</div>
+                            <div key={index + '-message'} className='log-entry-message'>{message}</div>
                         ))}
 
                     {duplicateList && duplicateList.length > 0 && (
                         <>
                             <hr />
                             {duplicateList.map((duplicate, index) => (
-                                <div key={index} className='log-entry-duplicate'>
+                                <div key={index + '-duplicate'} className='log-entry-duplicate'>
                                     <label className='log-entry-line-icon'>⎘</label>
                                     <p>{duplicate}</p>
                                 </div>
@@ -365,7 +405,7 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
                         <>
                             <hr />
                             {stackTraceList.map((trace, index) => (
-                                <div key={index} className='log-entry-trace'>
+                                <div key={index + '-stack'} className='log-entry-trace'>
                                     <label className='log-entry-line-icon'>{'>'.repeat(index + 1)}</label>
                                     <p>{trace}</p>
                                 </div>
@@ -380,39 +420,6 @@ const LogEntryItem: React.FC<{ LogListItem: LogListItem }> = ({ LogListItem: { t
 };
 
 
-/************************
- * Previous/Nex Buttons *
- ************************/
-export const LogPageNavigationButtons = ({ location, type, startDate, endDate, showLocalPrevious, cumulativeIndex, lastTimestamp: latestTimestamp, executeSearch, searchPreviousDay }
-    : { location:LogLocation, type:LogType|undefined, startDate?:Date, endDate?:Date, showLocalPrevious:boolean, cumulativeIndex:number, lastTimestamp:number,
-        executeSearch:({ type, endTimestamp, cumulativeIndex }: { type:LogType, endTimestamp: number, cumulativeIndex: number }) => void, searchPreviousDay:(override?:Object, nextDay?:boolean) => void }) =>
-    (location === LogLocation.LOCAL) ?
-        <div id='previous-page-button-box'>
-            {showLocalPrevious &&
-                <button className='alternative-button previous-page-button' type='button' onClick={() =>
-                        executeSearch({ type: type ?? LogType.ERROR, endTimestamp: latestTimestamp, cumulativeIndex: cumulativeIndex + 1 })}>
-                    {`Previous Index | ${cumulativeIndex + 1}`}
-                </button>
-            }
-            {cumulativeIndex > 0 &&
-                <button className='alternative-button next-page-button' type='button' onClick={() => executeSearch({ cumulativeIndex: cumulativeIndex - 1, endTimestamp: new Date().getTime(), type: type ?? LogType.ERROR })}>
-                    {`Next Index | ${cumulativeIndex - 1}`}
-                </button>
-            }
-        </div>
-    :
-        <div id='previous-page-button-box'>
-            <button className='alternative-button previous-page-button' type='button' onClick={() => searchPreviousDay()} >
-                {`Previous Day | ${formatRelativeDate(calculateUTCDays(startDate, - 1), undefined, {shortForm: false, includeHours: false, markPassed: false, timezoneOffset: 6})}`}
-            </button>
-            {(endDate && (endDate.getTime() < new Date().setUTCHours(0, 0, 0, 0))) &&
-                <button className='alternative-button next-page-button' type='button' onClick={() => searchPreviousDay({}, true)} >
-                    {`Next Day | ${formatRelativeDate(calculateUTCDays(endDate, + 1), undefined, {shortForm: false, includeHours: false, markPassed: false, timezoneOffset: -6})}`}
-                </button>
-            }
-        </div>;
-
-
 
 /* UTILITIES */
 const LOG_TYPE_COLORS: { [key in LogType]:string } = {
@@ -425,29 +432,32 @@ const LOG_TYPE_COLORS: { [key in LogType]:string } = {
 
 const getLogColor = (type:LogType):string => LOG_TYPE_COLORS[type] || 'black';
 
-const calculateUTCDays = (date:Date = new Date(), days:number):Date => {
-    const d:Date = new Date(date);
-    d.setUTCHours(0, 0, 0, 0);
-    d.setUTCDate(d.getUTCDate() + days);
-    return d;
+const formatLogDate = (originalDate:Date, longForm:boolean = false, showLocalTime:boolean = false):string => {
+    const date:Date = showLocalTime ? new Date(originalDate.getTime() - originalDate.getTimezoneOffset() * 60000) : originalDate; //modified new object to still use date utilities
+    
+    return (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
+        '['
+        + String(date.getMonth() + 1).padStart(2, '0')
+        + '-'
+        + String(date.getDate()).padStart(2, '0')
+        + (longForm ? '-'
+            + date.getFullYear() : '')
+        + ' '
+        + String(date.getHours()).padStart(2, '0')
+        + ':'
+        + String(date.getMinutes()).padStart(2, '0')
+        + (longForm ? ':'
+            + String(date.getSeconds()).padStart(2, '0')
+            + '.'
+            + String(date.getMilliseconds()).padStart(3, '0') : '')
+        + ']';
 }
 
-const formatLogDate = (date:Date, longForm:boolean = false):string => (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
-    '['
-    + String(date.getMonth() + 1).padStart(2, '0')
-    + '-'
-    + String(date.getDate()).padStart(2, '0')
-    + (longForm ? '-'
-        + date.getFullYear() : '')
-    + ' '
-    + String(date.getHours()).padStart(2, '0')
-    + ':'
-    + String(date.getMinutes()).padStart(2, '0')
-    + (longForm ? ':'
-        + String(date.getSeconds()).padStart(2, '0')
-        + '.'
-        + String(date.getMilliseconds()).padStart(3, '0') : '')
-    + ']';
+
+export function formatUTCDate(timestamp:number):string {
+    const date = new Date(timestamp);
+    return `${date.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} ${formatNumberOrdinal(date.getUTCDate())}`;
+}
 
 
 const formatIntervalTime = (ms:number, longForm:boolean = true):string => {
@@ -465,3 +475,41 @@ const formatIntervalTime = (ms:number, longForm:boolean = true):string => {
     } else
         return `${ms} ms`;
 };
+
+
+/* Calculate UTC Day Boundaries for navigation toggles */
+enum SearchDayDirection { PREVIOUS, NEXT }
+const calculateDayTimestamps = (direction?:SearchDayDirection, timestamp?:number):[number, number] => {
+    const currentTimestamp:number = timestamp ?? new Date().getTime();
+    const currentDateUTC = new Date(currentTimestamp);
+    currentDateUTC.setUTCHours(0, 0, 0, 0); 
+    const currentDayMidnight:number = currentDateUTC.getTime();    
+
+    //Current UTC Day Boundaries
+    let startTimestamp = currentDayMidnight;
+    let endTimestamp = currentDayMidnight + (24 * 60 * 60 * 1000) - 1;
+
+    //Previous UTC Day: yesterday's midnight -> (timestamp or midnight)
+    if(direction === SearchDayDirection.PREVIOUS) {
+        if(timestamp && (timestamp - currentDayMidnight) > 60000) {//Earlier this Day
+            startTimestamp = currentDayMidnight;
+            endTimestamp = timestamp;
+
+        } else { //Previous Full Day
+            startTimestamp = currentDayMidnight - (24 * 60 * 60 * 1000);
+            endTimestamp = currentDayMidnight - 1;
+        }
+
+    //Next UTC Day: (timestamp or midnight) -> tomorrow's midnight
+    } else if(direction === SearchDayDirection.NEXT) {
+        if(timestamp && ((currentDayMidnight + (24 * 60 * 60 * 1000)) - timestamp) > 60000) { //Finish Day
+            startTimestamp = timestamp;
+            endTimestamp = (currentDayMidnight + (24 * 60 * 60 * 1000) - 1);
+        } else { //Next Full Day
+            startTimestamp = currentDayMidnight + (24 * 60 * 60 * 1000);
+            endTimestamp = currentDayMidnight + (48 * 60 * 60 * 1000) - 1;
+        }        
+    }
+
+    return [startTimestamp, endTimestamp];
+}

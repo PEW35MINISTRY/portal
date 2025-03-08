@@ -1,12 +1,11 @@
-import axios, { AxiosResponse } from 'axios';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import axios, { AxiosResponse } from 'axios';
 import { LogType, LogLocation, LogListItem } from '../../0-Assets/field-sync/api-type-sync/utility-types';
 import { getDateDaysFuture } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
 import { getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppSelector, notify, processAJAXError } from '../../1-Utilities/hooks';
 import { makeDisplayText } from '../../1-Utilities/utilities';
 import { ToastStyle } from '../../100-App/app-types';
-
 
 
 /****************
@@ -270,35 +269,6 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
     const type:LogType = useMemo(() => LogType[propertyMap.get('Location')?.value as keyof typeof LogType] ?? LogType.ERROR, [propertyMap]); //Uses Label Name
     const location:LogLocation = useMemo(() => LogLocation[propertyMap.get('Location')?.value as keyof typeof LogLocation] ?? LogLocation.LOCAL, [propertyMap]); //Uses Label Name
 
-    /* DOWNLOAD LOG FILE | Server initiates file stream */
-    const downloadLog = (triggerDownload:boolean = true) => axios.get(`${process.env.REACT_APP_DOMAIN}/api/admin/log/${type}/download?location=${location}`, { headers: { jwt }, responseType: 'blob' })
-        .then((response: AxiosResponse<Blob>) => {
-            const fileBlob = response.data;
-            const fileURL = URL.createObjectURL(fileBlob);
-            
-            if(triggerDownload) {
-                notify(`${makeDisplayText(type)} Download Initiated`, ToastStyle.SUCCESS);
-                //Server provides filename
-                const contentDisposition = response.headers['content-disposition'];
-                const matches = /filename='([^']*)'/.exec(contentDisposition ?? '');
-                const filename = (matches && matches[1]) || `${type.toLowerCase()}-log.txt`;
-
-                const downloadLink = document.createElement('a');
-                downloadLink.href = fileURL;
-                downloadLink.download = filename;
-                downloadLink.click();
-            
-            //Open file in new tab
-            } else {
-                const newTab = window.open(fileURL, '_blank');
-                if(newTab) notify(`${makeDisplayText(type)} Opened in New Tab`, ToastStyle.SUCCESS);
-                else notify(`Unable to Open ${makeDisplayText(type)} File`, ToastStyle.ERROR);
-            }
-            onCancel && onCancel();
-        })
-        .catch((error) => processAJAXError(error));
-
-
     return (
         <div className='center-absolute-wrapper' onClick={() => onCancel && onCancel()}>
             <div id='settings-log-pop-up' className='center-absolute-inside' onClick={(e) => e.stopPropagation()} 
@@ -333,7 +303,7 @@ export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<s
                             onCancel && onCancel();
                         })
                         .catch((error) => processAJAXError(error))
-                        }>Reset File ↺</button>
+                        }>Resize & Rewrite File ↺</button>
                 }
 
                 {/* Update Athena Partitions for S3 Log Search */}
@@ -374,3 +344,44 @@ export class SettingsProperty<T> {
         }
     }
 }
+
+
+
+
+/************************
+ * Previous/Next Buttons *
+ ************************/
+export const LogPageLocalNavigationButtons = ({ type, showPreviousIndex, latestTimestamp, cumulativeIndex, refreshButtonText, onRefreshButtonClick, executeSearch }
+            : { type: LogType|undefined, showPreviousIndex: boolean, latestTimestamp:number, cumulativeIndex:number,  refreshButtonText:string, onRefreshButtonClick:Function,
+        executeSearch:({ type, endTimestamp, cumulativeIndex }: { type:LogType, endTimestamp:number, cumulativeIndex:number }) => void }) => (
+    <div id='previous-page-button-box'>
+        {showPreviousIndex &&
+            <button className='alternative-button previous-page-button' type='button' onClick={() =>
+                executeSearch({ type: type ?? LogType.ERROR, endTimestamp: latestTimestamp, cumulativeIndex: cumulativeIndex + 1 })}>
+                {`Previous Index | ${cumulativeIndex + 1}`}
+            </button>
+        }
+        {refreshButtonText &&
+            <button className='alternative-button previous-page-button' type='button' onClick={() => onRefreshButtonClick()}>{refreshButtonText}</button>
+        }
+        {cumulativeIndex > 0 &&
+            <button className='alternative-button next-page-button' type='button' onClick={() =>
+                executeSearch({ cumulativeIndex: cumulativeIndex - 1, endTimestamp: new Date().getTime(), type: type ?? LogType.ERROR })}>
+                {`Next Index | ${cumulativeIndex - 1}`}
+            </button>
+        }
+    </div>
+);
+
+export const LogPageS3NavigationButtons = ({ previousDayText, searchPreviousDay, nextDayText, showNextDay, searchNextDay, refreshButtonText, onRefreshButtonClick }
+    : { previousDayText:String, searchPreviousDay:Function, showNextDay: boolean, nextDayText:String, searchNextDay:Function, refreshButtonText:string, onRefreshButtonClick:Function }) => (
+    <div id='previous-page-button-box'>
+        <button className='alternative-button previous-page-button' type='button' onClick={() => searchPreviousDay()}>{previousDayText}</button>
+        {refreshButtonText && (
+            <button className='alternative-button previous-page-button' type='button' onClick={() => onRefreshButtonClick()}>{refreshButtonText}</button>
+        )}
+        {showNextDay && (
+            <button className='alternative-button next-page-button' type='button' onClick={() => searchNextDay()}>{nextDayText}</button>
+        )}
+    </div>
+);
