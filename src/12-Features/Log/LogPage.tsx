@@ -432,26 +432,23 @@ const LOG_TYPE_COLORS: { [key in LogType]:string } = {
 
 const getLogColor = (type:LogType):string => LOG_TYPE_COLORS[type] || 'black';
 
-const formatLogDate = (originalDate:Date, longForm:boolean = false, showLocalTime:boolean = false):string => {
-    const date:Date = showLocalTime ? new Date(originalDate.getTime() - originalDate.getTimezoneOffset() * 60000) : originalDate; //modified new object to still use date utilities
-    
-    return (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
-        '['
-        + String(date.getMonth() + 1).padStart(2, '0')
-        + '-'
-        + String(date.getDate()).padStart(2, '0')
-        + (longForm ? '-'
-            + date.getFullYear() : '')
-        + ' '
-        + String(date.getHours()).padStart(2, '0')
-        + ':'
-        + String(date.getMinutes()).padStart(2, '0')
-        + (longForm ? ':'
-            + String(date.getSeconds()).padStart(2, '0')
-            + '.'
-            + String(date.getMilliseconds()).padStart(3, '0') : '')
-        + ']';
-}
+const formatLogDate = (date:Date, longForm:boolean = false, showLocalTime:boolean = false):string =>
+    (!(date instanceof Date) || isNaN(date.getTime())) ? '[]' :
+    '['
+    + String(showLocalTime ? date.getMonth() + 1 : date.getUTCMonth() + 1).padStart(2, '0')
+    + '-'
+    + String(showLocalTime ? date.getDate() : date.getUTCDate()).padStart(2, '0')
+    + (longForm ? '-'
+        + (showLocalTime ? date.getFullYear() : date.getUTCFullYear()) : '')
+    + ' '
+    + String(showLocalTime ? date.getHours() : date.getUTCHours()).padStart(2, '0')
+    + ':'
+    + String(date.getMinutes()).padStart(2, '0')
+    + (longForm ? ':'
+        + String(showLocalTime ? date.getSeconds() : date.getUTCSeconds()).padStart(2, '0')
+        + '.'
+        + String(showLocalTime ? date.getMilliseconds() : date.getUTCMilliseconds()).padStart(3, '0') : '')
+    + ']';
 
 
 export function formatUTCDate(timestamp:number):string {
