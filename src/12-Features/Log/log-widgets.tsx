@@ -266,7 +266,7 @@ export const ExportLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<str
 ************/
 export const SettingsLogPopup = ({ propertyMap, onCancel }: { propertyMap: Map<string, SettingsProperty<any>>, onCancel?: () => void }) => {
     const jwt:string = useAppSelector((state) => state.account.jwt);
-    const type:LogType = useMemo(() => LogType[propertyMap.get('Location')?.value as keyof typeof LogType] ?? LogType.ERROR, [propertyMap]); //Uses Label Name
+    const type:LogType = useMemo(() => LogType[propertyMap.get('Type')?.value as keyof typeof LogType] ?? LogType.ERROR, [propertyMap]); //Uses Label Name
     const location:LogLocation = useMemo(() => LogLocation[propertyMap.get('Location')?.value as keyof typeof LogLocation] ?? LogLocation.LOCAL, [propertyMap]); //Uses Label Name
 
     return (
