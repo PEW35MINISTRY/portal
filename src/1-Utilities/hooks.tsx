@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -49,12 +49,12 @@ export const notify = (text:string, type:ToastStyle = ToastStyle.INFO, callback?
 
 export const processAJAXError = (error:AXIOSError, callback?:Function) => {
   const status:number = error?.response?.status || 500;
-  if (error?.response?.data && 'action' in error?.response?.data)
+  if(error?.response?.data && 'action' in error?.response?.data)
     console.error(error.message, error?.response?.data.action);
   else
     console.error(error.message, error?.response?.data.notification);
 
-  notify(error?.response?.data.notification || '', 
+  notify(error?.response?.data.notification || 'Server is Offline', 
       (status < 300) ? ToastStyle.SUCCESS
       : (status < 400) ? ToastStyle.INFO
       : (status < 500) ? ToastStyle.WARN
@@ -77,37 +77,66 @@ export const useQuery = () => {
  * * Optional cancelInterval() check *
  *************************************/
 export const useInterval = ({ interval, callback, cancelInterval }:{interval:number, callback:() => void, cancelInterval?:() => boolean}) => {
-    const [currentInterval, setCurrentInterval] = useState<number>(interval);
-
     useEffect(() => {
         let timer:NodeJS.Timeout|undefined = undefined;
 
         const startInterval = () => {
-            timer = setInterval(() => {
-                if(cancelInterval?.()) {
-                    if(timer) {
-                        clearInterval(timer);
-                        timer = undefined;
-                    }
-                } else {
-                    callback();
-                }
-            }, currentInterval);
+			timer = setInterval(() => {
+				if(cancelInterval?.()) {
+					if(timer) {
+						clearInterval(timer);
+						timer = undefined;
+					}
+				} else {
+					callback();
+				}
+			}, interval);
         };
 
-        /* Restart Interval */
+        /* Initiate/Stop Interval */
         if(interval > 0)
-          startInterval();
+			startInterval();
         else if(timer) {
-          clearInterval(timer);
-          timer = undefined;
+        	clearInterval(timer);
+        	timer = undefined;
         }
 
         return () => { timer && clearInterval(timer); }
-    }, [currentInterval, callback, cancelInterval]);
+    }, [interval, cancelInterval]);
+};
 
-    // Update interval duration
+
+export const useStatusInterval = ({interval, callback, statusInterval, statusCallback, cancelInterval}: {interval:number, callback:() => void, statusInterval:number, statusCallback:(timeLeft:number) => void, cancelInterval?:() => boolean}) => {
+	const nextCompletionTimestamp = useRef<number>(0);
+    const timerRef = useRef<NodeJS.Timeout|undefined>(undefined);
+
     useEffect(() => {
-        setCurrentInterval(interval);
-    }, [interval]);
+        if(interval <= 0 || statusInterval <= 0 || interval < statusInterval) return;
+
+		nextCompletionTimestamp.current = new Date().getTime() + interval;
+
+        timerRef.current = setInterval(() => {
+            const now:number = new Date().getTime();
+            const timeLeft:number = nextCompletionTimestamp.current - now;
+
+            //Main Callback
+            if(timeLeft <= statusInterval) {
+                callback();
+                nextCompletionTimestamp.current = now + interval;
+            } else
+            	statusCallback(timeLeft);
+
+            if(cancelInterval?.()) {
+                clearInterval(timerRef.current!);
+                timerRef.current = undefined;
+            }
+        }, statusInterval);
+
+        return () => {
+            if(timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = undefined;
+            }
+        };
+    }, [interval, statusInterval, cancelInterval]);
 };
