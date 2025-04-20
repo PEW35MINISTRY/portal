@@ -462,7 +462,7 @@ const CircleEditPage = () => {
                     ])}
             />}
 
-            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.COMMENT) && (editingCircleID > 0) &&
+            {(viewState === PageState.VIEW) && (popUpAction === ModelPopUpAction.ANNOUNCEMENT) && (editingCircleID > 0) &&
                 <CircleAnnouncementPage 
                     key={'CircleEdit-circleAnnouncement-'+editingCircleID}
                     onSaveCallback={makeCircleAnnouncementRequest}
