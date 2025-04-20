@@ -16,6 +16,10 @@ import FullImagePage from '../12-Features/Utility-Pages/FullImagePage';
 
 
 const App = () => {
+  const version:string = packageJson.version ?? '0.0.0';
+  const environment:string = process.env.REACT_APP_ENVIRONMENT ?? 'ENVIRONMENT';
+  const gitBranch:string = process.env.REACT_APP_GIT_BUILD_BRANCH ?? 'BRANCH';
+  const gitCommit:string = process.env.REACT_APP_GIT_BUILD_COMMIT ?? 'COMMIT';
 
   return (
     <BrowserRouter>
@@ -24,7 +28,7 @@ const App = () => {
             <Route path='/login/*' element={<Login/>}/>
             <Route path='/signup/initial-account-flow/*' element={<PopupPageFlow allowEscape={false} />}/>
             <Route path='/signup/*' element={<SignUpPage/>}/>
-            <Route path='/portal/version' element={<FullImagePage fullPage={true} alternativeButtonText={packageJson.version}/>}/>
+            <Route path='/portal/version' element={<FullImagePage fullPage={true} alternativeButtonText={`Version: ${version} | ${environment} | ${gitBranch}@${gitCommit}`}/>}/>
             <Route path='/portal/' element={ <Navigate to='/portal/dashboard' /> }/>
             <Route path='/portal/*' element={<AppContent/>}/>
             <Route path='*' element={ <Navigate to='/login' /> }/>
