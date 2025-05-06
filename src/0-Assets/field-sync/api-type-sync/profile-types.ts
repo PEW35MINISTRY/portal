@@ -1,9 +1,8 @@
 /************* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *************/
-
-import { ModelSourceEnvironmentEnum, GenderEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config.js'
-import { CircleAnnouncementListItem, CircleListItem } from './circle-types.js'
-import { ContentListItem } from './content-types.js';
-import { PrayerRequestListItem } from './prayer-request-types.js'
+import { GenderEnum, ModelSourceEnvironmentEnum, PartnerStatusEnum, RoleEnum } from '../input-config-sync/profile-field-config'
+import { CircleAnnouncementListItem, CircleListItem } from './circle-types'
+import { ContentListItem } from './content-types';
+import { PrayerRequestListItem } from './prayer-request-types'
 
 /**************************************************************************
 *                   PROFILE TYPES                                         *
@@ -53,11 +52,11 @@ export interface ProfilePublicResponse extends ProfileListItem {
 };
 
 export const PROFILE_PROPERTY_LIST = [ //Sync to ProfileResponse
-    'userID', 'modelSourceEnvironment', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'isActive', 'maxPartners', 'walkLevel', 'notes', 'image',
+    'userID', 'modelSourceEnvironment', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'emailVerified', 'maxPartners', 'walkLevel', 'notes', 'image',
     'userRole', 'userRoleList',
     'circleList', 'circleInviteList', 'circleRequestList', 'circleAnnouncementList',
     'partnerList', 'partnerPendingUserList', 'partnerPendingPartnerList',
-    'newPrayerRequestList', 'ownedPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
+    'newPrayerRequestList', 'ownedPrayerRequestList', 'expiringPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
 ];
 
 export interface ProfileResponse {
@@ -71,7 +70,7 @@ export interface ProfileResponse {
     gender: GenderEnum,
     postalCode: string, 
     dateOfBirth: string,
-    isActive: boolean,
+    emailVerified: boolean,
     maxPartners: number,
     walkLevel: number,
     notes?: string,
@@ -86,6 +85,8 @@ export interface ProfileResponse {
     partnerPendingPartnerList?: PartnerListItem[],
     newPrayerRequestList?: PrayerRequestListItem[], //Recipient for dashboard
     ownedPrayerRequestList?: PrayerRequestListItem[], //Not resolved (pending) for which user is the Requestor
+    expiringPrayerRequestList?:PrayerRequestListItem[], // Owned prayer requests that are long term but past their set expiration date
+    answeredPrayerRequestList?:PrayerRequestListItem[], // Owned prayer requests that are answered (resolved)
     recommendedContentList?: ContentListItem[],
     contactList?: ProfileListItem[],
     profileAccessList?: ProfileListItem[], //Leaders
@@ -101,7 +102,7 @@ export interface ProfileEditRequestBody {
     postalCode?: string, 
     dateOfBirth?: string, 
     gender?: GenderEnum,
-    isActive?: boolean,
+    emailVerified?: boolean,
     maxPartners?: number,
     walkLevel?: number,
     image?: string,

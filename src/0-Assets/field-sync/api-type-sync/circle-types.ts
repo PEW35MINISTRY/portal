@@ -1,8 +1,8 @@
 /*********** ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ ***********/
 
-import { CircleStatusEnum } from '../input-config-sync/circle-field-config.js'
-import { PrayerRequestListItem } from './prayer-request-types.js'
-import { ProfileListItem } from './profile-types.js'
+import { CircleStatusEnum } from '../input-config-sync/circle-field-config'
+import { PrayerRequestListItem } from './prayer-request-types'
+import { ProfileListItem } from './profile-types'
 
 /***********************************************************************
 *                   CIRCLE TYPES                                       *
