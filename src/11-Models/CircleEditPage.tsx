@@ -334,14 +334,15 @@ const CircleEditPage = () => {
                 </div>]}
             />}
 
-            {(viewState === PageState.VIEW) && (
-                userLeaderCircleList.length > 0
-                || requestProfileList.length > 0
-                || announcementList.length > 0
-                || inviteProfileList.length > 0
-                || memberProfileList.length > 0
-                || prayerRequestList.length > 0
-            ) &&
+            {((viewState === PageState.NEW && userRole === RoleEnum.ADMIN)
+                || (viewState === PageState.VIEW && (
+                    userLeaderCircleList.length > 0
+                    || requestProfileList.length > 0
+                    || announcementList.length > 0
+                    || inviteProfileList.length > 0
+                    || memberProfileList.length > 0
+                    || prayerRequestList.length > 0
+            ))) &&
             <SearchList
                 key={'CircleEdit-'+editingCircleID}
                 defaultDisplayTitleKeySearch='Circles'

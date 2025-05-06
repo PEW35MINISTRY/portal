@@ -51,13 +51,12 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
                     defaultList.push(...itemList);
                 }
             });
+
         //No matches for defaultDisplayTitleList -> display first list
-        if(defaultList.length === 0) {
-            const firstEntry:[SearchListKey, SearchListValue[]] | undefined = Array.from(props.displayMap.entries()).find(([key, itemList]) => itemList.length > 0);
-            if(firstEntry !== undefined) {
+        const firstEntry:[SearchListKey, SearchListValue[]] | undefined = (defaultList.length === 0) ? Array.from(props.displayMap.entries()).find(([key, itemList]) => itemList.length > 0) : undefined;
+        if(firstEntry !== undefined) {
                 defaultList.push(...firstEntry[1]);
                 setSelectedKey(firstEntry[0] || new SearchListKey({displayTitle: 'Default'}));
-            }
 
         //Default to First display Title (Even for multi display of multiple categories)
         } else if(props.defaultDisplayTitleList !== undefined && props.defaultDisplayTitleList.length > 0) {
