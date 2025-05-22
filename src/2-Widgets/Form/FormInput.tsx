@@ -169,7 +169,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
     
     /* Manage Validations */
     const validate = (field:InputField, simpleValidationOnly:boolean = true):InputValidationResult => {
-        const result:InputValidationResult = validateInput({field, value: props.getInputField(field.field), getInputField:props.getInputField, simpleValidationOnly:simpleValidationOnly});
+        const result:InputValidationResult = validateInput({field, value: props.getInputField(field.field), getInputField:props.getInputField, simpleValidationOnly:true});
 
         if(!result.passed) {
             validationMap.set(field.field, result);
@@ -329,11 +329,10 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
             </select>
             {(roleSelected !== 'defaultValue') &&
                 <section className='custom-input-box'>
-                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'USER') ? 'hidden' : 'visible'}}/>
+                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'USER') ? 'hidden' : 'visible'}} autoComplete="authorization-token"/>
                     <button type='button' onClick={onAdd} >ADD</button>
                 </section>
             }
-            {showValidation && <p className='validation' >{props.field.validationMessage}</p>}
         </div>
     );
 }
