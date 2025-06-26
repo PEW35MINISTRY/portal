@@ -1,6 +1,7 @@
 {
   "name": "portal",
   "version": "1.0.0",
+  "homepage": "/portal",
   "private": true,
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.5",
@@ -24,6 +25,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "prebuild": "node ./scripts/version.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
