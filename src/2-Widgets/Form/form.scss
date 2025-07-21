@@ -82,6 +82,10 @@
                 @media only screen and (max-width: $screen-tablet-width) {
                     text-align: left;
                 }
+
+                .required {
+                    color: $blue;
+                }
             }
 
             .custom-string-list-box {

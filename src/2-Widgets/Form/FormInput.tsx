@@ -195,7 +195,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
             {FIELD_LIST.filter(field => !field.hide).map((f, index) => 
                     <div id={f.field} key={f.field} className='inputWrapper' onBlurCapture={(e) => { if(!e.currentTarget.contains(e.relatedTarget)) validate(f); }}>
-                        <label htmlFor={f.field}>{f.title}</label>
+                        <label htmlFor={f.field}>{f.required  && <span className='required'>* </span>}{f.title}</label>
 
                         {(f.field === 'userRoleTokenList' && (f instanceof InputSelectionField)) 
                             ? <FormEditRole
