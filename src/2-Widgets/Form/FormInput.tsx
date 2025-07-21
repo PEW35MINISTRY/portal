@@ -34,7 +34,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 if(f.value !== undefined)
                     props.setInputField(f.field, f.value);
 
-                else if(f.required && f instanceof InputSelectionField)
+                else if(f.required && f.type === InputType.SELECT_LIST && f instanceof InputSelectionField)
                     props.setInputField(f.field, f.selectOptionList[0]);
 
                 else if(f.required && f instanceof InputRangeField) {
@@ -206,7 +206,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 
                         : (f.field === 'dateOfBirth' && (f instanceof InputRangeField)) 
                             ? <input name={f.field} type={'date'} onChange={onInput}  
-                                value={getShortDate(props.getInputField(f.field) as string)} 
+                                value={getShortDate(props.getInputField(f.field) ?? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).toISOString())} 
                                 min={f.minValue ? getDOBMinDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined} 
                                 max={f.maxValue ? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined}
                               />
@@ -219,7 +219,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
                             : (f.type === InputType.DATE) 
                                 ? <input name={f.field} type={'date'} onChange={onInput}  
-                                    value={getShortDate(props.getInputField(f.field) as string)} 
+                                    value={getShortDate(props.getInputField(f.field) ?? new Date().toISOString())} 
                                 />
 
                             : (f.type === InputType.PARAGRAPH) 
@@ -266,7 +266,16 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
                         <p className='validation'>
                             { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
-                            { (f.length && props.getInputField(f.field)) && <span className='length-counter'>{getValidationLength(props.getInputField(f.field))}/{((getValidationLength(props.getInputField(f.field)) < f.length.min) ? f.length.min : f.length.max)}</span> }
+                            { (f.length && props.getInputField(f.field)) &&
+                                (() => {
+                                    const length = getValidationLength(props.getInputField(f.field));
+                                    const { min, max } = f.length;
+                                    return ((length < min) || (length > (max - (max * 0.2)))) &&
+                                        <span className='length-counter'>
+                                            {(length < min) ? `${min}/${length}` : `${length}/${max}`}
+                                        </span>;
+                                })()
+                            }
                         </p>                        
                     </div>
                 )

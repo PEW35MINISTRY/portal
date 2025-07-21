@@ -136,7 +136,7 @@
                 }
 
                 @media only screen and (max-width: $screen-tablet-width) {
-                    grid-column: 1;
+                    grid-column: 1 /span 2;
                 }
               }
 
