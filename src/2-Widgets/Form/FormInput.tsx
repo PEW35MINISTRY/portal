@@ -227,7 +227,8 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.SELECT_LIST && (f instanceof InputSelectionField)) 
-                                ? <select name={f.field} onChange={onInput} value={`${props.getInputField(f.field)}` || 'defaultValue'}>
+                                ? <select name={f.field} onChange={onInput} value={props.getInputField(f.field) ?? 'defaultValue'}
+>
                                     <option value={'defaultValue'} disabled hidden>Select:</option>
                                     {f.selectOptionList?.map((item, i)=>
                                         <option key={`${f.field}-${item}`} value={`${item}`}>{f.displayOptionList[i]}</option>
