@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
-import { makeDisplayText } from '../1-Utilities/utilities';
+import { makeDisplayText } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { logoutAccount } from './redux-store';
 import { ImageDefaultEnum, ImageWidget, ProfileImage } from '../2-Widgets/ImageWidgets';
 import { ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';

@@ -5,7 +5,8 @@ import { FacebookEmbed, InstagramEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbe
 import InputField, { checkFieldName, ENVIRONMENT_TYPE, InputSelectionField } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
-import { assembleRequestBody, getEnvironment, makeDisplayText } from '../1-Utilities/utilities';
+import { assembleRequestBody, getEnvironment } from '../1-Utilities/utilities';
+import { makeDisplayText } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { blueColor, PageState, ModelPopUpAction, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';

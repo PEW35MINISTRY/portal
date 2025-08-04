@@ -4,7 +4,7 @@ import { LogType, LogLocation, LogListItem } from '../../0-Assets/field-sync/api
 import { getDateDaysFuture } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
 import { getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { useAppSelector, notify, processAJAXError } from '../../1-Utilities/hooks';
-import { makeDisplayText } from '../../1-Utilities/utilities';
+import { makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { ToastStyle } from '../../100-App/app-types';
 
 

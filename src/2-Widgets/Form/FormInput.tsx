@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Range, getTrackBackground } from 'react-range';
 import { IThumbProps, ITrackProps } from 'react-range/lib/types';
 import React, { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
-import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList } from '../../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import validateInput, { getValidationLength, InputValidationResult } from '../../0-Assets/field-sync/input-config-sync/inputValidation';
 import { notify } from '../../1-Utilities/hooks';
@@ -99,43 +99,43 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 uniqueFields.set(f.field, props.getInputField(f.field) || '');
         });
 
-        //Verify required fields entered
-        if(FIELD_LIST.some(f => { const value:any = props.getInputField(f.field);
-            if(f.required && (value === undefined || String(value).length === 0)) {
-                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Required field is missing:`, f.field, value);
-                return true;
-            }
-            return false;
-        })){
-            notify(`Please complete required fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
-            return;
-        }
+        //Re-validate input prior to Submit | (Also updates validation messages)
+        const failedValidations:InputValidationResult[] = FIELD_LIST.map(field => validate(field, false)).filter(result => !result.passed);
 
         //Re-test unique fields as combination
-        if(props.validateUniqueFields === true && uniqueFields.size > 1) {
-            if(Array.from(uniqueFields.values()).some(v => {
-                if(v === undefined || v.length === 0) {
-                    [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Identity field is incomplete:`, v);
-                    return true;
-                }
-                return false;
-            })) {
-                notify(`Please complete identity fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
-                return;
+        if(failedValidations.length === 0 && props.validateUniqueFields && uniqueFields.size > 1) {
+            for(const [field, value] of uniqueFields.entries()) {
+                if(value === undefined || value.length === 0) {
+                    const validation:InputValidationResult = {passed: false, message: 'Unique value is incomplete.', 
+                                                              description: `Unique ${value} value is incomplete and prevent unique validation network call.`};
+                    setValidationMap(previous => new Map(previous).set(field, validation));
+                    failedValidations.push(validation);
 
-            } else if(await testAccountAvailable(uniqueFields) === false) {
-                notify(`Account Exists`);
-                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Account already exists:`, uniqueFields);
+                    [ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()) && console.error(validation.description, field, value, uniqueFields);
+                }
+            }
+
+            if(failedValidations.length === 0 && await testAccountAvailable(uniqueFields) === false) {
+                //Update Validations, But don't add combination to uniqueFieldAvailableCache; because we're not sure which field is invalid
+                 uniqueFields.forEach((value, field) => {
+                    const validation:InputValidationResult = {passed: false, message: 'Unique value already exists, may depend on related fields.', 
+                                                              description: `${value} value existing in database for ${field}, belong to ${modelID.modelIDField} = ${modelID.modelID}`};
+                    setValidationMap(previous => new Map(previous).set(field, validation));
+                    failedValidations.push(validation);
+            });
+
+                if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment())) console.error(`Account combination already exists:`, uniqueFields);
+
+                notify(`Already Exists`, ToastStyle.ERROR);
                 return;
             }
         }
 
-        //Re-validate input prior to Submit
-        if(FIELD_LIST.every(field => validate(field, false))) {
+        //Assembled above, NOT from validationMap state
+        if(failedValidations.length > 0) 
+            notify(`Fix ${failedValidations.length} Validations`, ToastStyle.ERROR);
+        else
             props.onSubmitCallback();
-        } else {
-            notify(`Please fix all validations before ${props.onSubmitText}.`, ToastStyle.ERROR);
-        }
     }
 
     const onInput = (event: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) => {
@@ -169,20 +169,21 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
     
     /* Manage Validations */
     const validate = (field:InputField, simpleValidationOnly:boolean = true):InputValidationResult => {
-        const result:InputValidationResult = validateInput({field, value: props.getInputField(field.field), getInputField:props.getInputField, simpleValidationOnly:true});
+        const result:InputValidationResult = validateInput({field, value: props.getInputField(field.field), getInputField:props.getInputField, simpleValidationOnly: simpleValidationOnly});
 
-        if(!result.passed) {
-            validationMap.set(field.field, result);
-            setValidationMap(new Map(validationMap)); //Triggers Refresh
+        setValidationMap(previous => {
+            const newMap = new Map(previous);
+            if(!result.passed) {
+                newMap.set(field.field, result);
 
-            if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()))
-                console.error('Invalid Input:', field.field, props.getInputField(field.field), result.description);    
+                if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()))
+                    console.error('Invalid Input:', field.field, props.getInputField(field.field), result.description)
 
-        } else if(result.passed && validationMap.has(field.field)) {
-            validationMap.delete(field.field);
-            setValidationMap(new Map(validationMap));
-        }
+            } else
+                newMap.delete(field.field);
 
+            return newMap;
+        });
         return result;
     }
 
@@ -215,7 +216,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                             || f.type === InputType.NUMBER 
                             || f.type === InputType.EMAIL 
                             || f.type === InputType.PASSWORD)
-                                ? <input name={f.field} type={f.type} onChange={onInput} value={props.getInputField(f.field)?.toString() || ''} onBlur={onUniqueField}/>
+                                ? <input name={f.field} type={f.type} onChange={onInput} value={props.getInputField(f.field)?.toString() || ''} onBlur={onUniqueField} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.DATE) 
                                 ? <input name={f.field} type={'date'} onChange={onInput}  
@@ -223,7 +224,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 />
 
                             : (f.type === InputType.PARAGRAPH) 
-                                ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''}/>
+                                ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.SELECT_LIST && (f instanceof InputSelectionField)) 
                                 ? <select name={f.field} onChange={onInput} value={`${props.getInputField(f.field)}` || 'defaultValue'}>
@@ -262,7 +263,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                         }
 
                         {f.customField && (props.getInputField(f.field) === 'CUSTOM') &&
-                             <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title}/>}
+                             <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title} maxLength={f.length?.max}/>}
 
                         <p className='validation'>
                             { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
@@ -295,7 +296,6 @@ export default FormInput;
 const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void }) => {
     const [roleSelected, setRoleSelected] = useState<string>('defaultValue');
     const [tokenInput, setTokenInput] = useState<string>('');
-    const [showValidation, setShowValidation] = useState<boolean>(false);
 
     const onAdd = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if(event)
@@ -305,9 +305,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
             props.setInputField('userRoleTokenList', new Map(props.getInputField(props.field.field)).set(roleSelected, tokenInput));
             setRoleSelected('defaultValue');
             setTokenInput('');
-            setShowValidation(false);
-        } else
-            setShowValidation(true);
+        }
     }
 
     const onRemove = (item:string) => {
@@ -342,6 +340,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
                     <button type='button' onClick={onAdd} >ADD</button>
                 </section>
             }
+
         </div>
     );
 }
