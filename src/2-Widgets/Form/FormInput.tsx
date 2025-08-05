@@ -4,7 +4,9 @@ import { IThumbProps, ITrackProps } from 'react-range/lib/types';
 import React, { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
 import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
+import { getDateDaysFuture } from '../../0-Assets/field-sync/input-config-sync/circle-field-config';
 import validateInput, { getValidationLength, InputValidationResult } from '../../0-Assets/field-sync/input-config-sync/inputValidation';
+import formatRelativeDate from '../../1-Utilities/dateFormat';
 import { notify } from '../../1-Utilities/hooks';
 import { ToastStyle } from '../../100-App/app-types';
 import { testAccountAvailable } from './form-utilities';
@@ -206,11 +208,24 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 />    
                                 
                         : (f.field === 'dateOfBirth' && (f instanceof InputRangeField)) 
-                            ? <input name={f.field} type={'date'} onChange={onInput}  
+                            ? <input name={'dateOfBirth'} type={'date'} onChange={onInput}  
                                 value={getShortDate(props.getInputField(f.field) ?? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).toISOString())} 
                                 min={f.minValue ? getDOBMinDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined} 
                                 max={f.maxValue ? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined}
                               />
+
+                        : (f.field === 'duration' && (['prayerRequestID'].includes(props.getIDField().modelIDField)) && (f instanceof InputSelectionField)) 
+                            ? <select name={'duration'} onChange={onInput} value={'currentValue'}>
+                                <option value='currentValue' disabled hidden>{
+                                    formatRelativeDate(
+                                        props.getInputField('duration') ? getDateDaysFuture(parseInt(props.getInputField('duration')))
+                                            : props.getInputField('expirationDate'),
+                                        undefined, {shortForm:false, includeHours:false, alwaysIncludeMonth:true, markPassed:true}
+                                    ) || 'Pick a Time Frame:'}</option>
+                                {f.selectOptionList?.map((item, i)=>
+                                    <option key={`${f.field}-${item}`} value={item}>{f.displayOptionList[i]}</option>
+                                )}
+                            </select>
 
                         : (f.type === InputType.TEXT 
                             || f.type === InputType.NUMBER 
