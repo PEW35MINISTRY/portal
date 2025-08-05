@@ -13,7 +13,7 @@ import { getEnvironment } from '../../1-Utilities/utilities';
 import './form.scss';
 
 const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
-    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
+    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => !field.hide && field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
     const [validationMap, setValidationMap] = useState<Map<string, InputValidationResult>>(new Map());
 
     /***************************
@@ -100,7 +100,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
         });
 
         //Re-validate input prior to Submit | (Also updates validation messages)
-        const failedValidations:InputValidationResult[] = FIELD_LIST.map(field => validate(field, false)).filter(result => !result.passed);
+        const failedValidations:InputValidationResult[] = FIELD_LIST.filter(field => !field.hide).map(field => validate(field, false)).filter(result => !result.passed);
 
         //Re-test unique fields as combination
         if(failedValidations.length === 0 && props.validateUniqueFields && uniqueFields.size > 1) {

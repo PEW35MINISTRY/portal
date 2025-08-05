@@ -165,6 +165,7 @@ const PrayerRequestEditPage = () => {
             setViewState(PageState.LOADING);
             navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: true});
             fetchPrayerRequest(editingPrayerRequestID); 
+            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
 
         } else { //(id === -1)
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
@@ -177,6 +178,7 @@ const PrayerRequestEditPage = () => {
             setAddCircleRecipientIDList([]);
             setRemoveCircleRecipientIDList([]);
             updatePopUpAction(ModelPopUpAction.NONE);
+            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
         }
     }, [editingPrayerRequestID]);
 
@@ -230,12 +232,6 @@ const PrayerRequestEditPage = () => {
     const makeEditRequest = async(resultMap:Map<string, string> = inputMap) => {
         const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
-        // Convert `duration` mock field to `expirationDate`
-        if(resultMap.has('duration')) {
-            const durationField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'duration');
-            requestBody.expirationDate = getDateDaysFuture(parseInt(resultMap.get('duration') ?? durationField?.value ?? '7')).toISOString();
-        }
-
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(removeUserRecipientIDList.length > 0) requestBody['removeUserRecipientIDList'] = removeUserRecipientIDList;
         if(addCircleRecipientIDList.length > 0) requestBody['addCircleRecipientIDList'] = addCircleRecipientIDList;
@@ -260,11 +256,9 @@ const PrayerRequestEditPage = () => {
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
         const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
 
-        // Convert `duration` mock field to `expirationDate`
-        if(resultMap.has('duration')) {
-            const durationField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'duration');
-            requestBody.expirationDate = getDateDaysFuture(parseInt(resultMap.get('duration') ?? durationField?.value ?? '7')).toISOString();
-        }
+        //Convert `duration` mock field to `expirationDate`
+        const durationField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'duration');
+        requestBody.expirationDate = getDateDaysFuture(parseInt(resultMap.get('duration') ?? durationField?.value ?? '7')).toISOString();
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(addCircleRecipientIDList.length > 0) requestBody['addCircleRecipientIDList'] = addCircleRecipientIDList;
