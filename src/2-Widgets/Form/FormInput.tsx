@@ -2,19 +2,19 @@ import axios from 'axios';
 import { Range, getTrackBackground } from 'react-range';
 import { IThumbProps, ITrackProps } from 'react-range/lib/types';
 import React, { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
-import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList } from '../../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
+import validateInput, { getValidationLength, InputValidationResult } from '../../0-Assets/field-sync/input-config-sync/inputValidation';
 import { notify } from '../../1-Utilities/hooks';
 import { ToastStyle } from '../../100-App/app-types';
-import { getInputHighestRole, testAccountAvailable } from './form-utilities';
-
-import './form.scss';
+import { testAccountAvailable } from './form-utilities';
 import { getEnvironment } from '../../1-Utilities/utilities';
 
-const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
-    const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
+import './form.scss';
 
-    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
+const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
+    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => !field.hide && field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
+    const [validationMap, setValidationMap] = useState<Map<string, InputValidationResult>>(new Map());
 
     /***************************
      *   UNIQUE FIELD HANDLING
@@ -34,7 +34,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 if(f.value !== undefined)
                     props.setInputField(f.field, f.value);
 
-                else if(f.required && f instanceof InputSelectionField)
+                else if(f.required && f.type === InputType.SELECT_LIST && f instanceof InputSelectionField)
                     props.setInputField(f.field, f.selectOptionList[0]);
 
                 else if(f.required && f instanceof InputRangeField) {
@@ -71,78 +71,13 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             notify(`Account already exists with: ${currentValue}.`);
     }
 
-    /***************************
-     *    VALIDATION HANDLING 
-     * *************************/
-    const validateInput = (field:InputField, value?:any, validateRequired?:boolean):boolean => {
-        const currentValue:string|number|undefined = value || props.getInputField(field.field);
 
-        /* Required Fields */
-        if(currentValue === undefined && field.required && (submitAttempted || validateRequired)) {
-            return false;
-
-         /* Password Matching */ 
-        } else if(field.field === 'passwordVerify' && currentValue !== props.getInputField('password')) {
-            return false;
-
-        /* Custom Fields */
-        } else if(currentValue === 'CUSTOM' && field.customField !== undefined && !(new RegExp(field.validationRegex).test(props.getInputField(field.customField)))) {
-            return false;
-
-        /* Non-required fields with no input are excluded from post body */
-        } else if(currentValue === undefined){
-            return true;
-
-        /* CUSTOM_STRING_LIST */
-        } else if(field.type === InputType.CUSTOM_STRING_LIST) {
-            return !Array.isArray(currentValue) || currentValue.some((v:string) => !(new RegExp(field.validationRegex).test(v)));
-
-        /* Validate general validationRegex from config */
-        } else if(!(new RegExp(field.validationRegex).test(String(currentValue)))){
-            return false;
-
-        /* SELECT_LIST */
-        } else if((field instanceof InputSelectionField) && (field.type === InputType.SELECT_LIST) && !field.selectOptionList.includes(`${currentValue}`)) {
-            return false;
-
-        /* DATES | dateOfBirth */
-        } else if(field.type === InputType.DATE && field.field === 'dateOfBirth') {
-            const currentDate:Date = new Date(currentValue);
-
-            if(isNaN(currentDate.valueOf()))
-                return false;
-
-            const currentRole:RoleEnum = getInputHighestRole(props.getInputField);
-
-            if(currentDate > getDOBMaxDate(currentRole)) {
-                notify(`Must be older than ${getAgeFromDate(getDOBMaxDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account`);
-                return false;
-
-            } else if(currentDate < getDOBMinDate(currentRole)) {
-                notify(`Must be younger than ${getAgeFromDate(getDOBMinDate(currentRole))} for a ${getSelectDisplayValue('userRoleTokenList', currentRole)} account.`);
-                return false
-            }
-
-        /* RANGE_SLIDER */
-        } else if((field instanceof InputRangeField) && (field.type === InputType.RANGE_SLIDER) && (isNaN(Number(currentValue)) || Number(currentValue) < Number(field.minValue) || Number(currentValue) > Number(field.maxValue))) {
-            return false;
-
-        /* UNIQUE FIELDS */ 
-        } else if(props.validateUniqueFields === true && field.unique && (uniqueFieldAvailableCache.get(field.field) === false)) {
-            return false;
-        }
-
-        return true;
-    }
-  
     /*********************
      *   EVENT HANDLING 
      * *******************/
     const onSubmit = async(event:React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if(event)
             event.preventDefault();
-
-        setSubmitAttempted(true); //enforces undefined and required validations
 
         const modelID:{modelIDField:string, modelID:number} = props.getIDField();
         const uniqueFields:Map<string, string> = new Map([[modelID.modelIDField, modelID.modelID.toString()]]);
@@ -153,7 +88,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                     props.setInputField(f.field, f.selectOptionList[0]);
 
                 else if(f.type === InputType.DATE)
-                    props.setInputField(f.field, getDateInputDefaultValue(f).toISOString());
+                    props.setInputField(f.field, getDateYearsAgo(Number(f.value) || 0).toISOString());
 
                 else
                     props.setInputField(f.field, f.value || '');
@@ -164,44 +99,43 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 uniqueFields.set(f.field, props.getInputField(f.field) || '');
         });
 
-        //Verify required fields entered
-        if(FIELD_LIST.some(f => { const value:any = props.getInputField(f.field);
-            if(f.required && (value === undefined || String(value).length === 0)) {
-                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Required field is missing:`, f.field, value);
-                return true;
-            }
-            return false;
-        })){
-            notify(`Please complete required fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
-            return;
-        }
+        //Re-validate input prior to Submit | (Also updates validation messages)
+        const failedValidations:InputValidationResult[] = FIELD_LIST.filter(field => !field.hide).map(field => validate(field, false)).filter(result => !result.passed);
 
         //Re-test unique fields as combination
-        if(props.validateUniqueFields === true && uniqueFields.size > 1) {
-            if(Array.from(uniqueFields.values()).some(v => {
-                if(v === undefined || v.length === 0) {
-                    [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Identity field is incomplete:`, v);
-                    return true;
-                }
-                return false;
-            })) {
-                notify(`Please complete identity fields before ${props.onSubmitText}.`, ToastStyle.ERROR);
-                return;
+        if(failedValidations.length === 0 && props.validateUniqueFields && uniqueFields.size > 1) {
+            for(const [field, value] of uniqueFields.entries()) {
+                if(value === undefined || value.length === 0) {
+                    const validation:InputValidationResult = {passed: false, message: 'Unique value is incomplete.', 
+                                                              description: `Unique ${value} value is incomplete and prevent unique validation network call.`};
+                    setValidationMap(previous => new Map(previous).set(field, validation));
+                    failedValidations.push(validation);
 
-            } else if(await testAccountAvailable(uniqueFields) === false) {
-                notify(`Account Exists`);
-                [ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error(`Account already exists:`, uniqueFields);
+                    [ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()) && console.error(validation.description, field, value, uniqueFields);
+                }
+            }
+
+            if(failedValidations.length === 0 && await testAccountAvailable(uniqueFields) === false) {
+                //Update Validations, But don't add combination to uniqueFieldAvailableCache; because we're not sure which field is invalid
+                 uniqueFields.forEach((value, field) => {
+                    const validation:InputValidationResult = {passed: false, message: 'Unique value already exists, may depend on related fields.', 
+                                                              description: `${value} value existing in database for ${field}, belong to ${modelID.modelIDField} = ${modelID.modelID}`};
+                    setValidationMap(previous => new Map(previous).set(field, validation));
+                    failedValidations.push(validation);
+            });
+
+                if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment())) console.error(`Account combination already exists:`, uniqueFields);
+
+                notify(`Already Exists`, ToastStyle.ERROR);
                 return;
             }
         }
 
-        //Re-validate input prior to Submit    
-        if(FIELD_LIST.every(f => validateInput(f, undefined, true) 
-            || ([ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()) && console.error('Invalid Input:', f.field, props.getInputField(f.field)), false)))
+        //Assembled above, NOT from validationMap state
+        if(failedValidations.length > 0) 
+            notify(`Fix ${failedValidations.length} Validations`, ToastStyle.ERROR);
+        else
             props.onSubmitCallback();
-
-        else  
-            notify(`Please fix all validations before ${props.onSubmitText}.`, ToastStyle.ERROR);
     }
 
     const onInput = (event: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) => {
@@ -225,32 +159,32 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
 
         if(fieldName && field) {
             props.setInputField(fieldName, currentValue);
+
+            if(validationMap.has(fieldName))
+                validate(field);
         
-        } else {
+        } else if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()))
             console.error('Invalid Field Name: ', fieldName, FIELD_LIST);
-        }
     }
     
-    /***********************
-     *    UTILITY METHODS 
-     * *********************/
-    const getAgeFromDate = (date: Date):number => Math.floor((new Date().getTime() - date.getTime()+(25*60*60*1000)) / 31557600000);  //Reverse offset one day for delay
-    const getDateInputDefaultValue = (field:InputField):Date => (field.field === 'dateOfBirth') 
-                                        ? ((props.getInputField('userRole') as RoleEnum === RoleEnum.USER) 
-                                            ? getDateYearsAgo(15) : getDateYearsAgo(30))
-                                        : new Date();
+    /* Manage Validations */
+    const validate = (field:InputField, simpleValidationOnly:boolean = true):InputValidationResult => {
+        const result:InputValidationResult = validateInput({field, value: props.getInputField(field.field), getInputField:props.getInputField, simpleValidationOnly: simpleValidationOnly});
 
-    //Finds matching displayOptionList value from selectOptionList input
-    const getSelectDisplayValue = (fieldField:string, value:string):string => {
-        const field:InputSelectionField|undefined = FIELD_LIST.find(f => (f.field === fieldField) && (f instanceof InputSelectionField)) as InputSelectionField;
-        const index:number = (field?.selectOptionList || []).indexOf(value);
+        setValidationMap(previous => {
+            const newMap = new Map(previous);
+            if(!result.passed) {
+                newMap.set(field.field, result);
 
-        if(field !== undefined && index >= 0 && field.selectOptionList.length === field.displayOptionList.length) 
-            return field.displayOptionList[index];
-        else {
-            console.error(`Failed to identify display list value: ${value} from ${fieldField} lists.`, field, index)
-            return value;
-        }
+                if([ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT].includes(getEnvironment()))
+                    console.error('Invalid Input:', field.field, props.getInputField(field.field), result.description)
+
+            } else
+                newMap.delete(field.field);
+
+            return newMap;
+        });
+        return result;
     }
 
     /*********************
@@ -261,8 +195,8 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             {props.headerChildren ?? <></>}
 
             {FIELD_LIST.filter(field => !field.hide).map((f, index) => 
-                    <div id={f.field} key={f.field} className='inputWrapper'>
-                        <label htmlFor={f.field}>{f.title}</label>
+                    <div id={f.field} key={f.field} className='inputWrapper' onBlurCapture={(e) => { if(!e.currentTarget.contains(e.relatedTarget)) validate(f); }}>
+                        <label htmlFor={f.field}>{f.required  && <span className='required'>* </span>}{f.title}</label>
 
                         {(f.field === 'userRoleTokenList' && (f instanceof InputSelectionField)) 
                             ? <FormEditRole
@@ -273,7 +207,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 
                         : (f.field === 'dateOfBirth' && (f instanceof InputRangeField)) 
                             ? <input name={f.field} type={'date'} onChange={onInput}  
-                                value={getShortDate(props.getInputField(f.field) as string || getDateInputDefaultValue(f).toISOString())} 
+                                value={getShortDate(props.getInputField(f.field) ?? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).toISOString())} 
                                 min={f.minValue ? getDOBMinDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined} 
                                 max={f.maxValue ? getDOBMaxDate(props.getInputField('userRole') as RoleEnum).getTime() : undefined}
                               />
@@ -282,18 +216,19 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                             || f.type === InputType.NUMBER 
                             || f.type === InputType.EMAIL 
                             || f.type === InputType.PASSWORD)
-                                ? <input name={f.field} type={f.type} onChange={onInput} value={props.getInputField(f.field)?.toString() || ''} onBlur={onUniqueField}/>
+                                ? <input name={f.field} type={f.type} onChange={onInput} value={props.getInputField(f.field)?.toString() || ''} onBlur={onUniqueField} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.DATE) 
                                 ? <input name={f.field} type={'date'} onChange={onInput}  
-                                    value={getShortDate(props.getInputField(f.field) as string || getDateInputDefaultValue(f).toISOString())} 
+                                    value={getShortDate(props.getInputField(f.field) ?? new Date().toISOString())} 
                                 />
 
                             : (f.type === InputType.PARAGRAPH) 
-                                ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''}/>
+                                ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.SELECT_LIST && (f instanceof InputSelectionField)) 
-                                ? <select name={f.field} onChange={onInput} value={`${props.getInputField(f.field)}` || 'defaultValue'}>
+                                ? <select name={f.field} onChange={onInput} value={props.getInputField(f.field) ?? 'defaultValue'}
+>
                                     <option value={'defaultValue'} disabled hidden>Select:</option>
                                     {f.selectOptionList?.map((item, i)=>
                                         <option key={`${f.field}-${item}`} value={`${item}`}>{f.displayOptionList[i]}</option>
@@ -329,10 +264,21 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                         }
 
                         {f.customField && (props.getInputField(f.field) === 'CUSTOM') &&
-                             <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title}/>}
+                             <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title} maxLength={f.length?.max}/>}
 
-                        {!validateInput(f) && <p className='validation' >{f.validationMessage}</p>}
-                        
+                        <p className='validation'>
+                            { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
+                            { (f.length && props.getInputField(f.field)) &&
+                                (() => {
+                                    const length = getValidationLength(props.getInputField(f.field));
+                                    const { min, max } = f.length;
+                                    return ((length < min) || (length > (max - (max * 0.2)))) &&
+                                        <span className='length-counter'>
+                                            {(length < min) ? `${min}/${length}` : `${length}/${max}`}
+                                        </span>;
+                                })()
+                            }
+                        </p>                        
                     </div>
                 )
             }
@@ -351,7 +297,6 @@ export default FormInput;
 const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void }) => {
     const [roleSelected, setRoleSelected] = useState<string>('defaultValue');
     const [tokenInput, setTokenInput] = useState<string>('');
-    const [showValidation, setShowValidation] = useState<boolean>(false);
 
     const onAdd = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if(event)
@@ -361,9 +306,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
             props.setInputField('userRoleTokenList', new Map(props.getInputField(props.field.field)).set(roleSelected, tokenInput));
             setRoleSelected('defaultValue');
             setTokenInput('');
-            setShowValidation(false);
-        } else
-            setShowValidation(true);
+        }
     }
 
     const onRemove = (item:string) => {
@@ -394,11 +337,11 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
             </select>
             {(roleSelected !== 'defaultValue') &&
                 <section className='custom-input-box'>
-                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'USER') ? 'hidden' : 'visible'}}/>
+                    <input type='password' value={tokenInput} onChange={(e)=>setTokenInput(e.target.value)} placeholder='Authorization Token' style={{visibility: (roleSelected === 'USER') ? 'hidden' : 'visible'}} autoComplete="authorization-token"/>
                     <button type='button' onClick={onAdd} >ADD</button>
                 </section>
             }
-            {showValidation && <p className='validation' >{props.field.validationMessage}</p>}
+
         </div>
     );
 }
@@ -407,7 +350,7 @@ const FormEditRole = (props:{ field:InputSelectionField, getInputField:(field:st
 const FormEditCustomStringList = (props:{ field:InputField, getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, getCleanValue:(item:string) => string, getDisplayValue:(item:string) => string }) => {
     const [list, setList] = useState<string[]>([]); 
     const [newValue, setNewValue] = useState<string>('');
-    const [showValidation, setShowValidation] = useState<boolean>(false);
+    const [validation, setValidation] = useState<InputValidationResult>({passed: true, message: '', description: ''});
 
     //Local list copy synced with props
     useEffect(()=>setList(Array.from(props.getInputField(props.field.field) || [])), [props]);
@@ -417,7 +360,6 @@ const FormEditCustomStringList = (props:{ field:InputField, getInputField:(field
 
         const value:string = props.getCleanValue(event.target.value || '');
         setNewValue(value);
-        setShowValidation((value.length === 0) || (new RegExp(props.field.validationRegex).test(value)));
     }
 
     const onAdd = (event: React.MouseEvent<HTMLButtonElement, MouseEvent> | React.KeyboardEvent<HTMLInputElement>) => {
@@ -428,10 +370,8 @@ const FormEditCustomStringList = (props:{ field:InputField, getInputField:(field
 
         if(value.length > 0 && !currentList.includes(value)) {
             props.setInputField(props.field.field, [...currentList, value]);
-            setShowValidation(false);
-
-        } else
-            setShowValidation(true);
+            setValidation(validateInput({field:props.field, value: props.getInputField(props.field.field), getInputField:props.getInputField, simpleValidationOnly:true}));
+        }
 
         setNewValue('');
     }
@@ -455,8 +395,9 @@ const FormEditCustomStringList = (props:{ field:InputField, getInputField:(field
                 <input type='text' value={props.getDisplayValue(newValue)} onChange={onChange} onKeyDown={(event)=>{ if(event.key === 'Enter') onAdd(event);}} placeholder={'New Term'} />
                 <button type='button' onClick={onAdd} >ADD</button>
             </section>
-            {showValidation && <p className='validation' >{props.field.validationMessage}</p>}
-        </div>
+        
+            <p className='validation'>{ validation.passed ? '\u00A0' : validation.message }</p>        
+      </div>
     );
 }
 

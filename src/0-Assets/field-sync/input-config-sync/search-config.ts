@@ -1,4 +1,4 @@
-/***** ONLY DEPENDENCY: ./inputField - Define all other types locally *****/
+/***** ONLY DEPENDENCY:./inputField - Define all other types locally *****/
 import { CircleListItem, CircleAnnouncementListItem, CircleEventListItem } from '../api-type-sync/circle-types';
 import { ContentListItem } from '../api-type-sync/content-types';
 import { PrayerRequestListItem, PrayerRequestCommentListItem } from '../api-type-sync/prayer-request-types';

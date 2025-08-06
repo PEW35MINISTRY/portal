@@ -3,7 +3,7 @@ import axios from 'axios';
 import { PARTNERSHIP_CONTRACT, PartnerStatusEnum, RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
 import { ToastStyle } from '../100-App/app-types';
-import { makeDisplayText } from '../1-Utilities/utilities';
+import { makeDisplayText } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { PartnerListItem, ProfileListItem, ProfilePublicResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { addPartner, addPartnerPendingPartner, removePartnerPendingUser } from '../100-App/redux-store';
 import { ProfileItem } from './SearchList/SearchListItemCards';

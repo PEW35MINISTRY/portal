@@ -58,7 +58,7 @@ const SignUpPage = () => {
 
 
     /* Local Utilities */
-    const isUserRole:boolean = useMemo(() => ((getInputField('userRoleTokenList') === undefined) || getInputField('userRoleTokenList').has(RoleEnum.USER)), [getInputField('userRoleTokenList')]);
+    const isUserRole:boolean = useMemo(() => ((getInputField('userRoleTokenList') === undefined) || new Map(getInputField('userRoleTokenList')).has(RoleEnum.USER)), [getInputField('userRoleTokenList')]);
 
 
     /*********************

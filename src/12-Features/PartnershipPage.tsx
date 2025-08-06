@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PartnerListItem, ProfileListItem, PartnerCountListItem, NewPartnerListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { notify, processAJAXError, useAppSelector } from '../1-Utilities/hooks';
 import { PartnerItem } from '../2-Widgets/SearchList/SearchListItemCards';
-import { makeAbbreviatedText, makeDisplayText } from '../1-Utilities/utilities';
+import { makeAbbreviatedText, makeDisplayText } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { PartnerStatusEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { PartnershipDeleteAllADMIN, PartnershipStatusADMIN } from '../2-Widgets/PartnershipWidgets';
 import { SearchType, ListItemTypesEnum, DisplayItemType } from '../0-Assets/field-sync/input-config-sync/search-config';
@@ -172,7 +172,7 @@ const PartnershipPage = (props:{view:PARTNERSHIP_VIEW}) => {
 
                     {Object.values(PartnerStatusEnum).map((status, index) =>
                         <span key={`status-header-${status}-${index}`} className='grid-header grid-header-rotate' >
-                            <h3>{makeAbbreviatedText(status, false)}</h3>
+                            <h3>{makeAbbreviatedText(status, { keepLastWord: true })}</h3>
                         </span>
                     )}
 

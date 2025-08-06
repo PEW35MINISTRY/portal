@@ -1,7 +1,7 @@
 /********* ONLY DEPENDENCIES FROM DIRECTORY: /field-sync/ *********/
 
-import { RoleEnum } from '../input-config-sync/profile-field-config.js'
-import { ProfileResponse } from './profile-types.js'
+import { RoleEnum } from '../input-config-sync/profile-field-config'
+import { ProfileResponse } from './profile-types';
 
 /********************************************************************
 *                   AUTH TYPES                                      *

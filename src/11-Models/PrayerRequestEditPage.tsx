@@ -6,10 +6,11 @@ import { PrayerRequestCommentListItem, PrayerRequestListItem, PrayerRequestPatch
 import { PartnerListItem, ProfileListItem, ProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 import { CircleStatusEnum } from '../0-Assets/field-sync/input-config-sync/circle-field-config';
 import InputField, { checkFieldName, ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
-import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
+import { CREATE_PRAYER_REQUEST_FIELDS, EDIT_PRAYER_REQUEST_FIELDS, getDateDaysFuture, PRAYER_REQUEST_COMMENT_FIELDS, PRAYER_REQUEST_FIELDS_ADMIN } from '../0-Assets/field-sync/input-config-sync/prayer-request-field-config';
 import { RoleEnum, } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 import { notify, processAJAXError, useAppDispatch, useAppSelector } from '../1-Utilities/hooks';
-import { assembleRequestBody, circleFilterUnique, getEnvironment, makeDisplayText, userFilterUnique } from '../1-Utilities/utilities';
+import { assembleRequestBody, circleFilterUnique, getEnvironment, userFilterUnique } from '../1-Utilities/utilities';
+import { makeDisplayText } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { blueColor, ModelPopUpAction, PageState, ToastStyle } from '../100-App/app-types';
 import FormInput from '../2-Widgets/Form/FormInput';
 import SearchList from '../2-Widgets/SearchList/SearchList';
@@ -164,6 +165,7 @@ const PrayerRequestEditPage = () => {
             setViewState(PageState.LOADING);
             navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: true});
             fetchPrayerRequest(editingPrayerRequestID); 
+            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
 
         } else { //(id === -1)
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
@@ -176,6 +178,7 @@ const PrayerRequestEditPage = () => {
             setAddCircleRecipientIDList([]);
             setRemoveCircleRecipientIDList([]);
             updatePopUpAction(ModelPopUpAction.NONE);
+            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
         }
     }, [editingPrayerRequestID]);
 
@@ -252,6 +255,10 @@ const PrayerRequestEditPage = () => {
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
         const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
+
+        //Convert `duration` mock field to `expirationDate`
+        const durationField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'duration');
+        requestBody.expirationDate = getDateDaysFuture(parseInt(resultMap.get('duration') ?? durationField?.value ?? '7')).toISOString();
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(addCircleRecipientIDList.length > 0) requestBody['addCircleRecipientIDList'] = addCircleRecipientIDList;

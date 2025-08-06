@@ -6,8 +6,8 @@ import { RoleEnum } from '../../0-Assets/field-sync/input-config-sync/profile-fi
 import { LabelListItem } from '../../0-Assets/field-sync/input-config-sync/search-config';
 import formatRelativeDate, { calculateAge } from '../../1-Utilities/dateFormat';
 import { useAppSelector } from '../../1-Utilities/hooks';
-import { ContentArchivePreview, getDefaultThumbnail } from '../../11-Models/ContentArchivePage';
-import { makeAbbreviatedText, makeDisplayText } from '../../1-Utilities/utilities';
+import {  getDefaultThumbnail } from '../../11-Models/ContentArchivePage';
+import { makeAbbreviatedText, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { CircleImage, ContentThumbnailImage, ProfileImage } from '../ImageWidgets';
 
 

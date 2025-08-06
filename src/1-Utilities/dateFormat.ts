@@ -23,8 +23,8 @@ export const formatNumberOrdinal = (n:number):string =>
   
   
   //Relative Date Rules
-const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, markPassed?:boolean}):string => {
-    options = {shortForm:true, includeHours:true, markPassed:false, ...options}; //Apply defaults & inputted overrides
+const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options?:{shortForm?:boolean, includeHours?:boolean, alwaysIncludeMonth?:boolean, markPassed?:boolean}):string => {
+    options = {shortForm:true, includeHours:true, alwaysIncludeMonth:false, markPassed:false, ...options}; //Apply defaults & inputted overrides
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let text = '';
@@ -56,7 +56,7 @@ const formatRelativeDate = (startDate:Date|string, endDate?:Date|string, options
 
     else if(startDate > getFutureDate(today, -7) && startDate < getFutureDate(today, 7)) text += options.shortForm ? DAY_OF_WEEK_SHORT[startDate.getDay()] : DAY_OF_WEEK_LONG[startDate.getDay()];
 
-    else if(startDate.getMonth() === today.getMonth()) text += formatNumberOrdinal(startDate.getDate());
+    else if(!options.alwaysIncludeMonth && startDate.getMonth() === today.getMonth()) text += formatNumberOrdinal(startDate.getDate());
 
     else text += options.shortForm ? MONTH_SHORT[startDate.getMonth()] : MONTH_LONG[startDate.getMonth()] + ' ' + formatNumberOrdinal(startDate.getDate());
 

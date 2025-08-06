@@ -385,7 +385,8 @@ const UserEditPage = () => {
             />}
 
             {(viewState === PageState.VIEW) && (
-                userAccessProfileList.length > 0
+                userRole === RoleEnum.ADMIN
+                || userAccessProfileList.length > 0
                 || userContactList.length > 0
                 || partnerList.length > 0
                 || partnerPendingUserList.length > 0
