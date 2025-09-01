@@ -406,8 +406,8 @@ const FormEditRangeSlider = (props:{ field:InputRangeField, getInputField:(field
     //Declare local references | component gets rebuilt on state change: props.setInputField
     const minimum = (typeof props.field.minValue === 'number') ? props.field.minValue : 0;
     const maximum = (typeof props.field.maxValue === 'number') ? props.field.maxValue : (minimum + 1);
-    const minValue = props.getInputField(props.field.field) || minimum;
-    const maxValue = props.getInputField(props.field.maxField || '') || maximum;
+    const minValue = Math.min(Math.max(props.getInputField(props.field.field) || minimum, minimum), maximum);
+    const maxValue = Math.min(Math.max(props.getInputField(props.field.maxField || '') || maximum, minimum), maximum);
     const dualSlider:boolean = props.field.maxField !== undefined;
 
     const onChange = (values:number[]) => {
