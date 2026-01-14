@@ -196,7 +196,7 @@ const CircleEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(EDIT_FIELDS, resultMap), { headers: { jwt: jwt }})
             .then(response => notify(`${response.data.name} Circle Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
 
@@ -206,7 +206,7 @@ const CircleEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
-        const requestBody:CircleEditRequestBody = assembleRequestBody(resultMap) as CircleEditRequestBody;
+        const requestBody:CircleEditRequestBody = assembleRequestBody(EDIT_FIELDS, resultMap) as CircleEditRequestBody;
         requestBody['leaderID'] = leaderProfile?.userID || userID;
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle`, requestBody, {headers: { jwt: jwt }})
@@ -241,7 +241,7 @@ const CircleEditPage = () => {
      *     SAVE NEW CIRCLE ANNOUNCEMENT
      * *****************************************/
     const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(EDIT_FIELDS, announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Announcement Sent', ToastStyle.SUCCESS, () => {
                     updatePopUpAction(ModelPopUpAction.NONE);
@@ -302,6 +302,7 @@ const CircleEditPage = () => {
         {[PageState.NEW, PageState.VIEW].includes(viewState) &&          
             <FormInput
                 key={editingCircleID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'circleID', modelID: editingCircleID})}
                 validateUniqueFields={true}
                 getInputField={getInputField}

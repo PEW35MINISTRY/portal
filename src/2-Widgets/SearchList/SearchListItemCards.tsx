@@ -166,7 +166,7 @@ export const PrayerRequestCommentItem = ({...props}:{key:any, prayerRequestComme
             <div className='detail-box' >
                 <ProfileImage src={props.prayerRequestComment.commenterProfile.image} className='icon'/>
                 <p >{props.prayerRequestComment.commenterProfile.displayName}</p>
-                {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.prayerRequestComment.prayerRequestID}| #{props.prayerRequestComment.commentID}</label>}
+                {(userRole === RoleEnum.ADMIN) && <label className='id'>#{props.prayerRequestComment.prayerRequestID} | #{props.prayerRequestComment.commentID}</label>}
                 {(props.prayerRequestComment.likeCount > 0) && <img className='icon' src={LIKE_ICON} alt='like-count'/>}
                 {(props.prayerRequestComment.likeCount > 0) && <label className='count' >{props.prayerRequestComment.likeCount}</label>}
             </div>}

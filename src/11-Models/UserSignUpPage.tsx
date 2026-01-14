@@ -34,7 +34,7 @@ const SignUpPage = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeNewProfileRequest = async(resultMap:Map<string, string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(resultMap))
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(SIGNUP_PROFILE_FIELDS, resultMap))
             .then((response:{data:AccountState}) => { //AUTO LOGIN               
                 const account:AccountState = {
                     jwt: response.data.jwt,

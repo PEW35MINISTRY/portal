@@ -27,7 +27,7 @@ const Login = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeLoginRequest = async(resultMap:Map<string,string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, assembleRequestBody(resultMap))
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, assembleRequestBody(LOGIN_PROFILE_FIELDS, resultMap))
             .then((response:{ data:LoginResponseBody }) => {
                 const account:AccountState = {
                     jwt: response.data.jwt,

@@ -212,7 +212,7 @@ const ContentArchivePage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string,any> = inputMap) => 
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, assembleRequestBody(EDIT_FIELDS, resultMap), { headers: { jwt: jwt }})
             .then((response:{ data:ContentResponseBody} ) => notify(`Content Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
 
@@ -222,7 +222,7 @@ const ContentArchivePage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(resultMap), {headers: { jwt: jwt }})
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(EDIT_FIELDS, resultMap), {headers: { jwt: jwt }})
             .then((response:{ data:ContentResponseBody} ) =>
                 notify(`Content Archive Created`, ToastStyle.SUCCESS, () => {
                     setOwnedContentList((currentList) => [{
@@ -309,6 +309,7 @@ const ContentArchivePage = () => {
         {[PageState.NEW, PageState.VIEW].includes(viewState) &&  
            <FormInput
                 key={editingContentID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'contentID', modelID: editingContentID})}
                 getInputField={getInputField}
                 setInputField={setInputField}

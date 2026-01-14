@@ -6,14 +6,14 @@ import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, Inp
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import validateInput, { getValidationLength, InputValidationResult } from '../../0-Assets/field-sync/input-config-sync/inputValidation';
 import { notify } from '../../1-Utilities/hooks';
-import { ToastStyle } from '../../100-App/app-types';
+import { PageState, ToastStyle } from '../../100-App/app-types';
 import { testAccountAvailable } from './form-utilities';
 import { getEnvironment } from '../../1-Utilities/utilities';
 
 import './form.scss';
 
-const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
-    const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => !field.hide && field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
+const FormInput = ({...props}:{key:any, pageViewState?:PageState, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
+    const FIELD_LIST = useMemo(() => (props.FIELDS ?? []).filter(field => !field.hide && !(props.pageViewState === PageState.NEW && field.type === InputType.READ_ONLY) && field.environmentList.includes(getEnvironment())), [props.FIELDS, props.pageViewState]);
     const [validationMap, setValidationMap] = useState<Map<string, InputValidationResult>>(new Map());
 
     /***************************
@@ -46,7 +46,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 }
             }
         });
-    }, [FIELD_LIST]);
+    }, [FIELD_LIST, props.pageViewState]);
 
     //Called onBlur of <input>
     const onUniqueField = async(event:React.ChangeEvent<HTMLInputElement>):Promise<void> => {
@@ -194,7 +194,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
         <form key={props.key} id={props.onSubmitText} >
             {props.headerChildren ?? <></>}
 
-            {FIELD_LIST.filter(field => !field.hide).map((f, index) => 
+            {FIELD_LIST.map((f, index) => 
                     <div id={f.field} key={f.field} className='inputWrapper' onBlurCapture={(e) => { if(!e.currentTarget.contains(e.relatedTarget)) validate(f); }}>
                         <label htmlFor={f.field}>{f.required  && <span className='required'>* </span>}{f.title}</label>
 
@@ -260,25 +260,29 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                     getCleanValue={(item:string = '')=>item.replace(/[^a-zA-Z0-9 _-]/g, '').replace(/ /g, '_').toUpperCase()}
                                 />
 
+                            : (f.type === InputType.READ_ONLY) 
+                                ? <p className='detail custom-field' >{makeDisplayText(props.getInputField(f.field) ?? '')}</p>
+
                             : <p className='validation' ></p>
                         }
 
                         {f.customField && (props.getInputField(f.field) === 'CUSTOM') &&
                              <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title} maxLength={f.length?.max}/>}
 
-                        <p className='validation'>
-                            { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
-                            { (f.length && props.getInputField(f.field)) &&
-                                (() => {
-                                    const length = getValidationLength(props.getInputField(f.field));
-                                    const { min, max } = f.length;
-                                    return ((length < min) || (length > (max - (max * 0.2)))) &&
-                                        <span className='length-counter'>
-                                            {(length < min) ? `${min}/${length}` : `${length}/${max}`}
-                                        </span>;
-                                })()
-                            }
-                        </p>                        
+                        {(f.type !== InputType.READ_ONLY) &&
+                            <p className='validation'>
+                                { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
+                                { (f.length && props.getInputField(f.field)) &&
+                                    (() => {
+                                        const length = getValidationLength(props.getInputField(f.field));
+                                        const { min, max } = f.length;
+                                        return ((length < min) || (length > (max - (max * 0.2)))) &&
+                                            <span className='length-counter'>
+                                                {(length < min) ? `${min}/${length}` : `${length}/${max}`}
+                                            </span>;
+                                    })()
+                                }
+                            </p>}                      
                     </div>
                 )
             }
