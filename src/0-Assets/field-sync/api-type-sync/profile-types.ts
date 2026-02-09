@@ -52,7 +52,7 @@ export interface ProfilePublicResponse extends ProfileListItem {
 };
 
 export const PROFILE_PROPERTY_LIST = [ //Sync to ProfileResponse
-    'userID', 'modelSourceEnvironment', 'displayName', 'firstName', 'lastName', 'email', 'gender', 'postalCode', 'dateOfBirth', 'emailVerified', 'maxPartners', 'walkLevel', 'notes', 'image',
+    'userID', 'modelSourceEnvironment', 'displayName', 'firstName', 'lastName', 'email', 'isEmailVerified', 'emailVerifiedDT', 'gender', 'postalCode', 'dateOfBirth', 'maxPartners', 'walkLevel', 'notes', 'image',
     'createdDT', 'modifiedDT', 
     'userRole', 'userRoleList',
     'circleList', 'circleInviteList', 'circleRequestList', 'circleAnnouncementList',
@@ -60,22 +60,19 @@ export const PROFILE_PROPERTY_LIST = [ //Sync to ProfileResponse
     'newPrayerRequestList', 'ownedPrayerRequestList', 'expiringPrayerRequestList', 'recommendedContentList', 'contactList', 'profileAccessList'
 ];
 
-export interface ProfileResponse {
-    userID: number, 
+export interface ProfileResponse extends ProfileListItem {
     modelSourceEnvironment: ModelSourceEnvironmentEnum,
     userRole: RoleEnum,
-    displayName: string,
-    firstName: string,    
     lastName: string, 
     email:string,
+    isEmailVerified: boolean,
+    emailVerifiedDT?: string,
     gender: GenderEnum,
     postalCode: string, 
     dateOfBirth: string,
-    emailVerified: boolean,
     maxPartners: number,
     walkLevel: number,
     notes?: string,
-    image?: string,
     createdDT: string,
     modifiedDT: string,
 
@@ -101,12 +98,12 @@ export interface ProfileEditRequestBody {
     lastName?: string, 
     displayName?: string, 
     email?: string,
+    isEmailVerified?: boolean,
     password?: string,
     passwordVerify?: string,
     postalCode?: string, 
     dateOfBirth?: string, 
     gender?: GenderEnum,
-    emailVerified?: boolean,
     maxPartners?: number,
     walkLevel?: number,
     image?: string,
