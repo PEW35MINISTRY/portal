@@ -188,9 +188,10 @@ input, textarea {
     border-bottom: 1px solid $blue;
     border-radius: 0;
 
-    &:hover, &:active {
+    &:hover, &:active, &:focus {
         border: 1px solid $blue;
         border-radius: 4px;
+        outline: none;
     }
 }
 

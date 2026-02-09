@@ -21,7 +21,7 @@ export const circleFilterUnique = (list:CircleListItem[]):CircleListItem[] =>
     list.filter((profile, index) => 
         list.indexOf(
             list.find(c => c.circleID === profile.circleID) 
-            || {circleID: -1, name: ''})
+            || {circleID: -1, name: '', description: ''})
         === index);
 
 

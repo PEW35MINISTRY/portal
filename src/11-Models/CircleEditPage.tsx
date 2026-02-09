@@ -214,11 +214,7 @@ const CircleEditPage = () => {
                 notify(`Circle Created`, ToastStyle.SUCCESS, () => {
                     setEditingCircleID(response.data.circleID);
                     navigate(`/portal/edit/circle/${response.data.circleID}/image`);
-                    dispatch(addCircle({
-                        circleID: response.data.circleID || -1,
-                        name: response.data.name || '',
-                        status: CircleStatusEnum.LEADER, 
-                    }));
+                    dispatch(addCircle({...response.data}));
                 }))
             .catch((error) => { processAJAXError(error); });
     }

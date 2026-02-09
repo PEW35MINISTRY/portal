@@ -225,17 +225,7 @@ const ContentArchivePage = () => {
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(EDIT_FIELDS, resultMap), {headers: { jwt: jwt }})
             .then((response:{ data:ContentResponseBody} ) =>
                 notify(`Content Archive Created`, ToastStyle.SUCCESS, () => {
-                    setOwnedContentList((currentList) => [{
-                        contentID: response.data.contentID, 
-                        url: response.data.url, 
-                        type: response.data.type,
-                        source: response.data.source,
-                        title: response.data.title,
-                        description: response.data.description,
-                        image: response.data.image,
-                        keywordList: [...response.data.keywordList],
-                        likeCount: response.data.likeCount,
-                    }, ...currentList]);
+                    setOwnedContentList((currentList) => [{...response.data}, ...currentList]);
 
                     //Reset for new entry
                     setInputMap(new Map());

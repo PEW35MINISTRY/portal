@@ -8,11 +8,13 @@ import packageJson from '../../package.json';
 import './App.scss';
 
 //Components
-import Login from '../11-Models/Login';
+import Login from '../4-Auth/Login';
 import SignUpPage from '../11-Models/UserSignUpPage';
 import PopupPageFlow from '../12-Features/PopupPageFlow';
 import AppContent from './AppContent';
 import FullImagePage from '../12-Features/Utility-Pages/FullImagePage';
+import PasswordForgot from '../4-Auth/PasswordForgotPage';
+import PasswordReset from '../4-Auth/PasswordResetPage';
 
 
 const App = () => {
@@ -28,6 +30,8 @@ const App = () => {
             <Route path='/login/*' element={<Login/>}/>
             <Route path='/signup/initial-account-flow/*' element={<PopupPageFlow allowEscape={false} />}/>
             <Route path='/signup/*' element={<SignUpPage/>}/>
+            <Route path='/password-forgot' element={<PasswordForgot/>}/>
+            <Route path='/password-reset' element={<PasswordReset/>}/>
             <Route path='/portal/version' element={<FullImagePage fullPage={true} alternativeButtonText={`Version: ${version} | ${environment} | ${gitBranch}@${gitCommit}`}/>}/>
             <Route path='/portal/' element={ <Navigate to='/portal/dashboard' /> }/>
             <Route path='/portal/*' element={<AppContent/>}/>
