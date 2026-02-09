@@ -386,8 +386,7 @@ const PrayerRequestEditPage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={(editingPrayerRequestID > 0) ? 'Save Changes' : 'Create Prayer Request'}              
                 onSubmitCallback={(editingPrayerRequestID > 0) ? makeEditRequest : makePostRequest}
-                onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={editingPrayerRequestID > 0 ? [{ text:'Delete Prayer Request', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }] : undefined}
                 headerChildren={[
                     <div key='prayer-request-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -572,8 +571,7 @@ const PrayerRequestCommentPage = ({...props}:{key:any, onSaveCallback:(commentIn
                     FIELDS={PRAYER_REQUEST_COMMENT_FIELDS}
                     onSubmitText='Save Comment'              
                     onSubmitCallback={() => props.onSaveCallback(commentInputMap)}
-                    onAlternativeText='Cancel'
-                    onAlternativeCallback={() => props.onCancelCallback()}
+                    alternativeButtonList={[{ text:'Cancel', onClick:() => props.onCancelCallback() }]}
                 />
             </div>
         </div>

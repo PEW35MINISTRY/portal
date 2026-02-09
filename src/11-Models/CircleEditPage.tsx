@@ -310,8 +310,7 @@ const CircleEditPage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={getDisplayNew() ? 'Create Circle' : 'Save Changes'}
                 onSubmitCallback={getDisplayNew() ? makePostRequest : makeEditRequest}
-                onAlternativeText={getDisplayNew() ? undefined : 'Delete Circle'}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={getDisplayNew() ? undefined : [{ text:'Delete Circle', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }]}
                 headerChildren={[
                 <div key='circle-header' className='form-header-vertical'>
                     <div className='form-header-detail-box'>
@@ -561,8 +560,7 @@ const CircleAnnouncementPage = ({...props}:{key:any, onSaveCallback:(announcemen
                     FIELDS={CIRCLE_ANNOUNCEMENT_FIELDS}
                     onSubmitText='Send Announcement'              
                     onSubmitCallback={() => props.onSaveCallback(announcementInputMap)}
-                    onAlternativeText='Cancel'
-                    onAlternativeCallback={() => props.onCancelCallback()}
+                    alternativeButtonList={[{text: 'Cancel', onClick:() => props.onCancelCallback()}]}
                 />
             </div>
         </div>

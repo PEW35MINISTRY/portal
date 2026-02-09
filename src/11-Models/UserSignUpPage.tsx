@@ -65,7 +65,7 @@ const SignUpPage = () => {
      *   RENDER DISPLAY 
      * *******************/
     return (
-        <div id='sign-up-page' className='center-absolute-wrapper' >
+        <div id='sign-up-page' className='public-floating-popup-page center-absolute-wrapper' >
 
             <div id='popup-wrapper' className='form-page-block center-absolute-inside'>
                 <div id='logo-box' >
@@ -82,8 +82,7 @@ const SignUpPage = () => {
                     FIELDS={SIGNUP_PROFILE_FIELDS}
                     onSubmitText='Create Account'              
                     onSubmitCallback={makeNewProfileRequest}
-                    onAlternativeText='Already have an account?'
-                    onAlternativeCallback={()=>navigate('/login')}
+                    alternativeButtonList={[{ text:'Already have an account?', onClick:() => navigate('/login') }]}
                     footerChildren={
                         (isUserRole && ([ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()))) ? [
                             <div id='populateDemoProfile' key='populateDemoProfile' className='inputWrapper'>

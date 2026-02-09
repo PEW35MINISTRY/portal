@@ -316,8 +316,7 @@ const ContentArchivePage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={(editingContentID > 0) ? 'Save Content' : 'Create Content'}              
                 onSubmitCallback={(editingContentID > 0) ? makeEditRequest : makePostRequest}
-                onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={editingContentID > 0 ? [{ text: 'Delete Content', onClick: () => updatePopUpAction(ModelPopUpAction.DELETE) }] : undefined}
                 headerChildren={[
                     <div key='content-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>

@@ -363,8 +363,7 @@ const UserEditPage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText='Save Changes'              
                 onSubmitCallback={makeEditRequest}
-                onAlternativeText='Delete Profile'
-                onAlternativeCallback={()=>updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={[{ text:'Delete Profile', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }]}
                 headerChildren={[
                     <div key='user-edit-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>

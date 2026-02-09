@@ -75,6 +75,8 @@
 
             label {
                 text-align: right;
+                white-space: normal;
+                overflow-wrap: normal;
                 grid-column: 1;
                 color: black;
     
@@ -284,6 +286,32 @@
                     }
                 }
             }
+           
+            .token-input-wrapper {
+                grid-column: 1 / -1;
+                justify-self: start;
+
+                .token-box-row {
+                    display: inline-flex;
+                    gap: 0.6rem;
+
+                    .token-box-input {
+                        width: 2.0rem;
+                        height: 2.5rem;        
+                        text-align: center;
+                        
+                        border: 1px solid $blue;
+                        border-radius: $radius;
+                        outline: none;
+                        font-weight: bold;
+
+                        &:focus {
+                            border-color: $red;
+                        }
+                    }
+                }
+            }
+
 
             @media only screen and (max-width: $screen-tablet-width) {
                 label {
@@ -332,10 +360,18 @@
     }
 }
 
-.alternative-button {
+.alternative-button-list {
+  grid-column: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  margin: 1.0rem auto;
+
+  .alternative-button {
     grid-column: 1 /span 2;
     border-top: 1px solid $blue;
     border-radius: 0;
+    margin: 0.25rem 0;
+  }
 }
 
 .form-header-detail-box {
