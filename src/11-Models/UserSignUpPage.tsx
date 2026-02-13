@@ -34,7 +34,7 @@ const SignUpPage = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeNewProfileRequest = async(resultMap:Map<string, string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(resultMap))
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(SIGNUP_PROFILE_FIELDS, resultMap))
             .then((response:{data:AccountState}) => { //AUTO LOGIN               
                 const account:AccountState = {
                     jwt: response.data.jwt,
@@ -65,7 +65,7 @@ const SignUpPage = () => {
      *   RENDER DISPLAY 
      * *******************/
     return (
-        <div id='sign-up-page' className='center-absolute-wrapper' >
+        <div id='sign-up-page' className='public-floating-popup-page center-absolute-wrapper' >
 
             <div id='popup-wrapper' className='form-page-block center-absolute-inside'>
                 <div id='logo-box' >
@@ -82,8 +82,7 @@ const SignUpPage = () => {
                     FIELDS={SIGNUP_PROFILE_FIELDS}
                     onSubmitText='Create Account'              
                     onSubmitCallback={makeNewProfileRequest}
-                    onAlternativeText='Already have an account?'
-                    onAlternativeCallback={()=>navigate('/login')}
+                    alternativeButtonList={[{ text:'Already have an account?', onClick:() => navigate('/login') }]}
                     footerChildren={
                         (isUserRole && ([ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.LOCAL].includes(getEnvironment()))) ? [
                             <div id='populateDemoProfile' key='populateDemoProfile' className='inputWrapper'>

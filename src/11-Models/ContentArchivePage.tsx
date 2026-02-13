@@ -212,7 +212,7 @@ const ContentArchivePage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string,any> = inputMap) => 
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/content-archive/${editingContentID}`, assembleRequestBody(EDIT_FIELDS, resultMap), { headers: { jwt: jwt }})
             .then((response:{ data:ContentResponseBody} ) => notify(`Content Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
 
@@ -222,20 +222,10 @@ const ContentArchivePage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(resultMap), {headers: { jwt: jwt }})
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/content-archive`, assembleRequestBody(EDIT_FIELDS, resultMap), {headers: { jwt: jwt }})
             .then((response:{ data:ContentResponseBody} ) =>
                 notify(`Content Archive Created`, ToastStyle.SUCCESS, () => {
-                    setOwnedContentList((currentList) => [{
-                        contentID: response.data.contentID, 
-                        url: response.data.url, 
-                        type: response.data.type,
-                        source: response.data.source,
-                        title: response.data.title,
-                        description: response.data.description,
-                        image: response.data.image,
-                        keywordList: [...response.data.keywordList],
-                        likeCount: response.data.likeCount,
-                    }, ...currentList]);
+                    setOwnedContentList((currentList) => [{...response.data}, ...currentList]);
 
                     //Reset for new entry
                     setInputMap(new Map());
@@ -309,14 +299,14 @@ const ContentArchivePage = () => {
         {[PageState.NEW, PageState.VIEW].includes(viewState) &&  
            <FormInput
                 key={editingContentID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'contentID', modelID: editingContentID})}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={(editingContentID > 0) ? 'Save Content' : 'Create Content'}              
                 onSubmitCallback={(editingContentID > 0) ? makeEditRequest : makePostRequest}
-                onAlternativeText={(editingContentID > 0) ? 'Delete Content' : undefined}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={editingContentID > 0 ? [{ text: 'Delete Content', onClick: () => updatePopUpAction(ModelPopUpAction.DELETE) }] : undefined}
                 headerChildren={[
                     <div key='content-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>

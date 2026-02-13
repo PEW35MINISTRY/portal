@@ -7,6 +7,7 @@ import { ProfileListItem } from '../api-type-sync/profile-types';
 import { CircleSearchRefineEnum, CircleStatusEnum } from './circle-field-config';
 import { ContentSearchRefineEnum } from './content-field-config';
 import { RoleEnum, UserSearchRefineEnum } from './profile-field-config';
+import { PrayerRequestSearchRefineEnum } from './prayer-request-field-config';
 
 
 
@@ -49,6 +50,8 @@ export enum SearchType {
     CONTACT = 'CONTACT',
     CIRCLE = 'CIRCLE',
     CONTENT_ARCHIVE = 'CONTENT_ARCHIVE',
+    PRAYER_REQUEST = 'PRAYER_REQUEST',
+    PRAYER_REQUEST_OWNED = 'PRAYER_REQUEST_OWNED'
   }
   
 
@@ -110,6 +113,14 @@ export enum SearchType {
                                                   getID:(item:ContentListItem) => item.contentID, IDProperty:'contentID', 
                                                   searchRefineList: [...Object.values(ContentSearchRefineEnum)], 
                                                 }),
+    [SearchType.PRAYER_REQUEST]: new SearchTypeInfo<PrayerRequestListItem>({ searchType:SearchType.PRAYER_REQUEST, displayTitle: 'Prayer Request Search', roleList:Object.values(RoleEnum), itemType: ListItemTypesEnum.PRAYER_REQUEST, 
+                                                  getID:(item:PrayerRequestListItem) => item.prayerRequestID, IDProperty: 'prayerRequestID', 
+                                                  searchRefineList: [...Object.values(PrayerRequestSearchRefineEnum)], 
+                                                }),
+    [SearchType.PRAYER_REQUEST_OWNED]: new SearchTypeInfo<PrayerRequestListItem>({ searchType:SearchType.PRAYER_REQUEST, displayTitle: 'Owned Prayer Request Search', roleList:Object.values(RoleEnum), itemType: ListItemTypesEnum.PRAYER_REQUEST, 
+                                                  getID:(item:PrayerRequestListItem) => item.prayerRequestID, IDProperty: 'prayerRequestID',
+                                                  searchRefineList: [...Object.values(PrayerRequestSearchRefineEnum)], 
+                                                })
   };
   
 export default SearchDetail;

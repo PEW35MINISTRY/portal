@@ -1,18 +1,18 @@
 import axios from 'axios';
 import { Range, getTrackBackground } from 'react-range';
 import { IThumbProps, ITrackProps } from 'react-range/lib/types';
-import React, { ReactElement, ReactNode, useEffect, useMemo, useState } from 'react';
+import React, { ReactElement, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import InputField, { ENVIRONMENT_TYPE, InputRangeField, InputSelectionField, InputType, makeDisplayList, makeDisplayText } from '../../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum, getDOBMaxDate, getDOBMinDate, getDateYearsAgo, getShortDate } from '../../0-Assets/field-sync/input-config-sync/profile-field-config';
 import validateInput, { getValidationLength, InputValidationResult } from '../../0-Assets/field-sync/input-config-sync/inputValidation';
 import { notify } from '../../1-Utilities/hooks';
-import { ToastStyle } from '../../100-App/app-types';
+import { PageState, ToastStyle } from '../../100-App/app-types';
 import { testAccountAvailable } from './form-utilities';
 import { getEnvironment } from '../../1-Utilities/utilities';
 
 import './form.scss';
 
-const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>, onAlternativeText?:string, onAlternativeCallback?:()=>void|Promise<void>, headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
+const FormInput = ({...props}:{key:any, pageViewState?:PageState, getIDField:() => {modelIDField:string, modelID:number}, validateUniqueFields?:boolean, FIELDS:InputField[], getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, onSubmitText:string, onSubmitCallback:()=>void|Promise<void>,   alternativeButtonList?:{ text:string, onClick:()=>void|Promise<void>}[], headerChildren?:ReactElement[], footerChildren?:ReactElement[]}) => {
     const FIELD_LIST = useMemo(():InputField[] => props.FIELDS?.filter((field:InputField) => !field.hide && field.environmentList.includes(getEnvironment())) ?? [], [props.FIELDS]);
     const [validationMap, setValidationMap] = useState<Map<string, InputValidationResult>>(new Map());
 
@@ -46,7 +46,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                 }
             }
         });
-    }, [FIELD_LIST]);
+    }, [FIELD_LIST, props.pageViewState]);
 
     //Called onBlur of <input>
     const onUniqueField = async(event:React.ChangeEvent<HTMLInputElement>):Promise<void> => {
@@ -194,9 +194,9 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
         <form key={props.key} id={props.onSubmitText} >
             {props.headerChildren ?? <></>}
 
-            {FIELD_LIST.filter(field => !field.hide).map((f, index) => 
+            {FIELD_LIST.map((f, index) => 
                     <div id={f.field} key={f.field} className='inputWrapper' onBlurCapture={(e) => { if(!e.currentTarget.contains(e.relatedTarget)) validate(f); }}>
-                        <label htmlFor={f.field}>{f.required  && <span className='required'>* </span>}{f.title}</label>
+                        <label htmlFor={f.field} style={[InputType.TOKEN].includes(f.type) ? { textAlign: 'left' } : undefined}>{f.required  && <span className='required'>* </span>}{f.title}</label>
 
                         {(f.field === 'userRoleTokenList' && (f instanceof InputSelectionField)) 
                             ? <FormEditRole
@@ -227,8 +227,7 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                 ? <textarea name={f.field} onChange={onInput}  value={props.getInputField(f.field)?.toString() || ''} maxLength={f.length?.max}/>
 
                             : (f.type === InputType.SELECT_LIST && (f instanceof InputSelectionField)) 
-                                ? <select name={f.field} onChange={onInput} value={props.getInputField(f.field) ?? 'defaultValue'}
->
+                                ? <select name={f.field} onChange={onInput} value={props.getInputField(f.field) ?? 'defaultValue'}>
                                     <option value={'defaultValue'} disabled hidden>Select:</option>
                                     {f.selectOptionList?.map((item, i)=>
                                         <option key={`${f.field}-${item}`} value={`${item}`}>{f.displayOptionList[i]}</option>
@@ -260,25 +259,38 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
                                     getCleanValue={(item:string = '')=>item.replace(/[^a-zA-Z0-9 _-]/g, '').replace(/ /g, '_').toUpperCase()}
                                 />
 
+                            : (f.type === InputType.TOKEN)
+                                ? <FormTokenInput 
+                                    field={f}
+                                    getInputField={props.getInputField}
+                                    setInputField={props.setInputField}
+                                    setValidationText={(validation:InputValidationResult) => setValidationMap(previous => new Map(previous.set(f.field, validation)))}
+                                    charType='NUMERIC'
+                                />
+
+                            : (f.type === InputType.READ_ONLY) 
+                                ? <p className='detail custom-field' >{makeDisplayText(props.getInputField(f.field) ?? '')}</p>
+
                             : <p className='validation' ></p>
                         }
 
                         {f.customField && (props.getInputField(f.field) === 'CUSTOM') &&
                              <input className='custom-field' name={f.field} type={f.type} onChange={(e)=>props.setInputField(f.customField || 'customField', e.target.value)} value={props.getInputField(f.customField)?.toString() || ''} placeholder={'Custom '+f.title} maxLength={f.length?.max}/>}
 
-                        <p className='validation'>
-                            { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
-                            { (f.length && props.getInputField(f.field)) &&
-                                (() => {
-                                    const length = getValidationLength(props.getInputField(f.field));
-                                    const { min, max } = f.length;
-                                    return ((length < min) || (length > (max - (max * 0.2)))) &&
-                                        <span className='length-counter'>
-                                            {(length < min) ? `${min}/${length}` : `${length}/${max}`}
-                                        </span>;
-                                })()
-                            }
-                        </p>                        
+                        {(f.type !== InputType.READ_ONLY) &&
+                            <p className='validation'>
+                                { validationMap.get(f.field)?.message ?? '\u00A0' /* non‑breaking space to hold the line */ }
+                                { (f.length && props.getInputField(f.field)) &&
+                                    (() => {
+                                        const length = getValidationLength(props.getInputField(f.field));
+                                        const { min, max } = f.length;
+                                        return ((length < min) || (length > (max - (max * 0.2)))) &&
+                                            <span className='length-counter'>
+                                                {(length < min) ? `${min}/${length}` : `${length}/${max}`}
+                                            </span>;
+                                    })()
+                                }
+                            </p>}                      
                     </div>
                 )
             }
@@ -286,8 +298,12 @@ const FormInput = ({...props}:{key:any, getIDField:() => {modelIDField:string, m
             {props.footerChildren ?? <></>}
             
             <button className='submit-button' type='submit' onClick={onSubmit}>{props.onSubmitText}</button>
-            { props.onAlternativeText && <button className='alternative-button'  type='button' onClick={props.onAlternativeCallback}>{props.onAlternativeText}</button> }
-
+            {props.alternativeButtonList?.length &&
+                <div className='alternative-button-list'>
+                    {props.alternativeButtonList.map((button, index) => (
+                        <button key={`alternative-button-${index}`} className='alternative-button' type='button' onClick={button.onClick}>{button.text}</button>
+                    ))}
+                </div>}
         </form>
     );
 }
@@ -444,5 +460,128 @@ const FormEditRangeSlider = (props:{ field:InputRangeField, getInputField:(field
                 </div>
             }
         />
+    );
+}
+
+
+//Makes a second row in FormInput for character boxes to span both columns
+export const FormTokenInput = (props: {field:InputField, getInputField:(field:string) => any|undefined, setInputField:(field:string, value:any) => void, setValidationText:(validation:InputValidationResult) => void, charType:'NUMERIC'|'LETTERS'|'ALPHANUMERIC'|'TEXT', }) => {
+    const refList = useRef<Array<HTMLInputElement | null>>([]);
+    const MAX_LENGTH:number = props.field.length?.max ?? 0;
+   
+    const filter = (text:string) => {
+        const value: string = String(text ?? '');
+
+        switch(props.charType) {
+            case 'NUMERIC':
+                return value.replace(/\D/g, '');
+
+            case 'LETTERS':
+                return value.replace(/[^A-Za-z]/g, '').toUpperCase();
+
+            case 'ALPHANUMERIC':
+                return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+            case 'TEXT':
+            default:
+                return value;
+        }
+    }
+
+    const token:string = filter(String(props.getInputField(props.field.field) ?? '')).slice(0, MAX_LENGTH);
+
+
+
+    /* INPUT HANDLERS */
+    const onChange = (index:number) => (event:React.ChangeEvent<HTMLInputElement>) => {
+        if(event) event.preventDefault();
+        applyInput(String(event.target.value ?? ''), index);
+    }
+
+    const onPaste = (event:React.ClipboardEvent<HTMLInputElement>) => {
+        if(event) event.preventDefault();
+        props.setInputField(props.field.field, ''); //Clear existing input
+        applyInput(String(event.clipboardData.getData('text') ?? ''), 0);
+    }
+
+    const applyInput = (raw:string, startIndex:number) => {
+        const filtered:string = filter(raw);
+
+        if(!filtered.length) {
+            updateChar(startIndex, '');
+            return;
+        }
+
+        if(raw.length && filtered.length !== raw.length)
+            props.setValidationText({ passed:false, message:`${makeDisplayText(props.charType)} only`, description:`Some characters were removed because token allows ${props.charType} only.` });
+
+        const spread:string = filtered.slice(0, MAX_LENGTH - startIndex);
+        const list:any[] = Array.from({ length:MAX_LENGTH }, (_,i) => token[i] ?? '');
+
+        for(let k=0;k<spread.length;k++)
+            list[startIndex + k] = spread[k];
+
+        props.setInputField(props.field.field, filter(String(list.join(''))).slice(0, MAX_LENGTH));
+        focusIndex(Math.min(startIndex + spread.length, MAX_LENGTH - 1));
+    }
+
+    const updateChar = (index:number, char:string) => {
+        const list:any[] = Array.from({ length:MAX_LENGTH }, (_,i) => token[i] ?? '');
+        list[index] = char;
+        props.setInputField(props.field.field, filter(String(list.join(''))).slice(0, MAX_LENGTH));
+    }
+
+
+
+    /* NAVIGATION */
+    const onKeyDownAtIndex = (index:number) => (event:React.KeyboardEvent<HTMLInputElement>) => {
+        if(event.key === 'Backspace') {
+            if(token[index]) {
+                updateChar(index, '');
+                return;
+            }
+
+            if(index > 0) {
+                event.preventDefault();
+                updateChar(index - 1, '');
+                focusIndex(index - 1);
+            }
+
+        } else if(event.key === 'ArrowLeft') {
+            event.preventDefault();
+            if(index > 0) focusIndex(index - 1);
+            
+        } else if(event.key === 'ArrowRight') {
+            event.preventDefault();
+            if(index < MAX_LENGTH - 1) focusIndex(index + 1);
+        }
+    }
+
+    const focusIndex = (index:number) => {
+        const clamped:number = Math.max(0, Math.min(MAX_LENGTH - 1, index));
+        refList.current[clamped]?.focus();
+        refList.current[clamped]?.select?.();
+    }
+
+    return(
+        <div className='token-input-wrapper'>
+            <div className='token-box-row' role='group' aria-label='Token input'>
+                {Array.from({ length:MAX_LENGTH }, (_, index) => (
+                    <input
+                        key={`token-input-${index}`}
+                        ref={(el) => { refList.current[index] = el; }}
+                        className='token-box-input'
+                        name={`${props.field.field}-${index}`}
+                        value={token[index] ?? ''}
+                        onChange={onChange(index)}
+                        onKeyDown={onKeyDownAtIndex(index)}
+                        onPaste={onPaste}
+                        inputMode={props.charType === 'NUMERIC' ? 'numeric' : 'text'}
+                        autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                        maxLength={MAX_LENGTH}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }

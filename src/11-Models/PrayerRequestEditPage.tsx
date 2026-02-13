@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
@@ -165,7 +165,7 @@ const PrayerRequestEditPage = () => {
             setViewState(PageState.LOADING);
             navigate(`/portal/edit/prayer-request/${editingPrayerRequestID}/${action || ''}`, {replace: true});
             fetchPrayerRequest(editingPrayerRequestID); 
-            setEDIT_FIELDS(EDIT_PRAYER_REQUEST_FIELDS);
+            setEDIT_FIELDS(userHasAnyRole([RoleEnum.ADMIN]) ? PRAYER_REQUEST_FIELDS_ADMIN : EDIT_PRAYER_REQUEST_FIELDS);
 
         } else { //(id === -1)
             setRequestorProfile({ userID, displayName: userDisplayName, firstName: userProfile.firstName, image: userProfile.image });
@@ -178,7 +178,7 @@ const PrayerRequestEditPage = () => {
             setAddCircleRecipientIDList([]);
             setRemoveCircleRecipientIDList([]);
             updatePopUpAction(ModelPopUpAction.NONE);
-            setEDIT_FIELDS(CREATE_PRAYER_REQUEST_FIELDS);
+            setEDIT_FIELDS(userHasAnyRole([RoleEnum.ADMIN]) ? PRAYER_REQUEST_FIELDS_ADMIN : CREATE_PRAYER_REQUEST_FIELDS);
         }
     }, [editingPrayerRequestID]);
 
@@ -230,7 +230,7 @@ const PrayerRequestEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string, string> = inputMap) => {
-        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(EDIT_FIELDS, resultMap) as PrayerRequestPatchRequestBody;
 
         if(addUserRecipientIDList.length > 0) requestBody['addUserRecipientIDList'] = addUserRecipientIDList;
         if(removeUserRecipientIDList.length > 0) requestBody['removeUserRecipientIDList'] = removeUserRecipientIDList;
@@ -254,7 +254,7 @@ const PrayerRequestEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
-        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(resultMap) as PrayerRequestPatchRequestBody;
+        const requestBody:PrayerRequestPatchRequestBody = assembleRequestBody(EDIT_FIELDS, resultMap) as PrayerRequestPatchRequestBody;
 
         //Convert `duration` mock field to `expirationDate`
         const durationField:InputField|undefined = EDIT_FIELDS.find(field => field.field === 'duration');
@@ -292,12 +292,12 @@ const PrayerRequestEditPage = () => {
      *     SAVE NEW PRAYER REQUEST COMMENT
      * *****************************************/
     const makePrayerCommentRequest = async(announcementInputMap:Map<string, any>) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
-            .then(response => {
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/prayer-request/${editingPrayerRequestID}/comment`, assembleRequestBody(PRAYER_REQUEST_COMMENT_FIELDS, announcementInputMap), {headers: { jwt: jwt }})
+            .then((response:AxiosResponse<PrayerRequestCommentListItem>) => {
                 notify('Comment Posted', ToastStyle.SUCCESS);
                 updatePopUpAction(ModelPopUpAction.NONE);
                 setDefaultDisplayTitleList(['Comments']);
-                setCommentList(current => [{commentID: -1, prayerRequestID: editingPrayerRequestID, commenterProfile: userProfile, message: announcementInputMap.get('message') || '', likeCount: 0}, ...current])
+                setCommentList(current => [response.data, ...current])
             })
             .catch((error) => { processAJAXError(error); });
 
@@ -379,14 +379,14 @@ const PrayerRequestEditPage = () => {
         {[PageState.NEW, PageState.VIEW].includes(viewState) &&   
             <FormInput
                 key={editingPrayerRequestID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'prayerRequestID', modelID: editingPrayerRequestID})}
                 getInputField={getInputField}
                 setInputField={setInputField}
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={(editingPrayerRequestID > 0) ? 'Save Changes' : 'Create Prayer Request'}              
                 onSubmitCallback={(editingPrayerRequestID > 0) ? makeEditRequest : makePostRequest}
-                onAlternativeText={(editingPrayerRequestID > 0) ? 'Delete Prayer Request' : undefined}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={editingPrayerRequestID > 0 ? [{ text:'Delete Prayer Request', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }] : undefined}
                 headerChildren={[
                     <div key='prayer-request-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>
@@ -571,8 +571,7 @@ const PrayerRequestCommentPage = ({...props}:{key:any, onSaveCallback:(commentIn
                     FIELDS={PRAYER_REQUEST_COMMENT_FIELDS}
                     onSubmitText='Save Comment'              
                     onSubmitCallback={() => props.onSaveCallback(commentInputMap)}
-                    onAlternativeText='Cancel'
-                    onAlternativeCallback={() => props.onCancelCallback()}
+                    alternativeButtonList={[{ text:'Cancel', onClick:() => props.onCancelCallback() }]}
                 />
             </div>
         </div>

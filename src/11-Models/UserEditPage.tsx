@@ -241,7 +241,7 @@ const UserEditPage = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, assembleRequestBody(resultMap), 
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/user/${editingUserID}`, assembleRequestBody(EDIT_FIELDS, resultMap), 
             { headers: { jwt: jwt }})
             .then((response:{ data:ProfileResponse }) => {
                 //Save to Redux for current session
@@ -355,6 +355,7 @@ const UserEditPage = () => {
         {(viewState === PageState.VIEW) &&
             <FormInput
                 key={editingUserID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'userID', modelID: editingUserID})}
                 validateUniqueFields={true}
                 getInputField={getInputField}
@@ -362,8 +363,7 @@ const UserEditPage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText='Save Changes'              
                 onSubmitCallback={makeEditRequest}
-                onAlternativeText='Delete Profile'
-                onAlternativeCallback={()=>updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={[{ text:'Delete Profile', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }]}
                 headerChildren={[
                     <div key='user-edit-header' className='form-header-vertical'>
                         <div className='form-header-detail-box'>

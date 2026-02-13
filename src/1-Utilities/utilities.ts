@@ -1,6 +1,6 @@
 import { CircleListItem } from '../0-Assets/field-sync/api-type-sync/circle-types';
 import { ProfileListItem } from '../0-Assets/field-sync/api-type-sync/profile-types';
-import { ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
+import InputField, { ENVIRONMENT_TYPE, InputType } from '../0-Assets/field-sync/input-config-sync/inputField';
 import { RoleEnum } from '../0-Assets/field-sync/input-config-sync/profile-field-config';
 
 
@@ -21,16 +21,21 @@ export const circleFilterUnique = (list:CircleListItem[]):CircleListItem[] =>
     list.filter((profile, index) => 
         list.indexOf(
             list.find(c => c.circleID === profile.circleID) 
-            || {circleID: -1, name: ''})
+            || {circleID: -1, name: '', description: ''})
         === index);
 
 
 /* Transform inputMap to Simple JavaScript Object */
-export const assembleRequestBody = (inputMap:Map<string,any>):Object => {
+export const assembleRequestBody = (EDIT_FIELDS:InputField[], inputMap:Map<string,any>):Object => {
     //Assemble Request Body (Simple JavaScript Object)
     const requestBody = {};
     inputMap.forEach((value, field) => {
-        if(field === 'userRoleTokenList') { //@ts-ignore
+        const inputField:InputField|undefined = EDIT_FIELDS.find(f => f.field === field);
+
+        if(inputField && inputField.type === InputType.READ_ONLY)
+            return;
+        
+        else if(field === 'userRoleTokenList') { //@ts-ignore
             requestBody[field] = Array.from((inputMap.get('userRoleTokenList') as Map<string,string>).entries())
                                     .map(([role, token]) => ({role: role, token: token || ''}));
         } else {

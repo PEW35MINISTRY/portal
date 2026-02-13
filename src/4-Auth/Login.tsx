@@ -11,8 +11,7 @@ import { LoginResponseBody } from '../0-Assets/field-sync/api-type-sync/auth-typ
 import { ImageDefaultEnum, ImageWidget } from '../2-Widgets/ImageWidgets';
 
 import '../2-Widgets/Form/form.scss';
-import './user.scss';
-
+import '../11-Models/user.scss';
 
 
 const Login = () => {
@@ -27,7 +26,7 @@ const Login = () => {
      * FormProfile already handled validations
      * *****************************************/
     const makeLoginRequest = async(resultMap:Map<string,string> = inputMap) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, assembleRequestBody(resultMap))
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/login`, assembleRequestBody(LOGIN_PROFILE_FIELDS, resultMap))
             .then((response:{ data:LoginResponseBody }) => {
                 const account:AccountState = {
                     jwt: response.data.jwt,
@@ -51,7 +50,7 @@ const Login = () => {
      *   RENDER DISPLAY 
      * *******************/
     return (
-        <div id='login-page' className='center-absolute-wrapper'>
+        <div id='login-page' className='public-floating-popup-page center-absolute-wrapper'>
             <div id='popup-wrapper' className='form-page-block center-absolute-inside' >
                 <div id='logo-box' >
                     <ImageWidget defaultImage={ImageDefaultEnum.LOGO} />
@@ -67,8 +66,10 @@ const Login = () => {
                     FIELDS={LOGIN_PROFILE_FIELDS}
                     onSubmitText='Login'              
                     onSubmitCallback={makeLoginRequest}
-                    onAlternativeText='Need an account?'
-                    onAlternativeCallback={()=>navigate('/signup')}
+                    alternativeButtonList={[
+                        {text:'Forgot password?',onClick:() => navigate(getInputField('email') ? `/password-forgot?email=${encodeURIComponent(getInputField('email') ?? '')}` : '/password-forgot')},
+                        { text:'Need an account?', onClick:() => navigate('/signup') },
+                    ]}
                 />
                 
             </div>

@@ -196,7 +196,7 @@ const CircleEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makeEditRequest = async(resultMap:Map<string,any> = inputMap) =>
-        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(resultMap), { headers: { jwt: jwt }})
+        await axios.patch(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}`, assembleRequestBody(EDIT_FIELDS, resultMap), { headers: { jwt: jwt }})
             .then(response => notify(`${response.data.name} Circle Saved`, ToastStyle.SUCCESS))
             .catch((error) => processAJAXError(error));
 
@@ -206,7 +206,7 @@ const CircleEditPage = () => {
      * FormInput already handled validations
      * *****************************************/
     const makePostRequest = async(resultMap:Map<string, string> = inputMap) => {
-        const requestBody:CircleEditRequestBody = assembleRequestBody(resultMap) as CircleEditRequestBody;
+        const requestBody:CircleEditRequestBody = assembleRequestBody(EDIT_FIELDS, resultMap) as CircleEditRequestBody;
         requestBody['leaderID'] = leaderProfile?.userID || userID;
 
         await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle`, requestBody, {headers: { jwt: jwt }})
@@ -214,11 +214,7 @@ const CircleEditPage = () => {
                 notify(`Circle Created`, ToastStyle.SUCCESS, () => {
                     setEditingCircleID(response.data.circleID);
                     navigate(`/portal/edit/circle/${response.data.circleID}/image`);
-                    dispatch(addCircle({
-                        circleID: response.data.circleID || -1,
-                        name: response.data.name || '',
-                        status: CircleStatusEnum.LEADER, 
-                    }));
+                    dispatch(addCircle({...response.data}));
                 }))
             .catch((error) => { processAJAXError(error); });
     }
@@ -241,7 +237,7 @@ const CircleEditPage = () => {
      *     SAVE NEW CIRCLE ANNOUNCEMENT
      * *****************************************/
     const makeCircleAnnouncementRequest = async(announcementInputMap:Map<string, any>) =>
-        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(announcementInputMap), {headers: { jwt: jwt }})
+        await axios.post(`${process.env.REACT_APP_DOMAIN}/api/leader/circle/${editingCircleID}/announcement`, assembleRequestBody(EDIT_FIELDS, announcementInputMap), {headers: { jwt: jwt }})
             .then(response => {
                 notify('Announcement Sent', ToastStyle.SUCCESS, () => {
                     updatePopUpAction(ModelPopUpAction.NONE);
@@ -302,6 +298,7 @@ const CircleEditPage = () => {
         {[PageState.NEW, PageState.VIEW].includes(viewState) &&          
             <FormInput
                 key={editingCircleID}
+                pageViewState={viewState}
                 getIDField={()=>({modelIDField: 'circleID', modelID: editingCircleID})}
                 validateUniqueFields={true}
                 getInputField={getInputField}
@@ -309,8 +306,7 @@ const CircleEditPage = () => {
                 FIELDS={EDIT_FIELDS}
                 onSubmitText={getDisplayNew() ? 'Create Circle' : 'Save Changes'}
                 onSubmitCallback={getDisplayNew() ? makePostRequest : makeEditRequest}
-                onAlternativeText={getDisplayNew() ? undefined : 'Delete Circle'}
-                onAlternativeCallback={() => updatePopUpAction(ModelPopUpAction.DELETE)}
+                alternativeButtonList={getDisplayNew() ? undefined : [{ text:'Delete Circle', onClick:() => updatePopUpAction(ModelPopUpAction.DELETE) }]}
                 headerChildren={[
                 <div key='circle-header' className='form-header-vertical'>
                     <div className='form-header-detail-box'>
@@ -560,8 +556,7 @@ const CircleAnnouncementPage = ({...props}:{key:any, onSaveCallback:(announcemen
                     FIELDS={CIRCLE_ANNOUNCEMENT_FIELDS}
                     onSubmitText='Send Announcement'              
                     onSubmitCallback={() => props.onSaveCallback(announcementInputMap)}
-                    onAlternativeText='Cancel'
-                    onAlternativeCallback={() => props.onCancelCallback()}
+                    alternativeButtonList={[{text: 'Cancel', onClick:() => props.onCancelCallback()}]}
                 />
             </div>
         </div>
