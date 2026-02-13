@@ -12,6 +12,7 @@ import { ImageDefaultEnum, ImageWidget } from '../2-Widgets/ImageWidgets';
 import '../2-Widgets/Form/form.scss';
 import './user.scss';
 import { ENVIRONMENT_TYPE } from '../0-Assets/field-sync/input-config-sync/inputField';
+import { SignupProfileResponse } from '../0-Assets/field-sync/api-type-sync/profile-types';
 
 
 const SignUpPage = () => {
@@ -35,18 +36,10 @@ const SignUpPage = () => {
      * *****************************************/
     const makeNewProfileRequest = async(resultMap:Map<string, string> = inputMap) =>
         await axios.post(`${process.env.REACT_APP_DOMAIN}/signup${(isUserRole && populateDemoProfile) ? '?populate=true' : ''}`, assembleRequestBody(SIGNUP_PROFILE_FIELDS, resultMap))
-            .then((response:{data:AccountState}) => { //AUTO LOGIN               
-                const account:AccountState = {
-                    jwt: response.data.jwt,
-                    userID: response.data.userID,
-                    userRole: response.data.userRole,
-                    userProfile: response.data.userProfile,
-                };
-                //Save to Redux for current session
-                dispatch(setAccount(account));
+            .then((response:{data:SignupProfileResponse}) => {        
 
-                notify(`Welcome ${account.userProfile.firstName}`, ToastStyle.SUCCESS);
-                navigate(`/signup/initial-account-flow`);
+                notify(`Please Verify Email`, ToastStyle.WARN);
+                navigate(`/email-verify?email=${encodeURIComponent(getInputField('email') ?? '')}`);
 
             }).catch((error) => { processAJAXError(error); });
 

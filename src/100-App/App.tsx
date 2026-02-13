@@ -15,6 +15,7 @@ import AppContent from './AppContent';
 import FullImagePage from '../12-Features/Utility-Pages/FullImagePage';
 import PasswordForgot from '../4-Auth/PasswordForgotPage';
 import PasswordReset from '../4-Auth/PasswordResetPage';
+import EmailVerify from '../4-Auth/EmailVerify';
 
 
 const App = () => {
@@ -30,6 +31,7 @@ const App = () => {
             <Route path='/login/*' element={<Login/>}/>
             <Route path='/signup/initial-account-flow/*' element={<PopupPageFlow allowEscape={false} />}/>
             <Route path='/signup/*' element={<SignUpPage/>}/>
+            <Route path='/email-verify' element={<EmailVerify/>}/>
             <Route path='/password-forgot' element={<PasswordForgot/>}/>
             <Route path='/password-reset' element={<PasswordReset/>}/>
             <Route path='/portal/version' element={<FullImagePage fullPage={true} alternativeButtonText={`Version: ${version} | ${environment} | ${gitBranch}@${gitCommit}`}/>}/>
