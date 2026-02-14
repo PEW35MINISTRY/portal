@@ -97,6 +97,11 @@ export const LOGIN_PROFILE_FIELDS:InputField[] = [
     new InputField({title: 'Password', field: 'password', type: InputType.PASSWORD, required: true, validationMessage: 'Incomplete Format', environmentList:[ENVIRONMENT_TYPE.LOCAL, ENVIRONMENT_TYPE.DEVELOPMENT, ENVIRONMENT_TYPE.PRODUCTION] }),
 ];
 
+export const EMAIL_VERIFY_PROFILE_FIELDS:InputField[] = [
+    new InputField({title: 'Token', field: 'token', type: InputType.TOKEN, required: true, length:{min:6, max:6}, validationMessage: 'Incomplete Format', environmentList:[ENVIRONMENT_TYPE.PRODUCTION] }),
+    new InputField({title: 'Email Address', field: 'email', type: InputType.EMAIL, required: true, validationRegex: EMAIL_REGEX, validationMessage: 'Incomplete Format' })
+];
+
 export const PASSWORD_RESET_PROFILE_FIELDS:InputField[] = [
     new InputField({title: 'Token', field: 'token', type: InputType.TOKEN, required: true, length:{min:6, max:6} }),
     new InputField({title: 'Email Address', field: 'email', type: InputType.EMAIL, required: true, validationRegex: EMAIL_REGEX, validationMessage: 'Incomplete Format' }),

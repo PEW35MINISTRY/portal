@@ -22,18 +22,17 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     const [displayList, setDisplayList] = useState<SearchListValue[]>([]);
     const [selectedKey, setSelectedKey] = useState<SearchListKey>(new SearchListKey({displayTitle: 'Default'}));
     const [selectedKeyTitle, setSelectedKeyTitle] = useState<string>('Default'); //Sync state for <select><option> component
-    const [selectedDetail, setSelectedDetail] = useState<SearchTypeInfo<DisplayItemType>>(SearchDetail[SearchType.NONE]);
     const [searchButtonCache, setSearchButtonCache] = useState<Map<string, SearchListValue>|undefined>(undefined); //Quick pairing for accurate button options
     const [searchRefine, setSearchRefine] = useState<string>('ALL');
     const [searchTerm, setSearchTerm] = useState<string>('');
 
     const getKey = (keyTitle:string = selectedKey.displayTitle):SearchListKey => Array.from(props.displayMap.keys()).find((k) => k.displayTitle === keyTitle) || new SearchListKey({displayTitle: 'Default'});
     const getList = (keyTitle:string = selectedKey.displayTitle):SearchListValue[] => props.displayMap.get(getKey(keyTitle)) || [];
+    const getSearchDetail = (searchType:SearchType = selectedKey.searchType):SearchTypeInfo<DisplayItemType> => SearchDetail[searchType] || SearchDetail[SearchType.NONE];
 
     /* Sync state for <select><option> component */
     useEffect(() => {
         setSelectedKeyTitle(selectedKey.displayTitle);
-        setSelectedDetail(SearchDetail[selectedKey.searchType]);
     }, [selectedKey]);
 
     /*****************
@@ -76,6 +75,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
             return;
         }
 
+        const selectedDetail:SearchTypeInfo<DisplayItemType> = getSearchDetail();
         const params = new URLSearchParams([['search', value]]);
         if(selectedDetail.searchRefineList.length > 0 && searchRefine !== undefined) params.set('refine', searchRefine);
         if(selectedDetail.searchFilterList.length > 0 && selectedKey.searchFilter !== undefined) params.set('filter', selectedKey.searchFilter);
@@ -111,6 +111,7 @@ const SearchList = ({...props}:{key:any, displayMap:Map<SearchListKey, SearchLis
     
     //Save Map as: 'type-id' : SearchListValue = CIRCLE-1 : {...}
     const assembleSearchButtonCache = ():Map<string, SearchListValue> => { 
+        const selectedDetail:SearchTypeInfo<DisplayItemType> = getSearchDetail();
         const cacheMap = new Map();
         Array.from(props.displayMap.values()).reverse().flatMap(list => list).forEach((item:SearchListValue) => {
             const itemID:number = selectedDetail.getID(item.displayItem);

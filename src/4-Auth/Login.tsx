@@ -41,7 +41,10 @@ const Login = () => {
                 const redirect = new URLSearchParams(location.search).get('redirect');
                 navigate((redirect && redirect.startsWith('/portal')) ? redirect : '/portal/dashboard/animation');
 
-            }).catch((error) => processAJAXError(error));
+            }).catch((error) => {
+                if(error.response?.status === 403) navigate(`/email-verify?email=${encodeURIComponent(getInputField('email') ?? '')}`);
+                processAJAXError(error);}
+            );
 
     const getInputField = (field:string):string|undefined => inputMap.get(field);
     const setInputField = (field:string, value:string):void => setInputMap(map => new Map(map.set(field, value)));
